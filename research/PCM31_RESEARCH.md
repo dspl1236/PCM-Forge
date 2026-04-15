@@ -99,3 +99,16 @@ The same UDS stack from MMI3G-Toolkit's diag-tool works here.
 - PCM Repairs UK (confirms Harman Becker for all PCM generations)
 - IOActive V850 paper (V850 IOC methodology)
 - MMI3G-Toolkit research (sister platform architecture)
+
+## USB Engineering Access (Confirmed)
+
+Multiple vendors sell VIN-specific USB activation files for PCM 3.1.
+Features activatable without PIWIS include: engineering menu, navigation,
+Bluetooth, Sport Chrono, DAB, USB/AUX, video in motion, cruise control,
+and custom boot images.
+
+The activation works by copying a file to a USB stick and inserting it.
+The PCM processes the file in 30-60 seconds and reboots with the feature
+enabled. This is the same concept as the MMI3G's SD card script execution.
+
+See USB_ENGINEERING_ACCESS.md for full details.
