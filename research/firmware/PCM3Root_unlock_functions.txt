@@ -1,0 +1,282 @@
+=== Who calls FUN_0822b93c (component unlock handler)? ===
+References to FUN_0822b93c: 2
+
+  Caller: FUN_0822c4cc at 0822c4cc (2620b) from 0822cfd2
+
+--- DECOMPILED CALLER ---
+
+void FUN_0822c4cc(int param_1,int param_2,int param_3,int param_4,undefined4 param_5,
+                 undefined1 param_6,undefined4 param_7,int param_8,int param_9,int param_10)
+
+{
+  int iVar1;
+  code *pcVar2;
+  undefined1 uVar3;
+  undefined4 *puVar4;
+  int *piVar5;
+  undefined4 uVar6;
+  int iVar7;
+  undefined1 auStack_5c [4];
+  undefined4 uStack_58;
+  undefined4 uStack_54;
+  undefined4 uStack_50;
+  undefined4 uStack_4c;
+  undefined4 uStack_48;
+  undefined4 uStack_44;
+  undefined4 uStack_40;
+  undefined4 uStack_3c;
+  undefined4 uStack_38;
+  undefined4 uStack_34;
+  undefined4 uStack_30;
+  undefined4 uStack_2c;
+  int iStack_28;
+  undefined4 uStack_24;
+  
+  uStack_24 = param_5;
+  iStack_28 = param_4;
+  (*(code *)PTR_FUN_0822c638)(auStack_5c,PTR_DAT_0822c634);
+  iVar1 = (int)DAT_0822c61e;
+  if (param_3 == iVar1) {
+    iVar1 = (int)DAT_0822cb00;
+    if (iStack_28 == iVar1) {
+      (*(code *)PTR_FUN_0822ccec)(auStack_5c,PTR_s_Set_Package_State_5_km_h_for_Spe_0822ccf0);
+      puVar4 = &uStack_38;
+      uStack_38 = 5;
+      pcVar2 = *(code **)(*(int *)(DAT_0822ccd6 + param_1) + 0x48);
+    }
+    else if (iVar1 < iStack_28) {
+      if (iStack_28 == DAT_0822cb0a) {
+        (*(code *)PTR_FUN_0822ccec)(auStack_5c,PTR_s_Set_Package_State_9_km_h_for_Spe_0822ccf4);
+        puVar4 = &uStack_34;
+        uStack_34 = 9;
+        pcVar2 = *(code **)(*(int *)(DAT_0822ccd6 + param_1) + 0x48);
+      }
+      else {
+        if (iStack_28 != DAT_0822cb0a + 0x5d) goto LAB_0822cb84;
+        (*(code *)PTR_FUN_0822ccec)(auStack_5c,PTR_s_Set_Package_State_infinity_for_S_0822ccf8);
+        puVar4 = &uStack_30;
+        uStack_30 = 99;
+        pcVar2 = *(code **)(*(int *)(DAT_0822ccd6 + param_1) + 0x48);
+      }
+    }
+    else if (iStack_28 == 0) {
+      (*(code *)PTR_FUN_0822cb0c)(auStack_5c,PTR_s_Set_Package_State_Handbrake_for_S_0822cb28);
+      puVar4 = &uStack_40;
+      uStack_40 = 0xffffffff;
+      pcVar2 = *(code **)(*(int *)(DAT_0822cb04 + param_1) + 0x48);
+    }
+    else if (iStack_28 == iVar1 + -5) {
+      (*(code *)PTR_FUN_0822cb0c)(auStack_5c,PTR_s_Set_Package_State_0_km_h_for_Spe_0822cb2c);
+      puVar4 = &uStack_3c;
+      uStack_3c = 0;
+      pcVar2 = *(code **)(*(int *)(DAT_0822cb04 + param_1) + 0x48);
+    }
+    else {
+LAB_0822cb84:
+      (*(code *)PTR_FUN_0822ccec)(auStack_5c,PTR_s_Set_Package_State_Handbrake_for_S_0822ccfc);
+      puVar4 = &uStack_2c;
+      uStack_2c = 0xffffffff;
+      pcVar2 = *(code **)(*(int *)(DAT_0822ccd6 + param_1) + 0x48);
+    }
+    (*pcVar2)(puVar4);
+    iVar1 = (int)DAT_0822ccd6;
+    (*(code *)PTR_FUN_0822cd00)(param_1);
+    piVar5 = (int *)(iVar1 + param_1);
+    (**(code **)(*piVar5 + (int)DAT_0822ccd8))(piVar5,param_2);
+    (**(code **)(*piVar5 + 0x84))(piVar5,uStack_24);
+    if (param_2 == 0) {
+      uVar3 = 0;
+      pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ccda);
+    }
+    else {
+      pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ccda);
+      uVar3 = param_6;
+    }
+    uVar6 = 0x14;
+    (*pcVar2)(piVar5,uVar3);
+LAB_0822cf82:
+    if (param_8 != 0) {
+      (*(code *)PTR_FUN_0822d03c)(param_1,param_3,iStack_28,uStack_24,param_6,param_7,param_2);
+      iVar1 = (*(code *)PTR_FUN_0822d040)(param_1,param_3);
+      if ((iVar1 != 0) && (param_2 != 0)) {
+        (*(code *)PTR_FUN_0822d044)(param_1,param_3);
+      }
+    }
+  }
+  else {
+    if (iVar1 < param_3) {
+      iVar1 = (int)DAT_0822c628;
+      if (param_3 == iVar1) {
+        iVar1 = (int)DAT_0822ce9e;
+        (*(code *)PTR_FUN_0822cebc)
+                  (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cec4,param_2);
+        piVar5 = (int *)(iVar1 + param_1);
+        (**(code **)(*piVar5 + (int)DAT_0822cea4))(piVar5,param_2);
+        (**(code **)(*piVar5 + 0x94))(piVar5,uStack_24);
+        (**(code **)(*piVar5 + (int)DAT_0822cea6))(piVar5,iStack_28);
+        if (param_2 == 0) {
+          uVar3 = 0;
+          pcVar2 = *(code **)(*piVar5 + (int)DAT_0822cea8);
+        }
+        else {
+          pcVar2 = *(code **)(*piVar5 + (int)DAT_0822cea8);
+          uVar3 = param_6;
+        }
+        uVar6 = 0xf;
+        (*pcVar2)(piVar5,uVar3);
+      }
+      else if (iVar1 < param_3) {
+        iVar1 = (int)DAT_0822c62e;
+        if (param_3 == iVar1) {
+          iVar1 = (int)DAT_0822ce9e;
+          (*(code *)PTR_FUN_0822cebc)
+                    (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822ced0,param_2);
+          piVar5 = (int *)(iVar1 + param_1);
+          iVar1 = (int)DAT_0822ceb6;
+          (**(code **)(*piVar5 + iVar1 + 0x38))(piVar5,param_2);
+          (**(code **)(*piVar5 + 0xa0))(piVar5,uStack_24);
+          (**(code **)(*piVar5 + (int)DAT_0822ceb8))(piVar5,iStack_28);
+          if (param_2 == 0) {
+            pcVar2 = *(code **)(*piVar5 + iVar1);
+            uVar3 = 0;
+          }
+          else {
+            pcVar2 = *(code **)(*piVar5 + iVar1);
+            uVar3 = param_6;
+          }
+          uVar6 = 0x12;
+          (*pcVar2)(piVar5,uVar3);
+        }
+        else if (iVar1 < param_3) {
+          if (param_3 == DAT_0822c630) {
+            iVar1 = (int)DAT_0822d01e;
+            (*(code *)PTR_FUN_0822d02c)
+                      (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822d030,param_2);
+            piVar5 = (int *)(iVar1 + param_1);
+            iVar1 = (int)DAT_0822d020;
+            (**(code **)(*piVar5 + iVar1 + 0x3c))(piVar5,param_2);
+            (**(code **)(*piVar5 + 0xa4))(piVar5,uStack_24);
+            (**(code **)(*piVar5 + (int)DAT_0822d022))(piVar5,iStack_28);
+            if (param_2 == 0) {
+              pcVar2 = *(code **)(*piVar5 + iVar1 + 4);
+              uVar3 = 0;
+            }
+            else {
+              pcVar2 = *(code **)(*piVar5 + iVar1 + 4);
+              uVar3 = param_6;
+            }
+            uVar6 = 0x13;
+            (*pcVar2)(piVar5,uVar3);
+          }
+          else {
+            if (param_3 != DAT_0822c630 + 1) goto LAB_0822cf76;
+            iVar1 = (int)DAT_0822d01e;
+            (*(code *)PTR_FUN_0822d02c)
+                      (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822d034,param_2);
+            piVar5 = (int *)(iVar1 + param_1);
+            iVar1 = (int)DAT_0822d024;
+            (**(code **)(*piVar5 + iVar1))(piVar5,param_2);
+            (**(code **)(*piVar5 + 0xa8))(piVar5,uStack_24);
+            (**(code **)(*piVar5 + iVar1 + 0x24))(piVar5,iStack_28);
+            if (param_2 == 0) {
+              uVar3 = 0;
+              pcVar2 = *(code **)(*piVar5 + (int)DAT_0822d026);
+            }
+            else {
+              pcVar2 = *(code **)(*piVar5 + (int)DAT_0822d026);
+              uVar3 = param_6;
+            }
+            uVar6 = 0x18;
+            (*pcVar2)(piVar5,uVar3);
+          }
+        }
+        else if (param_3 == iVar1 + -2) {
+          iVar1 = (int)DAT_0822ce9e;
+          (*(code *)PTR_FUN_0822cebc)
+                    (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cec8,param_2);
+          piVar5 = (int *)(iVar1 + param_1);
+          (**(code **)(*piVar5 + (int)DAT_0822ceaa))(piVar5,param_2);
+          (**(code **)(*piVar5 + 0x98))(piVar5,uStack_24);
+          (**(code **)(*piVar5 + (int)DAT_0822ceac))(piVar5,iStack_28);
+          if (param_2 == 0) {
+            uVar3 = 0;
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ceae);
+          }
+          else {
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ceae);
+            uVar3 = param_6;
+          }
+          uVar6 = 0x10;
+          (*pcVar2)(piVar5,uVar3);
+        }
+        else {
+          if (param_3 != iVar1 + -1) goto LAB_0822cf76;
+          iVar1 = (int)DAT_0822ce9e;
+          (*(code *)PTR_FUN_0822cebc)
+                    (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cecc,param_2);
+          piVar5 = (int *)(iVar1 + param_1);
+          (**(code **)(*piVar5 + (int)DAT_0822ceb0))(piVar5,param_2);
+          (**(code **)(*piVar5 + 0x9c))(piVar5,uStack_24);
+          (**(code **)(*piVar5 + (int)DAT_0822ceb2))(piVar5,iStack_28);
+          if (param_2 == 0) {
+            uVar3 = 0;
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ceb4);
+          }
+          else {
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ceb4);
+            uVar3 = param_6;
+          }
+          uVar6 = 0x11;
+          (*pcVar2)(piVar5,uVar3);
+        }
+      }
+      else if (param_3 == iVar1 + -3) {
+        iVar1 = (int)DAT_0822ccd6;
+        (*(code *)PTR_FUN_0822ccec)
+                  (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cd08,param_2);
+        piVar5 = (int *)(iVar1 + param_1);
+        (**(code **)(*piVar5 + (int)DAT_0822cce0))(piVar5,param_2);
+        (**(code **)(*piVar5 + 0x88))(piVar5,uStack_24);
+        (**(code **)(*piVar5 + (int)DAT_0822cce2))(piVar5,iStack_28);
+        if (param_2 == 0) {
+          uVar3 = 0;
+          pcVar2 = *(code **)(*piVar5 + (int)DAT_0822cce4);
+        }
+        else {
+          pcVar2 = *(code **)(*piVar5 + (int)DAT_0822cce4);
+          uVar3 = param_6;
+        }
+        uVar6 = 0xc;
+        (*pcVar2)(piVar5,uVar3);
+      }
+      else if (iVar1 + -3 < param_3) {
+        if (param_3 == DAT_0822c62c) {
+          iVar1 = (int)DAT_0822ccd6;
+          (*(code *)PTR_FUN_0822ccec)
+                    (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cd0c,param_2);
+          piVar5 = (int *)(iVar1 + param_1);
+          (**(code **)(*piVar5 + (int)DAT_0822cce6))(piVar5,param_2);
+          (**(code **)(*piVar5 + 0x8c))(piVar5,uStack_24);
+          (**(code **)(*piVar5 + (int)DAT_0822cce8))(piVar5,iStack_28);
+          if (param_2 == 0) {
+            uVar3 = 0;
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ccea);
+          }
+          else {
+            pcVar2 = *(code **)(*piVar5 + (int)DAT_0822ccea);
+            uVar3 = param_6;
+          }
+          uVar6 = 0xd;
+          (*pcVar2)(piVar5,uVar3);
+        }
+        else {
+          if (param_3 != DAT_0822c62c + 1) goto LAB_0822cf76;
+          iVar1 = (int)DAT_0822ce9e;
+          (*(code *)PTR_FUN_0822cebc)
+                    (auStack_5c,PTR_s_Set_Unlock_code_state__d_for_Nav_0822cec0,param_2);
+ 
+...(truncated, 21902 chars total)
+
+=== Who calls FUN_0822c4cc? (7 refs) ===
+  Grand-caller: FUN_0822d4f4 at 0822d4f4 (1276b)
+  Grand-caller: FUN_0822d4f4 at 0822d4f4 (1276b)
