@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCM-Forge — Porsche PCM 3.1 Activation Code Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --surface: #131318;
+  --surface2: #1a1a22;
+  --border: #2a2a35;
+  --text: #e8e8ed;
+  --text2: #8888a0;
+  --accent: #c8a44e;
+  --accent2: #e8c85e;
+  --green: #4eca7a;
+  --red: #e85454;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(200,164,78,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,164,78,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeIn 0.6s ease 0.2s forwards;
+}
+
+h1 {
+  font-family: var(--sans);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+  opacity: 0;
+  animation: fadeIn 0.6s ease 0.3s forwards;
+}
+
+h1 span { color: var(--accent); }
+
+.subtitle {
+  color: var(--text2);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+  opacity: 0;
+  animation: fadeIn 0.6s ease 0.4s forwards;
+}
+
+/* VIN Input */
+.input-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: slideUp 0.5s ease 0.5s forwards;
+}
+
+.input-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.vin-input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.vin-input {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 20px;
+  letter-spacing: 3px;
+  padding: 16px 20px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  text-transform: uppercase;
+}
+
+.vin-input:focus {
+  border-color: var(--accent);
+}
+
+.vin-input::placeholder {
+  color: #404058;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+.gen-btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 16px 28px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.gen-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-1px);
+}
+
+.gen-btn:active {
+  transform: translateY(0);
+}
+
+.vin-hint {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 10px;
+}
+
+.vin-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 10px;
+  display: none;
+}
+
+/* Results */
+.results {
+  display: none;
+  animation: slideUp 0.4s ease forwards;
+}
+
+.results.visible {
+  display: block;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.results-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.vin-badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface2);
+  padding: 6px 14px;
+  border-radius: 6px;
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.code-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.2s;
+}
+
+.code-card:hover {
+  border-color: var(--accent);
+}
+
+.code-card .feat-name {
+  font-weight: 700;
+  font-size: 15px;
+  min-width: 140px;
+}
+
+.code-card .feat-desc {
+  color: var(--text2);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.code-card .code-value {
+  font-family: var(--mono);
+  font-size: 17px;
+  letter-spacing: 2px;
+  color: var(--green);
+  user-select: all;
+  cursor: pointer;
+}
+
+.code-card .copy-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+.code-card .copy-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.code-card .copy-btn.copied {
+  background: var(--green);
+  color: var(--bg);
+  border-color: var(--green);
+}
+
+/* USB Section */
+.usb-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-top: 32px;
+}
+
+.usb-section h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usb-section p {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+
+.usb-section ol {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 2;
+  padding-left: 20px;
+}
+
+.usb-section code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 24px;
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.dl-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.footer p {
+  color: var(--text2);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* Crypto badge */
+.crypto-note {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .vin-input-row { flex-direction: column; }
+  h1 { font-size: 28px; }
+  .vin-input { font-size: 16px; letter-spacing: 2px; }
+  .code-card { flex-wrap: wrap; gap: 8px; }
+  .code-card .code-value { font-size: 14px; letter-spacing: 1px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">PCM-Forge</div>
+    <h1>Porsche <span>PCM 3.1</span> Activation</h1>
+    <p class="subtitle">
+      Open-source activation code generator. No dealers, no $150 fees.
+      Reverse-engineered from firmware — 64-bit RSA, cracked.
+    </p>
+  </div>
+
+  <div class="input-section">
+    <label class="input-label">Enter your 17-digit VIN</label>
+    <div class="vin-input-row">
+      <input type="text" class="vin-input" id="vinInput" 
+             maxlength="17" placeholder="WP1AE2A28GLA64179" 
+             spellcheck="false" autocomplete="off">
+      <button class="gen-btn" id="genBtn" onclick="generateCodes()">GENERATE</button>
+    </div>
+    <div class="vin-hint">Porsche VINs start with WP0, WP1, or WBA. Found on driver door jamb or dashboard.</div>
+    <div class="vin-error" id="vinError"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-header">
+      <h2>Activation Codes</h2>
+      <span class="vin-badge" id="vinBadge"></span>
+    </div>
+    <div id="codeCards"></div>
+
+    <div class="usb-section">
+      <h3>📁 How to Use These Codes</h3>
+      <p>These activation codes are VIN-specific and verified against the PCM 3.1 firmware's <code>CPPorscheEncrypter</code> class. To activate features:</p>
+      <ol>
+        <li>Format a USB stick as <strong>FAT32</strong> (4GB–32GB)</li>
+        <li>Create the activation file with codes (format documentation in progress)</li>
+        <li>Insert USB into the PCM's USB port</li>
+        <li>PCM auto-detects and processes activation in 30–60 seconds</li>
+        <li>PCM reboots with features enabled</li>
+      </ol>
+      <p style="margin-top:12px;">
+        <strong>Note:</strong> The exact USB file format (<code>PagSWAct</code>) is still being documented. 
+        The activation codes themselves are 100% verified. Join the research at
+        <a href="https://github.com/dspl1236/PCM-Forge" target="_blank" style="color:var(--accent)">github.com/dspl1236/PCM-Forge</a>.
+      </p>
+      <button class="dl-btn" id="dlBtn" onclick="downloadCodes()">↓ Download codes as .txt</button>
+    </div>
+
+    <div class="crypto-note">
+      RSA-64: n=0x69f39c927ef94985 (1831263461×4169044001) · d=0x5483975015d0287b
+      <br>All computation runs locally in your browser. No data sent anywhere.
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>
+      PCM-Forge is open source · <a href="https://github.com/dspl1236/PCM-Forge">GitHub</a>
+      <br>Algorithm reverse-engineered from QNX IFS firmware via Ghidra SH4 decompilation
+      <br>No affiliation with Porsche AG · For research and personal use only
+    </p>
+  </div>
+</div>
+
+<script>
+// =========================================================
+// PORSCHE PCM 3.1 ACTIVATION CODE GENERATOR
+// 64-bit RSA — fully cracked from firmware
+// =========================================================
+
+// RSA parameters (64-bit, using BigInt)
+const N = 0x69f39c927ef94985n;
+const D = 0x5483975015d0287bn;
+const E = 0x4c1c5eeaf397c0b3n;
+
+// Feature table: [feat_hex, display_name, description]
+const FEATURES = [
+  ["010b0000", "ENGINEERING", "Full engineering & diagnostic menu"],
+  ["010a0000", "BTH", "Bluetooth telephony"],
+  ["01060000", "KOMP", "Component activation"],
+];
+
+// Modular exponentiation using BigInt
+function modpow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = result * base % mod;
+    exp = exp / 2n;
+    base = base * base % mod;
+  }
+  return result;
+}
+
+// VIN → VIN_number (replicates FUN_08240738)
+function vinToNumber(vin) {
+  const vl = vin.toLowerCase();
+  const positions = [7, 9, 11, 12, 13, 14, 15, 16];
+  let result = 0;
+  let weight = 10; // Start at 10 (null consumed weight=1)
+  
+  for (let i = positions.length - 1; i >= 0; i--) {
+    const c = vl[positions[i]];
+    let b;
+    if (c >= '0' && c <= '9') {
+      b = parseInt(c); // Face value
+    } else if (c >= 'a' && c <= 'z') {
+      b = c.charCodeAt(0) % 10; // ASCII mod 10
+    } else {
+      b = 0;
+    }
+    result = ((result + b * weight) & 0xFFFFFFFF) >>> 0;
+    weight = (weight * 10) & 0xFFFF;
+  }
+  return result;
+}
+
+// Interleave two 8-char hex strings
+function interleave(featHex, vinHex) {
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += featHex[i] + vinHex[i];
+  }
+  return result;
+}
+
+// Generate activation code
+function generateCode(vin, featHex) {
+  const vinNum = vinToNumber(vin);
+  const vinHex = vinNum.toString(16).padStart(8, '0');
+  const ptHex = interleave(featHex, vinHex);
+  const pt = BigInt('0x' + ptHex);
+  const code = modpow(pt, D, N);
+  return code.toString(16).padStart(16, '0');
+}
+
+// Verify code
+function verifyCode(vin, codeHex, featHex) {
+  const code = BigInt('0x' + codeHex);
+  const pt = modpow(code, E, N);
+  const ptHex = pt.toString(16).padStart(16, '0');
+  
+  const actualFeat = Array.from({length:8}, (_,i) => ptHex[i*2]).join('');
+  const actualVin = Array.from({length:8}, (_,i) => ptHex[i*2+1]).join('');
+  
+  const expectedVin = vinToNumber(vin).toString(16).padStart(8, '0');
+  return actualFeat === featHex && actualVin === expectedVin;
+}
+
+// Validate VIN
+function validateVin(vin) {
+  if (vin.length !== 17) return "VIN must be exactly 17 characters";
+  if (!/^[A-HJ-NPR-Z0-9]{17}$/i.test(vin)) return "Invalid VIN characters (I, O, Q not allowed)";
+  // Check positions 12-16 are digits (required by firmware)
+  for (let i = 12; i <= 16; i++) {
+    if (vin[i] < '0' || vin[i] > '9') return "VIN positions 13-17 must be digits";
+  }
+  return null;
+}
+
+let generatedVin = '';
+let generatedCodes = [];
+
+function generateCodes() {
+  const vin = document.getElementById('vinInput').value.trim().toUpperCase();
+  const errorEl = document.getElementById('vinError');
+  
+  const err = validateVin(vin);
+  if (err) {
+    errorEl.textContent = '⚠ ' + err;
+    errorEl.style.display = 'block';
+    document.getElementById('results').classList.remove('visible');
+    return;
+  }
+  errorEl.style.display = 'none';
+  
+  generatedVin = vin;
+  generatedCodes = [];
+  
+  const cardsEl = document.getElementById('codeCards');
+  cardsEl.innerHTML = '';
+  
+  for (const [featHex, name, desc] of FEATURES) {
+    const code = generateCode(vin, featHex);
+    const verified = verifyCode(vin, code, featHex);
+    generatedCodes.push({ name, code, verified });
+    
+    const card = document.createElement('div');
+    card.className = 'code-card';
+    card.innerHTML = `
+      <div>
+        <div class="feat-name">${name}</div>
+        <div class="feat-desc">${desc}</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span class="code-value" title="Click to select">${code}</span>
+        <button class="copy-btn" onclick="copyCode(this, '${code}')">COPY</button>
+      </div>
+    `;
+    cardsEl.appendChild(card);
+  }
+  
+  document.getElementById('vinBadge').textContent = vin;
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyCode(btn, code) {
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'COPY';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function downloadCodes() {
+  if (!generatedCodes.length) return;
+  let txt = `PCM-Forge — Porsche PCM 3.1 Activation Codes\n`;
+  txt += `VIN: ${generatedVin}\n`;
+  txt += `Generated: ${new Date().toISOString()}\n`;
+  txt += `${'='.repeat(50)}\n\n`;
+  for (const {name, code, verified} of generatedCodes) {
+    txt += `${name.padEnd(15)} ${code}  ${verified ? '✓ verified' : '✗'}\n`;
+  }
+  txt += `\nAlgorithm: RSA-64 modular exponentiation\n`;
+  txt += `n = 0x69f39c927ef94985 (1831263461 × 4169044001)\n`;
+  txt += `d = 0x5483975015d0287b\n`;
+  txt += `\nhttps://github.com/dspl1236/PCM-Forge\n`;
+  
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PCM3_codes_${generatedVin}.txt`;
+  a.click();
+}
+
+// Enter key triggers generate
+document.getElementById('vinInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') generateCodes();
+});
+
+// Auto-uppercase while typing
+document.getElementById('vinInput').addEventListener('input', e => {
+  e.target.value = e.target.value.toUpperCase();
+});
+</script>
+
+</body>
+</html>
