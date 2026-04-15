@@ -222,3 +222,55 @@ For $150, buying an engineering menu USB activation gives:
 4. This approach may actually reveal the algorithm faster
    than firmware RE, since the USB stick format likely
    contains the activation code in a simple format
+
+## MAJOR BREAKTHROUGH: QNX IFS Fully Extracted
+
+### LZO Decompression Success
+- Format: BE 16-bit length prefix per LZO block
+- 227 blocks decompressed: 6.8MB → 14.2MB (matches image_size perfectly)
+- imagefs header signature confirmed at byte 0
+
+### Full IFS Extraction: 129 Files
+- Complete QNX IFS directory parsed (image_attr struct format)
+- All regular files, symlinks, and directory entries documented
+- 80+ ELF binaries extracted (SH4A architecture, LE, QNX)
+- Proper file offsets and sizes from directory entries
+
+### Critical Binary: PCM3Root (5.8MB)
+- **File**: mnt/ifs1/HBproject/PCM3Root  
+- **Type**: ELF 32-bit LSB executable, Renesas SH (SH4A)
+- **Entry point**: 0x8046360
+- **Linked**: dynamically, interpreter /usr/lib/ldqnx.so.2
+- **Contains**: SWActivation system, HexArray parser, all activation logic
+
+### TEA Constant = RED HERRING
+The 0x9E3779B9 constant is in **npm-tcpip-v4.so** (a TCP/IP networking
+library), NOT in the activation code system. It's used for network 
+protocol hashing, completely unrelated to activation codes.
+
+### Ghidra Analysis of PCM3Root
+- **12,604 functions** identified with SH4A processor
+- Proper ELF loading with correct base addresses
+- Decompiler produces readable C pseudocode
+- Key string locations:
+  - SWActivation at 0x084b8a5f
+  - HexArray at 0x084bf800
+  - Displaying keys at 0x0858a387
+  - Activated at 0x084eb262
+  - PersistencySysCtrl manages activation persistence
+
+### Main App Architecture (from FUN_08048b98)
+Subsystem controllers initialized:
+- Bootstrap, OnOffDevCtrl, GauLogTrace
+- OnOffPresCtrl (feature enable/disable)
+- GlobalSettingsPresCtrl
+- DSPHeartbeatMonitor, MOSTSubSystem, MOSTServiceBroker
+- AudioAmplifier, PersistencySysCtrl (activation codes)
+- FSCSysCtrl, ErrorMemory
+
+### Next Steps
+1. Find the function that READS activation codes from persistence
+2. Trace to the VALIDATION function that compares VIN-derived code
+3. Identify the crypto algorithm used (NOT TEA — that was a red herring)
+4. Extract the secret key
+5. Build the Python activation code generator

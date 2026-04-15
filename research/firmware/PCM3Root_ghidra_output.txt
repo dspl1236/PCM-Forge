@@ -1,0 +1,822 @@
+=== FUN_08048b98 (SDARS handler, 4266b) ===
+
+int FUN_08048b98(void)
+
+{
+  int iVar1;
+  undefined *puVar2;
+  undefined *puVar3;
+  undefined *puVar4;
+  undefined *puVar5;
+  int iVar6;
+  int iVar7;
+  int iStack_20;
+  
+  puVar2 = PTR_operator_new_08048d50;
+  iVar1 = -(int)DAT_08048d40;
+  iVar6 = (*(code *)PTR_operator_new_08048d50)(0x14);
+  if (iVar6 != 0) {
+    (*(code *)PTR_FUN_08048d54)(iVar6);
+  }
+  iVar7 = (*(code *)puVar2)((int)DAT_08048d42);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048d58)(iVar7,PTR_s_Bootstrap_08048d5c);
+  }
+  puVar4 = PTR_FUN_08048d68;
+  puVar3 = PTR_FUN_08048d60;
+  (*(code *)PTR_FUN_08048d60)(iVar7,0x33,PTR_s_MainThread_08048d64);
+  *(int *)(&stack0xffffffe4 + iVar1) = iVar7;
+  *(undefined4 *)((int)&iStack_20 + iVar1) = DAT_08048d6c;
+  (*(code *)puVar4)(iVar6,(int)&iStack_20 + iVar1,&stack0xffffffe4 + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048d42);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048d58)(iVar7,PTR_s_OnOffDevCtrl_08048d70);
+  }
+  puVar5 = PTR_FUN_08048d74;
+  (*(code *)PTR_FUN_08048d74)(iVar7,5);
+  (*(code *)puVar3)(iVar7,0,PTR_s_OnOffDevCtrlWorkerThread_08048d78);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_OnOffDevCtrlWorkerThread_08048d78,
+             PTR_s_OnOffDevCtrlWorkerThread_OnOffDe_08048d80);
+  (*(code *)puVar3)(iVar7,1,PTR_s_DSPObserverWorkerThread_08048d84);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_DSPObserverWorkerThread_08048d84,
+             PTR_s_DSPObserverWorkerThread_OnOffDev_08048d88);
+  (*(code *)puVar3)(iVar7,2,PTR_s_StarterWorkerThread_08048d8c);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_StarterWorkerThread_08048d8c,
+             PTR_s_StarterWorkerThread_OnOffDevCtrl_08048d90);
+  (*(code *)puVar3)(iVar7,3,PTR_s_SystemReactWorker_08048d94);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_SystemReactWorker_08048d94,PTR_s_SystemReactWorker_OnOffDevCtrl_08048d98);
+  *(int *)(&stack0xffffffec + iVar1) = iVar7;
+  *(undefined4 *)(&stack0xffffffe8 + iVar1) = DAT_08048d9c;
+  (*(code *)puVar4)(iVar6,&stack0xffffffe8 + iVar1,&stack0xffffffec + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048d42);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048d58)(iVar7,PTR_s_GauLogTrace_08048da0);
+  }
+  (*(code *)PTR_FUN_08048da4)(iVar7,PTR_s__dev_slog_08048da8,PTR_s_PGSlogger_08048dac);
+  (*(code *)puVar3)(iVar7,4,PTR_s_GauLogTraceReadSlogWorker_08048db0);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_GauLogTraceReadSlogWorker_08048db0,
+             PTR_s_GauLogTraceReadSlogWorker_GauLog_08048db4);
+  (*(code *)puVar3)(iVar7,5,PTR_s_GauLogTraceLogJobWorker_08048db8);
+  (*(code *)PTR_FUN_08048d7c)
+            (iVar7,PTR_s_GauLogTraceLogJobWorker_08048db8,
+             PTR_s_GauLogTraceLogJobWorker_GauLogTr_08048dbc);
+  *(int *)(&stack0xfffffff4 + iVar1) = iVar7;
+  *(undefined4 *)(&stack0xfffffff0 + iVar1) = DAT_08048dc0;
+  (*(code *)puVar4)(iVar6,&stack0xfffffff0 + iVar1,&stack0xfffffff4 + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048d42);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048d58)(iVar7,PTR_s_OnOffPresCtrl_08048dc4);
+  }
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x13);
+  (*(code *)puVar5)(iVar7,0x34);
+  (*(code *)puVar5)(iVar7,1);
+  (*(code *)puVar5)(iVar7,2);
+  (*(code *)puVar5)(iVar7,3);
+  (*(code *)puVar5)(iVar7,4);
+  (*(code *)puVar5)(iVar7,0x12);
+  (*(code *)puVar5)(iVar7,0x41);
+  (*(code *)puVar5)(iVar7,0x49);
+  (*(code *)puVar5)(iVar7,0x2e);
+  (*(code *)puVar5)(iVar7,0x2f);
+  (*(code *)puVar5)(iVar7,0x69);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d44);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d46);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d48);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d4a);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d4c);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048d4e);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f64);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f66);
+  (*(code *)puVar5)(iVar7,0x35);
+  (*(code *)puVar5)(iVar7,0x23);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f68);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f6a);
+  (*(code *)puVar5)(iVar7,0x10);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x30);
+  (*(code *)puVar5)(iVar7,0xd);
+  (*(code *)puVar5)(iVar7,0x27);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f6c);
+  (*(code *)puVar5)(iVar7,0x7d);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f6e);
+  (*(code *)puVar5)(iVar7,(int)DAT_08048f70);
+  *(int *)(&stack0xfffffffc + iVar1) = iVar7;
+  *(undefined4 *)(&stack0xfffffff8 + iVar1) = DAT_08048f78;
+  (*(code *)puVar4)(iVar6,&stack0xfffffff8 + iVar1,&stack0xfffffffc + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048f72);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048f7c)(iVar7,PTR_s_GlobalSettingsPresCtrl_08048f80);
+  }
+  (*(code *)puVar5)(iVar7,0x23);
+  (*(code *)puVar5)(iVar7,0x25);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x35);
+  (*(code *)puVar5)(iVar7,0x36);
+  (*(code *)puVar5)(iVar7,0x2a);
+  *(int *)(&stack0x00000004 + iVar1) = iVar7;
+  *(undefined4 *)(&stack0x00000000 + iVar1) = DAT_08048f84;
+  (*(code *)puVar4)(iVar6,(int)&stack0x00000000 + iVar1,&stack0x00000004 + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048f72);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048f7c)(iVar7,PTR_s_DSPHeartbeatMonitor_08048f88);
+  }
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar3)(iVar7,6,PTR_s_DSPHeartbeatCommunicationWorker_08048f8c);
+  (*(code *)PTR_FUN_08048f90)
+            (iVar7,PTR_s_DSPHeartbeatCommunicationWorker_08048f8c,
+             PTR_s_DSPHeartbeatCommunicationWorker__08048f94);
+  *(int *)(&stack0x0000000c + iVar1) = iVar7;
+  *(undefined4 *)(&stack0x00000008 + iVar1) = DAT_08048f98;
+  (*(code *)puVar4)(iVar6,&stack0x00000008 + iVar1,&stack0x0000000c + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048f72);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048f7c)(iVar7,PTR_s_MOSTSubSystem_08048f9c);
+  }
+  (*(code *)puVar5)(iVar7,0x15);
+  (*(code *)puVar5)(iVar7,0x12);
+  (*(code *)puVar5)(iVar7,0x19);
+  (*(code *)PTR_FUN_08048fa0)(iVar7,(int)DAT_08048f74);
+  (*(code *)puVar3)(iVar7,7,PTR_s_NetServiceThread_08048fa4);
+  (*(code *)PTR_FUN_08048f90)
+            (iVar7,PTR_s_NetServiceThread_08048fa4,PTR_s_NetServiceThread_MOSTSubSystem_08048fa8);
+  *(int *)(&stack0x00000014 + iVar1) = iVar7;
+  *(undefined4 *)(&stack0x00000010 + iVar1) = DAT_08048fac;
+  (*(code *)puVar4)(iVar6,&stack0x00000010 + iVar1,&stack0x00000014 + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048f72);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048f7c)(iVar7,PTR_s_MOSTServiceBroker_08048fb0);
+  }
+  *(int *)(&stack0x0000001c + iVar1) = iVar7;
+  *(undefined4 *)(&stack0x00000018 + iVar1) = DAT_08048fb4;
+  (*(code *)puVar4)(iVar6,&stack0x00000018 + iVar1,&stack0x0000001c + iVar1);
+  iVar7 = (*(code *)puVar2)((int)DAT_08048f72);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08048f7c)(iVar7,PTR_s_AudioAmplifier_08048fb8);
+  }
+  (*(code *)puVar5)(iVar7,0x16);
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x1c);
+  (*(code *)puVar3)(iVar7,8,PTR_s_DSPCommunicationWorkerThread_0804918c);
+  (*(code *)PTR_FUN_08049190)
+            (iVar7,PTR_s_DSPCommunicationWorkerThread_0804918c,
+             PTR_s_DSPCommunicationWorkerThread_Aud_08049194);
+  *(undefined4 *)(&stack0x00000020 + iVar1) = DAT_08049198;
+  *(int *)(&stack0x00000024 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049178);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804919c)(iVar7,PTR_s_InternalAmplifierInitialization_080491a0);
+  }
+  (*(code *)puVar5)(iVar7,0x24);
+  *(undefined4 *)(&stack0x00000028 + iVar1) = DAT_080491a4;
+  *(int *)(&stack0x0000002c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049178);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804919c)(iVar7,PTR_s_ResourcePrioManager_080491a8);
+  }
+  (*(code *)puVar5)(iVar7,0x19);
+  (*(code *)puVar5)(iVar7,0x12);
+  (*(code *)puVar5)(iVar7,0x16);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x22);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x26);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x31);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x34);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x40);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x50);
+  (*(code *)PTR_FUN_080491ac)(iVar7,0x52);
+  *(undefined4 *)(&stack0x00000030 + iVar1) = DAT_080491b0;
+  *(int *)(&stack0x00000034 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049178);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804919c)(iVar7,PTR_s_SyncConnectionTable_080491b4);
+  }
+  (*(code *)puVar5)(iVar7,0x20);
+  (*(code *)PTR_FUN_080491ac)(iVar7,(int)DAT_0804917a);
+  *(undefined4 *)(&stack0x00000038 + iVar1) = DAT_080491b8;
+  *(int *)(&stack0x0000003c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049178);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804919c)(iVar7,PTR_DAT_080491bc);
+  }
+  (*(code *)puVar5)(iVar7,0x38);
+  (*(code *)puVar5)(iVar7,0x3e);
+  (*(code *)puVar5)(iVar7,0x7e);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804917c);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804917e);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049180);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049182);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049184);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049186);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049188);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804918a);
+  (*(code *)puVar3)(iVar7,9,PTR_s_NdrNotifyThread_080491c0);
+  (*(code *)PTR_FUN_08049190)
+            (iVar7,PTR_s_NdrNotifyThread_080491c0,PTR_s_NdrNotifyThread_Ndr_080491c4);
+  *(undefined4 *)(&stack0x00000040 + iVar1) = DAT_080491c8;
+  *(int *)(&stack0x00000044 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049178);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804919c)(iVar7,PTR_s_PersistencySysCtrl_080491cc);
+  }
+  (*(code *)puVar5)(iVar7,0xc);
+  (*(code *)puVar5)(iVar7,0xe);
+  (*(code *)puVar5)(iVar7,0x11);
+  (*(code *)puVar5)(iVar7,0x1e);
+  (*(code *)puVar5)(iVar7,0x26);
+  (*(code *)puVar5)(iVar7,0x29);
+  (*(code *)puVar5)(iVar7,0x2a);
+  (*(code *)puVar5)(iVar7,0x3a);
+  (*(code *)puVar5)(iVar7,0x45);
+  (*(code *)puVar5)(iVar7,0x4e);
+  (*(code *)puVar5)(iVar7,0x5d);
+  (*(code *)puVar5)(iVar7,0x60);
+  (*(code *)puVar5)(iVar7,99);
+  (*(code *)puVar5)(iVar7,0x6e);
+  (*(code *)puVar5)(iVar7,0x7b);
+  (*(code *)puVar5)(iVar7,0x7f);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049390);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049392);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049394);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049396);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049398);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804939a);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804939c);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804939e);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493a0);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493a2);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493a4);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493a6);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493a8);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493aa);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493ac);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493ae);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493b0);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493b2);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493b4);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493b6);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493b8);
+  (*(code *)puVar3)(iVar7,10,PTR_s_PersistencyFileIOWorkerThread_080493c4);
+  (*(code *)PTR_FUN_080493c8)
+            (iVar7,PTR_s_PersistencyFileIOWorkerThread_080493c4,
+             PTR_s_PersistencyFileIOWorkerThread_Pe_080493cc);
+  (*(code *)puVar3)(iVar7,0xb,PTR_s_PersistencyRMWorkerThread_080493d0);
+  (*(code *)PTR_FUN_080493c8)
+            (iVar7,PTR_s_PersistencyRMWorkerThread_080493d0,
+             PTR_s_PersistencyRMWorkerThread_Persis_080493d4);
+  *(undefined4 *)(&stack0x00000048 + iVar1) = DAT_080493d8;
+  *(int *)(&stack0x0000004c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049394);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080493dc)(iVar7,PTR_s_FSCSysCtrl_080493e0);
+  }
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x23);
+  *(undefined4 *)(&stack0x00000050 + iVar1) = DAT_080493e4;
+  *(int *)(&stack0x00000054 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049394);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080493dc)(iVar7,PTR_s_ErrorMemory_080493e8);
+  }
+  (*(code *)puVar5)(iVar7,0x23);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x12);
+  (*(code *)puVar5)(iVar7,0x33);
+  (*(code *)puVar5)(iVar7,0x3b);
+  (*(code *)puVar5)(iVar7,100);
+  (*(code *)puVar5)(iVar7,0x6f);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493ba);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493bc);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493be);
+  (*(code *)puVar5)(iVar7,(int)DAT_080493c0);
+  (*(code *)PTR_FUN_080493ec)(iVar7,(int)DAT_080493c2);
+  *(undefined4 *)(&stack0x00000058 + iVar1) = DAT_080493f0;
+  *(int *)(&stack0x0000005c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049394);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080493dc)(iVar7,PTR_s_AudioManagementDevCtrl_080493f4);
+  }
+  (*(code *)puVar5)(iVar7,0x57);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x4c);
+  (*(code *)puVar5)(iVar7,0x51);
+  (*(code *)puVar5)(iVar7,0x6c);
+  (*(code *)puVar5)(iVar7,0x7a);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804958a);
+  (*(code *)PTR_FUN_080495b0)(iVar7,0x22);
+  (*(code *)PTR_FUN_080495b0)(iVar7,(int)DAT_0804958c);
+  *(undefined4 *)((int)&iStack_20 + DAT_0804958e + iVar1) = DAT_080495b4;
+  *(int *)((int)&iStack_20 + DAT_08049590 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049592);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080495b8)(iVar7,PTR_s_SysInfo_080495bc);
+  }
+  (*(code *)puVar5)(iVar7,(int)DAT_08049590);
+  (*(code *)puVar5)(iVar7,0x57);
+  (*(code *)puVar5)(iVar7,0x27);
+  (*(code *)puVar5)(iVar7,0xb);
+  (*(code *)PTR_FUN_080495b0)(iVar7,(int)DAT_08049594);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049596 + iVar1) = DAT_080495c0;
+  *(int *)((int)&iStack_20 + DAT_08049598 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049592);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080495b8)(iVar7,PTR_s_SysInfoPresCtrl_080495c4);
+  }
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x22);
+  (*(code *)puVar5)(iVar7,0x69);
+  (*(code *)puVar5)(iVar7,0x49);
+  (*(code *)puVar5)(iVar7,0x78);
+  (*(code *)puVar5)(iVar7,0x61);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804959a);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804959c);
+  (*(code *)puVar5)(iVar7,0x55);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804959e);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049598);
+  (*(code *)puVar5)(iVar7,0x30);
+  (*(code *)puVar5)(iVar7,0x31);
+  (*(code *)puVar5)(iVar7,0x3c);
+  (*(code *)puVar5)(iVar7,0x3d);
+  (*(code *)puVar5)(iVar7,(int)DAT_080495a0);
+  (*(code *)puVar5)(iVar7,(int)DAT_080495a2);
+  (*(code *)puVar5)(iVar7,(int)DAT_080495a4);
+  (*(code *)puVar5)(iVar7,3);
+  (*(code *)puVar5)(iVar7,(int)DAT_080495a6);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x7d);
+  (*(code *)puVar5)(iVar7,(int)DAT_080495a8);
+  (*(code *)puVar5)(iVar7,0x27);
+  (*(code *)puVar5)(iVar7,0x74);
+  (*(code *)puVar5)(iVar7,2);
+  (*(code *)puVar5)(iVar7,1);
+  (*(code *)puVar5)(iVar7,5);
+  *(undefined4 *)((int)&iStack_20 + DAT_080495aa + iVar1) = DAT_080495c8;
+  *(int *)((int)&iStack_20 + DAT_08049592 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049592);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080495b8)(iVar7,PTR_s_TimeProvider_080495cc);
+  }
+  (*(code *)puVar5)(iVar7,0x22);
+  *(undefined4 *)((int)&iStack_20 + DAT_080495ac + iVar1) = DAT_080495d0;
+  *(int *)((int)&iStack_20 + DAT_080495ae + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049592);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080495b8)(iVar7,PTR_s_CANConnection_080495d4);
+  }
+  (*(code *)puVar5)(iVar7,10);
+  (*(code *)puVar5)(iVar7,0xf);
+  (*(code *)puVar5)(iVar7,0x1b);
+  (*(code *)puVar5)(iVar7,0x39);
+  (*(code *)puVar5)(iVar7,0x4d);
+  (*(code *)puVar5)(iVar7,0x56);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049780);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049782);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049784);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049786);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049788);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804978a);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804978c);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804978e);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049790);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049792);
+  (*(code *)puVar5)(iVar7,(int)DAT_08049794);
+  (*(code *)puVar3)(iVar7,0xc,PTR_s_CANConnectionWorkerThread_080497b0);
+  (*(code *)PTR_FUN_080497b4)
+            (iVar7,PTR_s_CANConnectionWorkerThread_080497b0,
+             PTR_s_CANConnectionWorkerThread_CANCon_080497b8);
+  (*(code *)puVar3)(iVar7,0xd,PTR_s_CANConnectionWorkerThreadTP_080497bc);
+  (*(code *)PTR_FUN_080497b4)
+            (iVar7,PTR_s_CANConnectionWorkerThreadTP_080497bc,
+             PTR_s_CANConnectionWorkerThreadTP_CANC_080497c0);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049796 + iVar1) = DAT_080497c4;
+  *(int *)((int)&iStack_20 + DAT_08049798 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_0804979a);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080497c8)(iVar7,PTR_s_KeyInput_080497cc);
+  }
+  (*(code *)puVar3)(iVar7,0xe,PTR_s_PKeyInputWorker_080497d0);
+  (*(code *)PTR_FUN_080497b4)
+            (iVar7,PTR_s_PKeyInputWorker_080497d0,PTR_s_PKeyInputWorker_KeyInput_080497d4);
+  *(undefined4 *)((int)&iStack_20 + DAT_0804979c + iVar1) = DAT_080497d8;
+  *(int *)((int)&iStack_20 + DAT_0804979e + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_0804979a);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080497c8)(iVar7,PTR_s_DTCPDevCtrl_080497dc);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x19);
+  (*(code *)puVar5)(iVar7,0x46);
+  (*(code *)puVar5)(iVar7,0x48);
+  (*(code *)PTR_FUN_080497e0)(iVar7,(int)DAT_080497a0);
+  *(undefined4 *)((int)&iStack_20 + DAT_080497a2 + iVar1) = DAT_080497e4;
+  *(int *)((int)&iStack_20 + DAT_080497a4 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_0804979a);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080497c8)(iVar7,PTR_s_DTCPSetup_080497e8);
+  }
+  (*(code *)puVar5)(iVar7,0x42);
+  (*(code *)puVar5)(iVar7,6);
+  (*(code *)PTR_FUN_080497e0)(iVar7,0x22);
+  (*(code *)puVar3)(iVar7,0xf,PTR_s_DTCPSetupDSPCommunicationWorker_080497ec);
+  (*(code *)PTR_FUN_080497b4)
+            (iVar7,PTR_s_DTCPSetupDSPCommunicationWorker_080497ec,
+             PTR_s_DTCPSetupDSPCommunicationWorker__080497f0);
+  *(undefined4 *)((int)&iStack_20 + DAT_080497a6 + iVar1) = DAT_080497f4;
+  *(int *)((int)&iStack_20 + DAT_080497a8 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_0804979a);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_080497c8)(iVar7,PTR_s_SoundPresCtrl_080497f8);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x2c);
+  (*(code *)puVar5)(iVar7,0x69);
+  (*(code *)puVar5)(iVar7,(int)DAT_080497aa);
+  (*(code *)puVar5)(iVar7,0x4f);
+  (*(code *)puVar5)(iVar7,0x34);
+  (*(code *)puVar5)(iVar7,0x30);
+  (*(code *)puVar5)(iVar7,(int)DAT_080497ac);
+  (*(code *)puVar5)(iVar7,0x78);
+  (*(code *)puVar5)(iVar7,0x53);
+  (*(code *)puVar5)(iVar7,5);
+  (*(code *)puVar5)(iVar7,0x41);
+  (*(code *)puVar5)(iVar7,0x57);
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x1d);
+  (*(code *)PTR_FUN_080499fc)(iVar7,0x22);
+  (*(code *)puVar3)(iVar7,0x10,PTR_s_NaviMuteISR_08049a00);
+  (*(code *)PTR_FUN_08049a04)
+            (iVar7,PTR_s_NaviMuteISR_08049a00,PTR_s_NaviMuteISR_SoundPresCtrl_08049a08);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499dc + iVar1) = DAT_08049a0c;
+  *(int *)((int)&iStack_20 + DAT_080499de + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_AuxInPresCtrl_08049a14);
+  }
+  (*(code *)puVar5)(iVar7,0x52);
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x49);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499e2 + iVar1) = DAT_08049a18;
+  *(int *)((int)&iStack_20 + DAT_080499e4 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_AuxInDevCtrl_08049a1c);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)PTR_FUN_080499fc)(iVar7,0x24);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499e6 + iVar1) = DAT_08049a20;
+  *(int *)((int)&iStack_20 + DAT_080499e8 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_WavePlayerDevCtrl_08049a24);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)PTR_FUN_080499fc)(iVar7,(int)DAT_080499ea);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499ec + iVar1) = DAT_08049a28;
+  *(int *)((int)&iStack_20 + DAT_080499ee + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_WavePlayerDevImplService_08049a2c);
+  }
+  (*(code *)puVar5)(iVar7,0x16);
+  (*(code *)puVar3)(iVar7,0x11,PTR_s_JobPlayWaveFileThread01_08049a30);
+  (*(code *)PTR_FUN_08049a04)
+            (iVar7,PTR_s_JobPlayWaveFileThread01_08049a30,
+             PTR_s_JobPlayWaveFileThread01_WavePlay_08049a34);
+  (*(code *)puVar3)(iVar7,0x12,PTR_s_JobPlayWaveFileThread02_08049a38);
+  (*(code *)PTR_FUN_08049a04)
+            (iVar7,PTR_s_JobPlayWaveFileThread02_08049a38,
+             PTR_s_JobPlayWaveFileThread02_WavePlay_08049a3c);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499f0 + iVar1) = DAT_08049a40;
+  *(int *)((int)&iStack_20 + DAT_080499f2 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_PBackFacilitiesPresCtrl_08049a44);
+  }
+  (*(code *)puVar5)(iVar7,0x40);
+  (*(code *)puVar5)(iVar7,0x61);
+  (*(code *)puVar5)(iVar7,0x7d);
+  (*(code *)puVar5)(iVar7,0x34);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499f4 + iVar1) = DAT_08049a48;
+  *(int *)((int)&iStack_20 + DAT_080499f6 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_DAT_08049a4c);
+  }
+  (*(code *)puVar5)(iVar7,0x16);
+  (*(code *)puVar3)(iVar7,0x13,PTR_s_DSPFBlockF1Thread_08049a50);
+  (*(code *)PTR_FUN_08049a04)
+            (iVar7,PTR_s_DSPFBlockF1Thread_08049a50,PTR_s_DSPFBlockF1Thread_TLAM_08049a54);
+  *(undefined4 *)((int)&iStack_20 + DAT_080499ea + iVar1) = DAT_08049a58;
+  *(int *)((int)&iStack_20 + DAT_080499f8 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_080499e0);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049a10)(iVar7,PTR_s_TunerDataServiceCtrl_08049a5c);
+  }
+  (*(code *)puVar5)(iVar7,(int)DAT_080499fa);
+  (*(code *)puVar5)(iVar7,0x74);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,3);
+  (*(code *)PTR_FUN_08049c3c)(iVar7,0x40);
+  (*(code *)PTR_FUN_08049c3c)(iVar7,(int)DAT_08049c1a);
+  (*(code *)puVar3)(iVar7,0x14,PTR_s_TunerDataServiceWorkerThread_08049c40);
+  (*(code *)PTR_FUN_08049c44)
+            (iVar7,PTR_s_TunerDataServiceWorkerThread_08049c40,
+             PTR_s_TunerDataServiceWorkerThread_Tun_08049c48);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c1c + iVar1) = DAT_08049c4c;
+  *(int *)((int)&iStack_20 + DAT_08049c1e + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_VideoManagementDevCtrl_08049c54);
+  }
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x62);
+  (*(code *)puVar3)(iVar7,0x15,PTR_s_VWDWorkerThread_08049c58);
+  (*(code *)PTR_FUN_08049c44)
+            (iVar7,PTR_s_VWDWorkerThread_08049c58,PTR_s_VWDWorkerThread_VideoManagementD_08049c5c);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c22 + iVar1) = DAT_08049c60;
+  *(int *)((int)&iStack_20 + DAT_08049c24 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_VideoManagementPresCtrl_08049c64);
+  }
+  (*(code *)puVar5)(iVar7,0x5e);
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x78);
+  (*(code *)puVar5)(iVar7,0x55);
+  (*(code *)puVar5)(iVar7,0x30);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x49);
+  (*(code *)puVar5)(iVar7,0x7c);
+  (*(code *)puVar5)(iVar7,0x27);
+  (*(code *)puVar5)(iVar7,0x34);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c26 + iVar1) = DAT_08049c68;
+  *(int *)((int)&iStack_20 + DAT_08049c28 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_XMMOSTDevice_08049c6c);
+  }
+  (*(code *)puVar5)(iVar7,0x16);
+  (*(code *)puVar5)(iVar7,0x67);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c2a + iVar1) = DAT_08049c70;
+  *(int *)((int)&iStack_20 + DAT_08049c2c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_GXMDataDev_08049c74);
+  }
+  (*(code *)puVar5)(iVar7,0x67);
+  (*(code *)puVar3)(iVar7,0x16,PTR_s_XMDataWorker_08049c78);
+  (*(code *)PTR_FUN_08049c44)
+            (iVar7,PTR_s_XMDataWorker_08049c78,PTR_s_XMDataWorker_GXMDataDev_08049c7c);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c2e + iVar1) = DAT_08049c80;
+  *(int *)((int)&iStack_20 + DAT_08049c30 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_XMDevice_08049c84);
+  }
+  (*(code *)puVar3)(iVar7,0x17,PTR_s_XMEdgeWorkerThread_08049c88);
+  (*(code *)PTR_FUN_08049c44)
+            (iVar7,PTR_s_XMEdgeWorkerThread_08049c88,PTR_s_XMEdgeWorkerThread_XMDevice_08049c8c);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c32 + iVar1) = DAT_08049c90;
+  *(int *)((int)&iStack_20 + DAT_08049c34 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049c20);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049c50)(iVar7,PTR_s_AuxIn_08049c94);
+  }
+  (*(code *)puVar5)(iVar7,0x16);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049c36 + iVar1) = DAT_08049c98;
+  *(int *)((int)&iStack_20 + DAT_08049c38 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049e36);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049e50)(iVar7,PTR_s_TunerPresCtrl_08049e54);
+  }
+  (*(code *)puVar5)(iVar7,0x70);
+  (*(code *)puVar5)(iVar7,0x71);
+  (*(code *)puVar5)(iVar7,0x74);
+  (*(code *)puVar5)(iVar7,0x75);
+  (*(code *)puVar5)(iVar7,0x76);
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x49);
+  (*(code *)puVar5)(iVar7,5);
+  (*(code *)puVar5)(iVar7,1);
+  (*(code *)puVar5)(iVar7,2);
+  (*(code *)puVar5)(iVar7,0x36);
+  (*(code *)puVar5)(iVar7,0x78);
+  (*(code *)puVar5)(iVar7,0x30);
+  (*(code *)puVar5)(iVar7,0x34);
+  (*(code *)puVar5)(iVar7,0x58);
+  (*(code *)puVar5)(iVar7,0x19);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x27);
+  (*(code *)puVar5)(iVar7,0x23);
+  (*(code *)PTR_FUN_08049e58)(iVar7,0x40);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049e38 + iVar1) = DAT_08049e5c;
+  *(int *)((int)&iStack_20 + DAT_08049e3a + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049e36);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049e50)(iVar7,PTR_s_AMFMTunerDevCtrl_08049e60);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)PTR_FUN_08049e58)(iVar7,0x40);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049e3c + iVar1) = DAT_08049e64;
+  *(int *)((int)&iStack_20 + DAT_08049e3e + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049e36);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049e50)(iVar7,PTR_s_SDARSDevCtrl_08049e68);
+  }
+  (*(code *)PTR_FUN_08049e58)(iVar7,0x44);
+  (*(code *)PTR_FUN_08049e58)(iVar7,(int)DAT_08049e40);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049e42 + iVar1) = DAT_08049e6c;
+  *(int *)((int)&iStack_20 + DAT_08049e44 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049e36);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049e50)(iVar7,PTR_s_TVTunerPresCtrl_08049e70);
+  }
+  (*(code *)puVar5)(iVar7,0x61);
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x49);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,0x34);
+  (*(code *)puVar5)(iVar7,0x69);
+  (*(code *)puVar5)(iVar7,0x7c);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049e46 + iVar1) = DAT_08049e74;
+  *(int *)((int)&iStack_20 + DAT_08049e48 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049e36);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_08049e50)(iVar7,PTR_s_TVFU02DevCtrl_08049e78);
+  }
+  (*(code *)puVar5)(iVar7,0x2b);
+  (*(code *)puVar5)(iVar7,0x7c);
+  (*(code *)PTR_FUN_08049e58)(iVar7,0x42);
+  *(undefined4 *)((int)&iStack_20 + DAT_08049e4a + iVar1) = DAT_08049e7c;
+  *(int *)((int)&iStack_20 + DAT_08049e4c + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049ffc);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804a00c)(iVar7,PTR_s_HMISettingsPresCtrl_0804a010);
+  }
+  (*(code *)puVar5)(iVar7,(int)DAT_08049ffe);
+  (*(code *)puVar5)(iVar7,0x3d);
+  (*(code *)puVar5)(iVar7,0x35);
+  (*(code *)puVar5)(iVar7,0x24);
+  (*(code *)puVar5)(iVar7,(int)DAT_0804a000);
+  (*(code *)puVar5)(iVar7,0x22);
+  (*(code *)puVar5)(iVar7,0x37);
+  *(undefined4 *)((int)&iStack_20 + DAT_0804a002 + iVar1) = DAT_0804a014;
+  *(int *)((int)&iStack_20 + DAT_0804a004 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  iVar7 = (*(code *)puVar2)((int)DAT_08049ffc);
+  if (iVar7 != 0) {
+    (*(code *)PTR_FUN_0804a00c)(iVar7,PTR_s_MoCCAv2_0804a018);
+  }
+  (*(code *)puVar3)(iVar7,0x18,PTR_s_OnOffDevCtrlThread_0804a01c);
+  (*(code *)puVar3)(iVar7,0x19,PTR_s_OnOffPresGauLogThread_0804a020);
+  (*(code *)puVar3)(iVar7,0x1a,PTR_s_MOSTSubSystemThread_0804a024);
+  (*(code *)puVar3)(iVar7,0x1b,PTR_s_MOSTServiceBrokerThread_0804a028);
+  (*(code *)puVar3)(iVar7,0x1c,PTR_s_AudioAmplifierThread_0804a02c);
+  (*(code *)puVar3)(iVar7,0x1d,PTR_s_ResourcePrioManagerThread_0804a030);
+  (*(code *)puVar3)(iVar7,0x1e,PTR_s_SyncConnectionTableThread_0804a034);
+  (*(code *)puVar3)(iVar7,0x1f,PTR_s_NdrThread_0804a038);
+  (*(code *)puVar3)(iVar7,0x20,PTR_s_PersistencySysCtrlThread_0804a03c);
+  (*(code *)puVar3)(iVar7,0x21,PTR_s_AudioMgmtDevCtrlThread_0804a040);
+  (*(code *)puVar3)(iVar7,0x22,PTR_s_SysInfoThread_0804a044);
+  (*(code *)puVar3)(iVar7,0x23,PTR_s_CANConnectionThread_0804a048);
+  (*(code *)puVar3)(iVar7,0x24,PTR_s_KeyInputThread_0804a04c);
+  (*(code *)puVar3)(iVar7,0x25,PTR_s_DTCPDevCtrlThread_0804a050);
+  (*(code *)puVar3)(iVar7,0x26,PTR_s_DTCPSetupDeviceThread_0804a054);
+  (*(code *)puVar3)(iVar7,0x27,PTR_s_AudioCtrlThread_0804a058);
+  (*(code *)puVar3)(iVar7,0x28,PTR_s_TunerDataServiceCtrlThread_0804a05c);
+  (*(code *)puVar3)(iVar7,0x29,PTR_s_VideoCtrlThread_0804a060);
+  (*(code *)puVar3)(iVar7,0x2a,PTR_s_XMMOSTThread_0804a064);
+  (*(code *)puVar3)(iVar7,0x2b,PTR_s_XMDataMOSTThread_0804a068);
+  (*(code *)puVar3)(iVar7,0x2c,PTR_s_XMDeviceThread_0804a06c);
+  (*(code *)puVar3)(iVar7,0x2d,PTR_s_AuxInThread_0804a070);
+  (*(code *)puVar3)(iVar7,0x2e,PTR_s_TunerCtrlThread_0804a074);
+  (*(code *)puVar3)(iVar7,0x2f,PTR_s_HMISettingsThread_0804a078);
+  (*(code *)puVar3)(iVar7,0x30,PTR_s_Receive_0804a07c);
+  (*(code *)puVar3)(iVar7,0x31,PTR_DAT_0804a080);
+  (*(code *)puVar3)(iVar7,0x32,PTR_s_Trace_0804a084);
+  (*(code *)puVar3)(iVar7,0x34,PTR_s_Watchdog_0804a088);
+  (*(code *)puVar3)(iVar7,0x35,PTR_s_ProcCtrlThread_0804a08c);
+  *(undefined4 *)((int)&iStack_20 + DAT_0804a006 + iVar1) = DAT_0804a090;
+  *(int *)((int)&iStack_20 + DAT_0804a008 + iVar1) = iVar7;
+  (*(code *)puVar4)(iVar6);
+  return iVar6;
+}
+
+
+
+
+=== Top 20 largest functions ===
+  084214f0 15336b FUN_084214f0
+  0804a994 15008b FUN_0804a994
+  08048b98 4266b FUN_08048b98
+  083e1748 3890b FUN_083e1748
+  08142910 3238b FUN_08142910
+  08218d70 2696b FUN_08218d70
+  0822c4cc 2620b FUN_0822c4cc
+  0805a9d0 2520b FUN_0805a9d0
+  08213b48 2492b FUN_08213b48
+  0822f478 2426b FUN_0822f478
+  080e26c0 2168b FUN_080e26c0
+  08420024 2116b FUN_08420024
+  0821318c 2074b FUN_0821318c
+  08222718 2002b FUN_08222718
+  08211274 1852b FUN_08211274
+  08476440 1624b FUN_08476440
+  082aed64 1594b FUN_082aed64
+  080ebfd0 1560b FUN_080ebfd0
+  08220954 1496b FUN_08220954
+  08222104 1448b FUN_08222104
+
+=== Functions near SWActivation code range ===
+  08048024 104b FUN_08048024
+  080480c4 118b FUN_080480c4
+  08048328 110b FUN_08048328
+  08048778 108b FUN_08048778
+  080487e8 104b FUN_080487e8
+  08048920 276b FUN_08048920
+  080489ac 106b FUN_080489ac
+  08048a60 122b FUN_08048a60
+  08048b98 4266b FUN_08048b98
+  0804a094 1232b main
+  0804a994 15008b FUN_0804a994
+  08050b7c 134b FUN_08050b7c
+  08050c30 106b FUN_08050c30
+  080510f0 110b FUN_080510f0
+  08051500 458b FUN_08051500
+  080518c8 108b FUN_080518c8
+  08051938 104b FUN_08051938
+  08051a80 130b FUN_08051a80
+  08051b0c 106b FUN_08051b0c
+  08051bbc 122b FUN_08051bbc
+  080520fc 118b FUN_080520fc
+  080522c8 118b FUN_080522c8
+  08052360 142b FUN_08052360
+  080528a0 102b FUN_080528a0
+  08052938 114b FUN_08052938
+  08052e44 106b FUN_08052e44
+  08052eb4 102b FUN_08052eb4
+  08053400 106b FUN_08053400
+  08053678 108b FUN_08053678
+  080536e8 104b FUN_080536e8
+  080538e0 118b FUN_080538e0
+  0805396c 112b FUN_0805396c
+  08053be0 106b FUN_08053be0
+  08053c50 102b FUN_08053c50
+  080540b0 122b FUN_080540b0
+  080544e4 130b FUN_080544e4
+  08054960 268b FUN_08054960
+  080549e4 120b FUN_080549e4
+  08054d54 168b FUN_08054d54
+  08055090 112b FUN_08055090
+  08055274 110b FUN_08055274
+  0805546c 106b FUN_0805546c
+  080554dc 102b FUN_080554dc
+  080555a8 190b FUN_080555a8
+  0805562c 102b FUN_0805562c
+  080556a0 144b FUN_080556a0
+  0805574c 120b FUN_0805574c
+  080557f4 108b FUN_080557f4
+  08055864 104b FUN_08055864
+  080558dc 118b FUN_080558dc
