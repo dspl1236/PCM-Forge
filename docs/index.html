@@ -3,641 +3,150 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PCM-Forge — Porsche PCM 3.1 Activation Code Generator</title>
+<title>PCM-Forge — Porsche PCM 3.1 Activation</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0a0a0c;
-  --surface: #131318;
-  --surface2: #1a1a22;
-  --border: #2a2a35;
-  --text: #e8e8ed;
-  --text2: #8888a0;
-  --accent: #c8a44e;
-  --accent2: #e8c85e;
-  --green: #4eca7a;
-  --red: #e85454;
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Subtle grid background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: 
-    linear-gradient(rgba(200,164,78,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200,164,78,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.container {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 40px 24px;
-  position: relative;
-  z-index: 1;
-}
-
-/* Header */
-.header {
-  text-align: center;
-  margin-bottom: 48px;
-}
-
-.logo {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 16px;
-  opacity: 0;
-  animation: fadeIn 0.6s ease 0.2s forwards;
-}
-
-h1 {
-  font-family: var(--sans);
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  margin-bottom: 12px;
-  opacity: 0;
-  animation: fadeIn 0.6s ease 0.3s forwards;
-}
-
-h1 span { color: var(--accent); }
-
-.subtitle {
-  color: var(--text2);
-  font-size: 16px;
-  line-height: 1.6;
-  max-width: 500px;
-  margin: 0 auto;
-  opacity: 0;
-  animation: fadeIn 0.6s ease 0.4s forwards;
-}
-
-/* VIN Input */
-.input-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 32px;
-  opacity: 0;
-  animation: slideUp 0.5s ease 0.5s forwards;
-}
-
-.input-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 12px;
-  display: block;
-}
-
-.vin-input-row {
-  display: flex;
-  gap: 12px;
-}
-
-.vin-input {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 20px;
-  letter-spacing: 3px;
-  padding: 16px 20px;
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  outline: none;
-  transition: border-color 0.2s;
-  text-transform: uppercase;
-}
-
-.vin-input:focus {
-  border-color: var(--accent);
-}
-
-.vin-input::placeholder {
-  color: #404058;
-  letter-spacing: 1px;
-  font-size: 14px;
-}
-
-.gen-btn {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  padding: 16px 28px;
-  background: var(--accent);
-  color: var(--bg);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.gen-btn:hover {
-  background: var(--accent2);
-  transform: translateY(-1px);
-}
-
-.gen-btn:active {
-  transform: translateY(0);
-}
-
-.vin-hint {
-  font-size: 13px;
-  color: var(--text2);
-  margin-top: 10px;
-}
-
-.vin-error {
-  color: var(--red);
-  font-size: 13px;
-  margin-top: 10px;
-  display: none;
-}
-
-/* Results */
-.results {
-  display: none;
-  animation: slideUp 0.4s ease forwards;
-}
-
-.results.visible {
-  display: block;
-}
-
-.results-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.results-header h2 {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.vin-badge {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--surface2);
-  padding: 6px 14px;
-  border-radius: 6px;
-  color: var(--accent);
-  border: 1px solid var(--border);
-}
-
-.code-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px 24px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: border-color 0.2s;
-}
-
-.code-card:hover {
-  border-color: var(--accent);
-}
-
-.code-card .feat-name {
-  font-weight: 700;
-  font-size: 15px;
-  min-width: 140px;
-}
-
-.code-card .feat-desc {
-  color: var(--text2);
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-.code-card .code-value {
-  font-family: var(--mono);
-  font-size: 17px;
-  letter-spacing: 2px;
-  color: var(--green);
-  user-select: all;
-  cursor: pointer;
-}
-
-.code-card .copy-btn {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 6px 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-left: 16px;
-  white-space: nowrap;
-}
-
-.code-card .copy-btn:hover {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
-}
-
-.code-card .copy-btn.copied {
-  background: var(--green);
-  color: var(--bg);
-  border-color: var(--green);
-}
-
-/* USB Section */
-.usb-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 28px;
-  margin-top: 32px;
-}
-
-.usb-section h3 {
-  font-size: 16px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.usb-section p {
-  color: var(--text2);
-  font-size: 14px;
-  line-height: 1.7;
-  margin-bottom: 10px;
-}
-
-.usb-section ol {
-  color: var(--text2);
-  font-size: 14px;
-  line-height: 2;
-  padding-left: 20px;
-}
-
-.usb-section code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--bg);
-  padding: 2px 8px;
-  border-radius: 4px;
-  color: var(--accent);
-}
-
-.dl-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 12px 24px;
-  background: transparent;
-  border: 2px solid var(--accent);
-  color: var(--accent);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 16px;
-}
-
-.dl-btn:hover {
-  background: var(--accent);
-  color: var(--bg);
-}
-
-/* Footer */
-.footer {
-  text-align: center;
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: 1px solid var(--border);
-}
-
-.footer p {
-  color: var(--text2);
-  font-size: 13px;
-  line-height: 1.8;
-}
-
-.footer a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-/* Crypto badge */
-.crypto-note {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text2);
-  text-align: center;
-  margin-top: 20px;
-  padding: 12px;
-  background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .vin-input-row { flex-direction: column; }
-  h1 { font-size: 28px; }
-  .vin-input { font-size: 16px; letter-spacing: 2px; }
-  .code-card { flex-wrap: wrap; gap: 8px; }
-  .code-card .code-value { font-size: 14px; letter-spacing: 1px; }
-}
+:root{--bg:#0a0a0c;--surface:#131318;--surface2:#1a1a22;--border:#2a2a35;--text:#e8e8ed;--text2:#8888a0;--accent:#c8a44e;--accent2:#e8c85e;--green:#4eca7a;--red:#e85454;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,164,78,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,164,78,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.container{max-width:820px;margin:0 auto;padding:40px 24px;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:48px}
+.logo{font-family:var(--mono);font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;opacity:0;animation:fadeIn .6s ease .2s forwards}
+h1{font-size:36px;font-weight:700;letter-spacing:-.5px;margin-bottom:12px;opacity:0;animation:fadeIn .6s ease .3s forwards}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--text2);font-size:16px;line-height:1.6;max-width:500px;margin:0 auto;opacity:0;animation:fadeIn .6s ease .4s forwards}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;margin-bottom:24px;opacity:0;animation:slideUp .5s ease .5s forwards}
+.input-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:block}
+.vin-row{display:flex;gap:12px}
+.vin-input{flex:1;font-family:var(--mono);font-size:20px;letter-spacing:3px;padding:16px 20px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color .2s;text-transform:uppercase}
+.vin-input:focus{border-color:var(--accent)}
+.vin-input::placeholder{color:#404058;letter-spacing:1px;font-size:14px}
+.btn{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;padding:14px 24px;border:none;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-go{background:var(--accent);color:var(--bg);padding:16px 28px}
+.btn-go:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-ol{background:0 0;border:2px solid var(--accent);color:var(--accent)}
+.btn-ol:hover{background:var(--accent);color:var(--bg)}
+.btn-usb{background:var(--green);color:var(--bg);font-size:14px}
+.btn-usb:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.hint{font-size:13px;color:var(--text2);margin-top:10px}
+.error{color:var(--red);font-size:13px;margin-top:10px;display:none}
+.results{display:none}.results.show{display:block;animation:slideUp .4s ease}
+.rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.rh h2{font-size:20px;font-weight:700}
+.badge{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:6px 14px;border-radius:6px;color:var(--accent);border:1px solid var(--border)}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s}
+.cc:hover{border-color:var(--accent)}
+.fn{font-weight:700;font-size:15px}.fd{color:var(--text2);font-size:12px;margin-top:2px}
+.cv{font-family:var(--mono);font-size:17px;letter-spacing:2px;color:var(--green);user-select:all;cursor:pointer}
+.cb{font-family:var(--mono);font-size:11px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:5px;cursor:pointer;transition:all .2s;margin-left:12px}
+.cb:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.cb.ok{background:var(--green);color:var(--bg);border-color:var(--green)}
+.us{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-top:24px}
+.us h3{font-size:16px;margin-bottom:14px}
+.us p{color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:12px}
+.us code{font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 8px;border-radius:4px;color:var(--accent)}
+.ua{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.ft{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;font-size:13px}
+.ft:hover{border-color:var(--accent)}.ft.on{border-color:var(--green);background:rgba(78,202,122,.06)}
+.ft input{accent-color:var(--green)}
+.sm{font-family:var(--mono);font-size:13px;margin-top:12px;padding:10px 14px;border-radius:6px;display:none}
+.sm.ok{display:block;background:rgba(78,202,122,.1);color:var(--green);border:1px solid rgba(78,202,122,.2)}
+.sm.bad{display:block;background:rgba(232,84,84,.1);color:var(--red);border:1px solid rgba(232,84,84,.2)}
+.cn{font-family:var(--mono);font-size:11px;color:var(--text2);text-align:center;margin-top:20px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
+.footer{text-align:center;margin-top:48px;padding-top:32px;border-top:1px solid var(--border)}
+.footer p{color:var(--text2);font-size:13px;line-height:1.8}
+.footer a{color:var(--accent);text-decoration:none}
+.chk{color:var(--green)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.vin-row{flex-direction:column}h1{font-size:28px}.vin-input{font-size:16px;letter-spacing:2px}.cc{flex-wrap:wrap;gap:8px}.cv{font-size:14px;letter-spacing:1px}.fg{grid-template-columns:1fr}.ua{flex-direction:column}}
 </style>
 </head>
 <body>
-
 <div class="container">
   <div class="header">
     <div class="logo">PCM-Forge</div>
     <h1>Porsche <span>PCM 3.1</span> Activation</h1>
-    <p class="subtitle">
-      Open-source activation code generator. No dealers, no $150 fees.
-      Reverse-engineered from firmware — 64-bit RSA, cracked.
-    </p>
+    <p class="subtitle">Open-source activation code generator. Reverse-engineered from firmware. No dealers, no fees.</p>
   </div>
-
-  <div class="input-section">
+  <div class="card">
     <label class="input-label">Enter your 17-digit VIN</label>
-    <div class="vin-input-row">
-      <input type="text" class="vin-input" id="vinInput" 
-             maxlength="17" placeholder="WP1AE2A28GLA64179" 
-             spellcheck="false" autocomplete="off">
-      <button class="gen-btn" id="genBtn" onclick="generateCodes()">GENERATE</button>
+    <div class="vin-row">
+      <input type="text" class="vin-input" id="vi" maxlength="17" placeholder="WP1AE2A28GLA64179" spellcheck="false" autocomplete="off">
+      <button class="btn btn-go" onclick="gen()">GENERATE</button>
     </div>
-    <div class="vin-hint">Porsche VINs start with WP0, WP1, or WBA. Found on driver door jamb or dashboard.</div>
-    <div class="vin-error" id="vinError"></div>
+    <div class="hint">Found on driver door jamb, dashboard, or registration.</div>
+    <div class="error" id="er"></div>
   </div>
-
-  <div class="results" id="results">
-    <div class="results-header">
-      <h2>Activation Codes</h2>
-      <span class="vin-badge" id="vinBadge"></span>
+  <div class="results" id="res">
+    <div class="rh"><h2>Activation Codes</h2><span class="badge" id="vb"></span></div>
+    <div id="cc"></div>
+    <div class="us">
+      <h3>💾 Write to USB Stick</h3>
+      <p>Select your <strong>FAT32-formatted USB drive</strong> and PCM-Forge writes the activation file directly. The file <code>PagSWAct.002</code> contains your VIN-specific activation records (28 bytes per feature).</p>
+      <p><strong>Features to include:</strong></p>
+      <div class="fg" id="fg"></div>
+      <div class="ua">
+        <button class="btn btn-usb" onclick="writeUsb()">📁 Select USB &amp; Write File</button>
+        <button class="btn btn-ol" onclick="dlBin()">↓ Download PagSWAct.002</button>
+        <button class="btn btn-ol" onclick="dlTxt()">↓ Codes as .txt</button>
+      </div>
+      <div class="sm" id="sm"></div>
+      <p style="margin-top:16px;font-size:13px"><strong>After writing:</strong> Insert USB into PCM's USB port. It auto-detects and processes activation in 30–60 sec, then reboots. If root path doesn't work, try a <code>PagSWAct</code> subfolder.</p>
     </div>
-    <div id="codeCards"></div>
-
-    <div class="usb-section">
-      <h3>📁 How to Use These Codes</h3>
-      <p>These activation codes are VIN-specific and verified against the PCM 3.1 firmware's <code>CPPorscheEncrypter</code> class. To activate features:</p>
-      <ol>
-        <li>Format a USB stick as <strong>FAT32</strong> (4GB–32GB)</li>
-        <li>Create the activation file with codes (format documentation in progress)</li>
-        <li>Insert USB into the PCM's USB port</li>
-        <li>PCM auto-detects and processes activation in 30–60 seconds</li>
-        <li>PCM reboots with features enabled</li>
-      </ol>
-      <p style="margin-top:12px;">
-        <strong>Note:</strong> The exact USB file format (<code>PagSWAct</code>) is still being documented. 
-        The activation codes themselves are 100% verified. Join the research at
-        <a href="https://github.com/dspl1236/PCM-Forge" target="_blank" style="color:var(--accent)">github.com/dspl1236/PCM-Forge</a>.
-      </p>
-      <button class="dl-btn" id="dlBtn" onclick="downloadCodes()">↓ Download codes as .txt</button>
-    </div>
-
-    <div class="crypto-note">
-      RSA-64: n=0x69f39c927ef94985 (1831263461×4169044001) · d=0x5483975015d0287b
-      <br>All computation runs locally in your browser. No data sent anywhere.
-    </div>
+    <div class="cn">RSA-64 · n=0x69f39c927ef94985 · d=0x5483975015d0287b · All computation runs locally in your browser</div>
   </div>
-
-  <div class="footer">
-    <p>
-      PCM-Forge is open source · <a href="https://github.com/dspl1236/PCM-Forge">GitHub</a>
-      <br>Algorithm reverse-engineered from QNX IFS firmware via Ghidra SH4 decompilation
-      <br>No affiliation with Porsche AG · For research and personal use only
-    </p>
-  </div>
+  <div class="footer"><p>PCM-Forge is open source · <a href="https://github.com/dspl1236/PCM-Forge" target="_blank">GitHub</a><br>Reverse-engineered from QNX IFS firmware via Ghidra SH4 decompilation<br>No affiliation with Porsche AG · For research &amp; personal use</p></div>
 </div>
-
 <script>
-// =========================================================
-// PORSCHE PCM 3.1 ACTIVATION CODE GENERATOR
-// 64-bit RSA — fully cracked from firmware
-// =========================================================
-
-// RSA parameters (64-bit, using BigInt)
-const N = 0x69f39c927ef94985n;
-const D = 0x5483975015d0287bn;
-const E = 0x4c1c5eeaf397c0b3n;
-
-// Feature table: [feat_hex, display_name, description]
-const FEATURES = [
-  ["010b0000", "ENGINEERING", "Full engineering & diagnostic menu"],
-  ["010a0000", "BTH", "Bluetooth telephony"],
-  ["01060000", "KOMP", "Component activation"],
+const N=0x69f39c927ef94985n,D=0x5483975015d0287bn,E=0x4c1c5eeaf397c0b3n;
+const FEATS=[
+  {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Full engineering & diagnostic menu'},
+  {id:'bth',fh:'010a0000',sw:0x010a,su:0,nm:'BTH',ds:'Bluetooth telephony'},
+  {id:'komp',fh:'01060000',sw:0x0106,su:0,nm:'KOMP',ds:'Component activation'},
 ];
-
-// Modular exponentiation using BigInt
-function modpow(base, exp, mod) {
-  let result = 1n;
-  base = base % mod;
-  while (exp > 0n) {
-    if (exp % 2n === 1n) result = result * base % mod;
-    exp = exp / 2n;
-    base = base * base % mod;
+function mp(b,x,m){let r=1n;b%=m;while(x>0n){if(x%2n===1n)r=r*b%m;x/=2n;b=b*b%m}return r}
+function v2n(v){const l=v.toLowerCase(),p=[7,9,11,12,13,14,15,16];let r=0,w=10;for(let i=p.length-1;i>=0;i--){const c=l[p[i]];let b=c>='0'&&c<='9'?parseInt(c):c>='a'&&c<='z'?c.charCodeAt(0)%10:0;r=((r+b*w)&0xFFFFFFFF)>>>0;w=(w*10)&0xFFFF}return r}
+function il(a,b){let r='';for(let i=0;i<8;i++)r+=a[i]+b[i];return r}
+function gc(v,fh){const vh=v2n(v).toString(16).padStart(8,'0');return mp(BigInt('0x'+il(fh,vh)),D,N).toString(16).padStart(16,'0')}
+function vc(v,c,fh){const p=mp(BigInt('0x'+c),E,N).toString(16).padStart(16,'0');const af=Array.from({length:8},(_,i)=>p[i*2]).join(''),av=Array.from({length:8},(_,i)=>p[i*2+1]).join('');return af===fh&&av===v2n(v).toString(16).padStart(8,'0')}
+function vv(v){if(v.length!==17)return'VIN must be exactly 17 characters';if(!/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))return'Invalid characters (I, O, Q not allowed)';for(let i=12;i<=16;i++)if(v[i]<'0'||v[i]>'9')return'Positions 13-17 must be digits';return null}
+function bp(v,fs){const recs=[];for(const f of fs){const c=gc(v,f.fh),r=new Uint8Array(28);for(let i=0;i<16;i++)r[i]=c.charCodeAt(i);r[18]=f.sw&0xFF;r[19]=(f.sw>>8)&0xFF;r[20]=f.su&0xFF;r[21]=(f.su>>8)&0xFF;r[22]=1;r[24]=1;recs.push(r)}const d=new Uint8Array(recs.length*28);recs.forEach((r,i)=>d.set(r,i*28));return d}
+let CV='',CC=[];
+function gen(){
+  const v=document.getElementById('vi').value.trim().toUpperCase(),e=vv(v),el=document.getElementById('er');
+  if(e){el.textContent='⚠ '+e;el.style.display='block';document.getElementById('res').classList.remove('show');return}
+  el.style.display='none';CV=v;CC=[];
+  const cd=document.getElementById('cc'),fg=document.getElementById('fg');cd.innerHTML='';fg.innerHTML='';
+  for(const f of FEATS){
+    const c=gc(v,f.fh),ok=vc(v,c,f.fh);CC.push({...f,code:c,ok});
+    cd.innerHTML+=`<div class="cc"><div><div class="fn">${f.nm} ${ok?'<span class="chk">✓</span>':''}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
+    fg.innerHTML+=`<label class="ft on"><input type="checkbox" checked data-f="${f.id}"> ${f.nm}</label>`;
   }
-  return result;
+  fg.querySelectorAll('.ft').forEach(el=>el.addEventListener('click',e=>{if(e.target.tagName==='INPUT')el.classList.toggle('on',e.target.checked)}));
+  document.getElementById('vb').textContent=v;document.getElementById('res').classList.add('show');
+  document.getElementById('sm').className='sm';
+  document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
-// VIN → VIN_number (replicates FUN_08240738)
-function vinToNumber(vin) {
-  const vl = vin.toLowerCase();
-  const positions = [7, 9, 11, 12, 13, 14, 15, 16];
-  let result = 0;
-  let weight = 10; // Start at 10 (null consumed weight=1)
-  
-  for (let i = positions.length - 1; i >= 0; i--) {
-    const c = vl[positions[i]];
-    let b;
-    if (c >= '0' && c <= '9') {
-      b = parseInt(c); // Face value
-    } else if (c >= 'a' && c <= 'z') {
-      b = c.charCodeAt(0) % 10; // ASCII mod 10
-    } else {
-      b = 0;
-    }
-    result = ((result + b * weight) & 0xFFFFFFFF) >>> 0;
-    weight = (weight * 10) & 0xFFFF;
-  }
-  return result;
+function sf(){const ids=new Set();document.querySelectorAll('#fg input:checked').forEach(c=>ids.add(c.dataset.f));return FEATS.filter(f=>ids.has(f.id))}
+async function writeUsb(){
+  const s=document.getElementById('sm');if(!CV)return;const fs=sf();
+  if(!fs.length){s.className='sm bad';s.textContent='⚠ Select at least one feature';return}
+  if(!('showDirectoryPicker' in window)){s.className='sm bad';s.textContent='⚠ Use Chrome or Edge for direct USB writing, or download the file instead.';return}
+  try{
+    const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
+    const d=bp(CV,fs),fh=await dh.getFileHandle('PagSWAct.002',{create:true}),w=await fh.createWritable();
+    await w.write(d);await w.close();
+    s.className='sm ok';s.textContent=`✓ Written PagSWAct.002 → ${dh.name}/ (${d.length} bytes, ${fs.length} feature${fs.length>1?'s':''})`;
+  }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='⚠ '+e.message}
 }
-
-// Interleave two 8-char hex strings
-function interleave(featHex, vinHex) {
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += featHex[i] + vinHex[i];
-  }
-  return result;
-}
-
-// Generate activation code
-function generateCode(vin, featHex) {
-  const vinNum = vinToNumber(vin);
-  const vinHex = vinNum.toString(16).padStart(8, '0');
-  const ptHex = interleave(featHex, vinHex);
-  const pt = BigInt('0x' + ptHex);
-  const code = modpow(pt, D, N);
-  return code.toString(16).padStart(16, '0');
-}
-
-// Verify code
-function verifyCode(vin, codeHex, featHex) {
-  const code = BigInt('0x' + codeHex);
-  const pt = modpow(code, E, N);
-  const ptHex = pt.toString(16).padStart(16, '0');
-  
-  const actualFeat = Array.from({length:8}, (_,i) => ptHex[i*2]).join('');
-  const actualVin = Array.from({length:8}, (_,i) => ptHex[i*2+1]).join('');
-  
-  const expectedVin = vinToNumber(vin).toString(16).padStart(8, '0');
-  return actualFeat === featHex && actualVin === expectedVin;
-}
-
-// Validate VIN
-function validateVin(vin) {
-  if (vin.length !== 17) return "VIN must be exactly 17 characters";
-  if (!/^[A-HJ-NPR-Z0-9]{17}$/i.test(vin)) return "Invalid VIN characters (I, O, Q not allowed)";
-  // Check positions 12-16 are digits (required by firmware)
-  for (let i = 12; i <= 16; i++) {
-    if (vin[i] < '0' || vin[i] > '9') return "VIN positions 13-17 must be digits";
-  }
-  return null;
-}
-
-let generatedVin = '';
-let generatedCodes = [];
-
-function generateCodes() {
-  const vin = document.getElementById('vinInput').value.trim().toUpperCase();
-  const errorEl = document.getElementById('vinError');
-  
-  const err = validateVin(vin);
-  if (err) {
-    errorEl.textContent = '⚠ ' + err;
-    errorEl.style.display = 'block';
-    document.getElementById('results').classList.remove('visible');
-    return;
-  }
-  errorEl.style.display = 'none';
-  
-  generatedVin = vin;
-  generatedCodes = [];
-  
-  const cardsEl = document.getElementById('codeCards');
-  cardsEl.innerHTML = '';
-  
-  for (const [featHex, name, desc] of FEATURES) {
-    const code = generateCode(vin, featHex);
-    const verified = verifyCode(vin, code, featHex);
-    generatedCodes.push({ name, code, verified });
-    
-    const card = document.createElement('div');
-    card.className = 'code-card';
-    card.innerHTML = `
-      <div>
-        <div class="feat-name">${name}</div>
-        <div class="feat-desc">${desc}</div>
-      </div>
-      <div style="display:flex;align-items:center;">
-        <span class="code-value" title="Click to select">${code}</span>
-        <button class="copy-btn" onclick="copyCode(this, '${code}')">COPY</button>
-      </div>
-    `;
-    cardsEl.appendChild(card);
-  }
-  
-  document.getElementById('vinBadge').textContent = vin;
-  document.getElementById('results').classList.add('visible');
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function copyCode(btn, code) {
-  navigator.clipboard.writeText(code).then(() => {
-    btn.textContent = '✓ COPIED';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'COPY';
-      btn.classList.remove('copied');
-    }, 2000);
-  });
-}
-
-function downloadCodes() {
-  if (!generatedCodes.length) return;
-  let txt = `PCM-Forge — Porsche PCM 3.1 Activation Codes\n`;
-  txt += `VIN: ${generatedVin}\n`;
-  txt += `Generated: ${new Date().toISOString()}\n`;
-  txt += `${'='.repeat(50)}\n\n`;
-  for (const {name, code, verified} of generatedCodes) {
-    txt += `${name.padEnd(15)} ${code}  ${verified ? '✓ verified' : '✗'}\n`;
-  }
-  txt += `\nAlgorithm: RSA-64 modular exponentiation\n`;
-  txt += `n = 0x69f39c927ef94985 (1831263461 × 4169044001)\n`;
-  txt += `d = 0x5483975015d0287b\n`;
-  txt += `\nhttps://github.com/dspl1236/PCM-Forge\n`;
-  
-  const blob = new Blob([txt], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `PCM3_codes_${generatedVin}.txt`;
-  a.click();
-}
-
-// Enter key triggers generate
-document.getElementById('vinInput').addEventListener('keypress', e => {
-  if (e.key === 'Enter') generateCodes();
-});
-
-// Auto-uppercase while typing
-document.getElementById('vinInput').addEventListener('input', e => {
-  e.target.value = e.target.value.toUpperCase();
-});
+function dlBin(){if(!CV)return;const fs=sf();if(!fs.length)return;const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();const s=document.getElementById('sm');s.className='sm ok';s.textContent=`✓ Downloaded PagSWAct.002 (${d.length} bytes). Copy to root of FAT32 USB.`}
+function dlTxt(){if(!CC.length)return;let t=`PCM-Forge — Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(50)}\n\n`;for(const c of CC)t+=`${c.nm.padEnd(15)} ${c.code}  ${c.ok?'✓':''}\n`;t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
+function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='✓';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
+document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
+document.getElementById('vi').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
 </script>
-
 </body>
 </html>
