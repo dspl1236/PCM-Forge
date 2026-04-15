@@ -88,3 +88,43 @@ def generate_code(plaintext):
 2. **Feature ID table**: Map all feature names to their P2 values
 3. **P2 computation**: Determine if P2 is purely feature-dependent or VIN+feature
 4. **Build web tool**: VIN input → all activation codes output
+
+## VIN → VIN_number Mapping (Partial)
+
+### Key Findings from Differential Analysis
+
+By comparing VINs that differ at only one position:
+
+| Position | Weight | Evidence |
+|----------|--------|----------|
+| 16 | 170 | WP0ZZZ99ZCS110100 vs 110103: diff=510, 3 chars, 170/char |
+| 9 | 151,455,744 | WP1ZZZ92ZBLA20006 vs ZCLA20006: diff=0x09060800 |
+
+### Character Value Conversion
+- Digits use **face value** (0→0, 1→1, ..., 9→9), NOT ASCII % 10
+- Letters use **ASCII - 0x30** (a→49, b→50, ..., z→74)
+- Or possibly **hex value** (a→10, b→11, ..., f→15, others→larger)
+
+### Positions Used
+The function `FUN_08240738` processes 8 VIN positions from the stack:
+- VIN[7], VIN[9], VIN[11], VIN[12], VIN[13], VIN[14], VIN[15], VIN[16]
+- Positions 8 (check digit) and 10 (plant code) are SKIPPED
+
+### Computed VIN_num Values (21 unique VINs)
+All computed from `pow(activation_code, e, n) & 0xFFFFFFFF`:
+
+| VIN | VIN_num | P2 (feature) |
+|-----|---------|--------------|
+| WP0ZZZ97Z8L040010 | 0x0f050e04 | 0x00bc |
+| WP0LLLL3L3L300815 | 0x040d0106 | 0x00b5 |
+| WP1ZZZ9PZ6LA46923 | 0x04010a0e | 0x00ba |
+| ... (20 more in PagSWAct.csv) |
+
+### Current Status
+The RSA algorithm is fully cracked. The VIN→plaintext mapping
+requires either:
+1. Completing the weight table for all 8 positions (solvable
+   with enough differential VIN pairs)
+2. Running the actual SH4 function with QEMU + QNX sysroot
+3. Using one known activation code for a target VIN to extract
+   its VIN_num, then generating all other feature codes
