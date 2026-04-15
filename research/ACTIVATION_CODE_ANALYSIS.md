@@ -56,3 +56,49 @@ in the PCM firmware. The key would be in the IFS images.
    - $30-90 from euronavmaps for engineering menu activation
    - Gives us one more data point (Andrew's VIN → known code)
    - Also gets engineering menu access for further exploration
+
+## IFS Image Analysis
+
+### IFS1 (PCM3_IFS1.ifs) — 6.51 MB
+- Standard QNX IFS format (starts with 0xEB 0x7E jump instruction)
+- Contains 60 ELF binaries (SH architecture, Big-Endian + Little-Endian mixed)
+- QNX 6.3.0SP1 confirmed (TAGID=330)
+- Build date: 14.04.30 (April 30, 2014)
+- Contains "SWActivation" string at 0x0055dcdf
+- Context: "Qent %d (SysInfo-SWActivation) state 0x%02X"
+- This is the boot/kernel IFS with base system services
+
+### IFS2 (PCM3_IFS2.ifs) — 25.79 MB
+- Harman Becker custom format ("hbcifs" magic at offset 0)
+- Compressed — needs custom decompression to extract binaries
+- Contains the main application code including:
+  - MD5 references (5 occurrences) — crypto library present
+  - NavDB_Eur — Navigation database activation
+  - SDARS — Satellite radio activation (5 occurrences)
+  - BTH — Bluetooth activation (18 occurrences)
+  - VIN_A: '%s' — VIN processing with format string
+  - KeyID — Key identifier system
+  - UNLOCK_FUNC — Unlock function reference
+  - CPEngineeringCAN — Engineering CAN interface
+  - .csv — CSV file parsing
+  - j9 — J9 JVM reference (same as MMI3G!)
+  - 0123456789abcdef — Hex conversion table
+  - CRC8 — CRC calculation
+  - pcm3 — PCM3 identification
+
+### Key Findings
+1. The activation code algorithm is in IFS2
+2. IFS2 uses HB custom compression ("hbcifs" format)
+3. MD5 is present as a library — likely used in the code generation
+4. VIN processing function found (VIN_A format string)
+5. UNLOCK_FUNC and KeyID suggest a key-based unlock mechanism
+6. The hex conversion table (0-f) is near offset 0x0000ccd1
+
+### Next: Decompress hbcifs Format
+The hbcifs format needs reverse engineering to extract the binaries.
+Once extracted, the UNLOCK_FUNC and VIN processing code can be
+analyzed in Ghidra to find the exact algorithm.
+
+Alternative: The IFS1 contains the "SWActivation" state machine
+which may have enough logic to understand the validation flow,
+even if the actual crypto is in IFS2.
