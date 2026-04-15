@@ -102,3 +102,64 @@ analyzed in Ghidra to find the exact algorithm.
 Alternative: The IFS1 contains the "SWActivation" state machine
 which may have enough logic to understand the validation flow,
 even if the actual crypto is in IFS2.
+
+## IFS Firmware Analysis Session
+
+### IFS Images Extracted
+- PCM3_IFS1.ifs (6.8 MB) — QNX boot IFS, contains native binaries
+- PCM3_IFS2.ifs (25.8 MB) — "hbcifs" format, contains application data
+
+### Key Findings in IFS1
+
+1. **TEA/XTEA delta constant (0x9E3779B9)** found at offset 0x000b2bc3
+   - This confirms a TEA-family cipher is used somewhere in the system
+   - Located in a binary between ldqnx.so.2 boundaries
+
+2. **SWActivation system** at offset 0x0055dcdf
+   - In a 2.5MB binary (0x0032f177 - 0x0058e37d)
+   - Contains: "Qent %d (SysInfo-SWActivation) state 0x%02X"
+   - Related strings: "Activated", "ENABLE", "Persistency_"
+   - Feature names: "SGHDTunerEngineering"
+   - "HexArray: len =#,=#X" — hex code parser
+   - ". Displaying keys! " — debug key display
+   - "MPLETELY_VALIDM" — validation result
+
+3. **QNX filesystem contents identified**:
+   - /bin/ksh, /bin/sh — shells
+   - /usr/lib/ldqnx.so.2 — dynamic linker
+   - /dev/ipc/ioc/c — IOC (V850) IPC device
+   - proc/boot/server.cfg — boot configuration
+   - Multiple shared libraries
+
+4. **SH4 cross-tools installed**: sh4-linux-gnu-objdump available
+   for disassembly, but offset alignment needs proper IFS extraction
+
+### Brute Force Key Search Results
+
+Tested with C implementation scanning entire IFS1 (6.8MB):
+- Standard TEA encrypt with 10 VIN-to-input methods: NO MATCH
+- Standard XTEA encrypt with 10 VIN-to-input methods: NO MATCH
+- Both LE and BE key interpretations tested
+- ~1.7M key positions tested per method
+
+### Conclusion
+
+The algorithm is NOT standard TEA/XTEA with a key directly stored
+in IFS1 and VIN bytes as plaintext input. It's likely:
+
+1. A **modified TEA/XTEA** with custom round function or key schedule
+2. The input is **derived** from VIN (hashed/transformed before encryption)
+3. The key might be **computed at runtime** from device-specific data
+4. The 0x9E3779B9 constant might be used in a different algorithm
+   entirely (e.g., Jenkins hash, or a custom mixing function)
+
+### Next Steps
+
+1. **Proper QNX IFS extraction** — Use dumpifs or write a complete
+   QNX6 IFS parser to extract individual binaries
+2. **SH4 Ghidra analysis** — Load extracted binaries with correct
+   base addresses into Ghidra for proper function analysis  
+3. **Focus on "HexArray" function** — This parses the 16-digit hex
+   codes, the validation logic is near it
+4. **Alternative: Buy one activation** — $150 gets engineering menu
+   access AND a sample activation file to reverse engineer
