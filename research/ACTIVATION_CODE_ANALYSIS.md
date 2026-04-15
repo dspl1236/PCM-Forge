@@ -163,3 +163,62 @@ in IFS1 and VIN bytes as plaintext input. It's likely:
    codes, the validation logic is near it
 4. **Alternative: Buy one activation** — $150 gets engineering menu
    access AND a sample activation file to reverse engineer
+
+## IFS Deep Analysis Session 2
+
+### Corrected Understanding
+- The IFS imagefs starts at offset 0x0000D10B (not 0x0000D108)
+- The TEA delta constant (0x9E3779B9) at 0x000b2bc3 IS in the imagefs
+- MD5 init constants found at 0x000bdf1e
+- SHA256 H0 constant found at 0x000be212
+- All crypto constants are in the same binary region
+
+### Crypto Constants Found in IFS1 Imagefs
+| Offset | Constant | Algorithm |
+|--------|----------|-----------|
+| 0x000b2bc3 | 0x9E3779B9 | TEA/XTEA/Golden ratio |
+| 0x000bdf1e | 0x67452301 | MD5 init value A |
+| 0x000bdf22 | 0x89ABCDEF | MD5 init value B |
+| 0x000be212 | 0xD76AA478 | SHA256 H0 (round constant) |
+| 0x0015ab89 | 0x67452301 | MD5 init A (in different binary) |
+
+### What's Been Ruled Out
+1. Standard TEA/XTEA with any 16-byte key from IFS1 — tested entire file
+2. Simple MD5/SHA1/SHA256 of VIN+feature — no match
+3. HMAC-MD5/SHA1 with obvious salt strings — no match
+4. Direct hash with firmware string salts — no match
+
+### What the Algorithm Likely Is
+The activation code algorithm uses a **keyed construction** with a 
+secret key embedded in the firmware. Options:
+1. HMAC-MD5 or HMAC-SHA256 with a non-obvious key
+2. A custom cipher using the golden ratio constant as a mixer
+3. AES or similar block cipher with a firmware-derived key
+4. A proprietary Harman Becker algorithm
+
+### ELF Binary Structure in IFS
+The QNX IFS uses a non-standard format for its embedded executables.
+The `/usr/lib/ldqnx.so.2` references mark dynamically-linked binaries
+but proper ELF headers aren't always present or correctly aligned.
+The SH4 decompiler produces "bad instruction data" for many regions,
+suggesting either compression, encryption, or alignment issues.
+
+### Status
+This is a deep reverse engineering task that requires:
+1. A proper QNX IFS extraction tool (dumpifs or custom parser)
+2. Correct identification of the SWActivation binary boundaries
+3. Proper SH4 disassembly with correct base address/entry points
+4. Tracing the code path from CSV parsing to code validation
+
+The tooling is in place (Ghidra 11.3 with SH4 support, sh4-linux-gnu
+cross-tools). The limitation is finding correct binary boundaries
+within the QNX IFS format to feed clean executables to the disassembler.
+
+### Practical Alternative
+For $150, buying an engineering menu USB activation gives:
+1. Immediate access to engineering menu on the Cayenne
+2. The USB stick file format to reverse engineer
+3. One confirmed VIN/code pair to validate future analysis
+4. This approach may actually reveal the algorithm faster
+   than firmware RE, since the USB stick format likely
+   contains the activation code in a simple format
