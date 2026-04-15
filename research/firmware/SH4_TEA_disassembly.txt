@@ -1,0 +1,91 @@
+=== PCM31 SH4 TEA Analysis ===
+Functions after seeding: 4
+TEA delta at: 000b2bc3
+
+=== Instructions near TEA delta ===
+  000b2b64: div0s r3,r3
+  000b2b66: mov.w @(r0,r6),r2
+  000b2b68: add #0x27,r12
+  000b2b6a: bsrf r5
+  000b2b6c: _mov #-0xc,r1
+  000b2b6e: mov r7,r6
+  000b2b70: shld r1,r6
+  000b2b72: mov r6,r1
+  000b2b74: mov.w r14,@(r0,r4)
+  000b2b76: mova 0x000b2c18,r0
+  000b2b78: fcmp/eq fr0,fr11
+  000b2b7a: mov.w r14,@r3
+  000b2b7c: mov.b @(r0,r11),r2
+  000b2b7e: mov.b r9,@(r0,r4)
+  000b2b84: mov.w r0,@r9
+  000b2b86: mov.w r1,@(r0,r1)
+  000b2b88: mov.l 0x000b2bac,r4
+  000b2b8a: mov.b r0,@(r0,r13)
+  000b2b8c: mov #-0xf,r1
+  000b2b8e: shld r1,r2
+  000b2b90: xor r2,r7
+  000b2b92: mov.w 0x000b2bda,r1
+  000b2b94: and r7,r1
+  000b2b96: shll2 r1
+  000b2b98: add #-0x8,r0
+  000b2b9a: mov.l @(r0,r4),r0
+  000b2b9c: mov #0x22,r13
+  000b2b9e: mov.l r12,@(0x28,r0)
+  000b2ba0: extu.b r4,r6
+  000b2ba2: mov.w 0x000b2bea,r12
+  000b2ba6: mov r9,r4
+  000b2ba8: mov #0x6,r6
+  000b2baa: mov.b @(0x28,GBR),r0
+  000b2bac: mov.w r7,@-r2
+  000b2bae: add #0x4f,r8
+  000b2bb0: cmp/pl r0
+  000b2bb2: mov.l r0,@r3
+  000b2bb4: mov.w r1,@-r2
+  000b2bb6: addv r14,r3
+  000b2bb8: add #-0x2a,r5
+  000b2bba: mov.b r1,@(r0,r2)
+  000b2bbc: mov.l @(0x14,r0),r13
+  000b2bbe: mov.b r2,@r1
+  000b2bc0: mov.w 0x000b2d54,r14
+  000b2bc2: bsr 0x000b1dcc
+  000b2bc6: addc r9,r0 <<< TEA
+  000b2bc8: cmp/eq r6,r6
+  000b2bca: add #0x7f,r3
+  000b2bcc: mova 0x000b2d6c,r0
+  000b2bce: mov.l r6,@(0x18,r0)
+  000b2bd0: add #0x1,r8
+  000b2bd2: mul.l r5,r5
+  000b2bd4: mov.l r6,@(0x18,r9)
+  000b2bd6: mov.l @r7+,r4
+  000b2bda: bra 0x000b28fe
+  000b2bdc: _xtrct r5,r4
+  000b2bde: addc r1,r1
+  000b2be0: mov.w @(r0,r9),r4
+  000b2be2: cmp/str r1,r9
+  000b2be4: mov.w @(r0,r9),r4
+  000b2be6: or r1,r9
+  000b2be8: mov.w @(r0,r9),r4
+  000b2bea: xor r1,r7
+  000b2bec: mov.w @(r0,r9),r4
+  000b2bee: mov.b r6,@r0
+  000b2bf0: mov.w 0x000b2c8c,r12
+  000b2bf2: mov.b r0,@(r0,r10)
+  000b2bf4: mov.w 0x000b2ccc,r2
+  000b2bf6: and r7,r2
+  000b2bf8: shll2 r2
+  000b2bfa: mov.w 0x000b2cce,r1
+  000b2bfc: add r10,r1
+  000b2bfe: mov.l @(0x10,r1),r0
+  000b2c00: ldc r4,VBR
+  000b2c02: mov.w r2,@(r0,r7)
+  000b2c04: bf 0x000b2c4a
+  000b2c06: mov.l r8,@r9
+  000b2c08: mov.l @(0x10,r1),r0
+  000b2c0a: mov.l r9,@(r0,r2)
+  000b2c0c: mov.l @(0x10,r1),r1
+
+No function contains TEA delta address
+  Nearby: FUN_000b2000 at 000b2000
+  Nearby: FUN_000b2400 at 000b2400
+  Nearby: FUN_000b2800 at 000b2800
+  Nearby: FUN_000b2a00 at 000b2a00
