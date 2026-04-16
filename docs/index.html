@@ -74,7 +74,7 @@ h1 span{color:var(--accent)}
   <div class="card">
     <label class="input-label">Enter your 17-digit VIN</label>
     <div class="vin-row">
-      <input type="text" class="vin-input" id="vi" maxlength="17" placeholder="WP1AE2A28GLA64179" spellcheck="false" autocomplete="off">
+      <input type="text" class="vin-input" id="vi" maxlength="17" placeholder="WP0AB2A95GS100123" spellcheck="false" autocomplete="off">
       <button class="btn btn-go" onclick="gen()">GENERATE</button>
     </div>
     <div class="hint">Found on driver door jamb, dashboard, or registration.</div>
@@ -90,7 +90,8 @@ h1 span{color:var(--accent)}
       <div class="fg" id="fg"></div>
       <div class="ua">
         <button class="btn btn-usb" onclick="writeUsb()">📁 Select USB &amp; Write File</button>
-        <button class="btn btn-ol" onclick="dlBin()">↓ Download PagSWAct.002</button>
+        <button class="btn btn-ol" onclick="dlBin()">↓ PagSWAct.002</button>
+        <button class="btn btn-ol" onclick="dlScr()">↓ copie_scr.sh</button>
         <button class="btn btn-ol" onclick="dlTxt()">↓ Codes as .txt</button>
       </div>
       <div class="sm" id="sm"></div>
@@ -169,6 +170,7 @@ async function writeUsb(){
   }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='⚠ '+e.message}
 }
 function dlBin(){if(!CV)return;const fs=sf();if(!fs.length)return;const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();const s=document.getElementById('sm');s.className='sm ok';s.textContent=`✓ Downloaded PagSWAct.002 (${d.length} bytes). Copy to root of FAT32 USB.`}
+function dlScr(){const scr="#!/bin/ksh\n# PCM-Forge — https://github.com/dspl1236/PCM-Forge\nfor USBPATH in /fs/usb0 /fs/usb1 /fs/usb /media/usb0; do\n    [ -f \"${USBPATH}/PagSWAct.002\" ] && break\ndone\n[ -f \"${USBPATH}/PagSWAct.002\" ] && cp \"${USBPATH}/PagSWAct.002\" /HBpersistence/PagSWAct.002\ntouch /HBpersistence/DBGModeActive\nsync\n";const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([scr],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();const s=document.getElementById('sm');s.className='sm ok';s.textContent='✓ Downloaded copie_scr.sh — place in USB root alongside PagSWAct.002'}
 function dlTxt(){if(!CC.length)return;let t=`PCM-Forge — Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(50)}\n\n`;for(const c of CC)t+=`${c.nm.padEnd(15)} ${c.code}  ${c.ok?'✓':''}\n`;t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='✓';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
