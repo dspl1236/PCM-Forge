@@ -6,6 +6,8 @@
 
 🌐 **Web tool:** [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/)
 
+📋 **What can I activate?** → See [FEATURES.md](FEATURES.md) for the full list of 26 features with descriptions, retail costs, and hardware requirements.
+
 ## Supported Vehicles
 
 All Porsche models with PCM 3.1 (Harman Becker, 2011–2016):
