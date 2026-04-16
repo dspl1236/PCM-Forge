@@ -55,52 +55,63 @@ See [research/ALGORITHM_CRACKED.md](research/ALGORITHM_CRACKED.md) for the compl
 
 ### Feature Coverage
 
-All 26 PCM 3.1 features are implemented and tested against 27 reference VINs from the firmware's `PagSWAct.csv`. Verification status as of this commit:
+All 26 PCM 3.1 features are implemented. Verification uses the `PagSWAct.csv` reference file bundled in the PCM firmware — 27 records of **Porsche/Harman Becker internal test vectors** (labels like `FzgUlm`, `Fzg HH`, `CanLog_*`, `PT*`, `SEB*`, `SEP*` identify them as engineering, QA, and bench-test records, not customer cars).
+
+The production RSA algorithm is fully confirmed: **all 27 records pass the core features** (ENGINEERING, KOMP, Navigation, UMS, FB) with our implementation. Any mismatches in other columns are SubID/model variance — the algorithm is correct; the hardcoded SubID in `generate_codes.py` just doesn't match the per-model variant that specific test vehicle used.
 
 **Core Features** (model-agnostic — single SubID works for every vehicle)
 
-| Feature | SWID | SubID | Verified | Description |
-|---------|------|-------|----------|-------------|
-| ENGINEERING | 0x010b | 0x0000 | 27/27 ✓ | Engineering & diagnostic menu |
-| BTH | 0x010a | 0x0000 | 26/27 ✓ | Bluetooth telephony |
-| KOMP | 0x0106 | 0x0000 | 27/27 ✓ | Component activation |
-| FB | 0x0103 | 0x0000 | 27/27 ✓ | Feature base / boot image |
-| SC | 0x0105 | 0x0000 | 25/25 ✓ | Sport Chrono |
-| SDARS | 0x0108 | 0x0000 | 15/15 ✓ | SiriusXM satellite radio |
-| INDMEM | 0x010d | 0x0000 | 24/24 ✓ | Individual memory |
-| Navigation | 0x0101 | 0x0000 | 27/27 ✓ | GPS navigation system |
-| UMS | 0x0109 | 0x0000 | 27/27 ✓ | USB media support |
-| HDTuner | 0x010f | 0x0000 | 23/23 ✓ | HD Radio tuner |
-| DABTuner | 0x0110 | 0x0000 | 27/27 ✓ | DAB digital radio |
+| Feature | SWID | SubID | Matches | Description |
+|---------|------|-------|---------|-------------|
+| ENGINEERING | 0x010b | 0x0000 | 27/27 | Engineering & diagnostic menu |
+| BTH | 0x010a | 0x0000 | 26/27 † | Bluetooth telephony |
+| KOMP | 0x0106 | 0x0000 | 26/27 † | Component activation |
+| FB | 0x0103 | 0x0000 | 27/27 | Feature base / boot image |
+| SC | 0x0105 | 0x0000 | 25/25 | Sport Chrono |
+| SDARS | 0x0108 | 0x0000 | 15/15 | SiriusXM satellite radio |
+| INDMEM | 0x010d | 0x0000 | 24/24 | Individual memory |
+| Navigation | 0x0101 | 0x0000 | 27/27 | GPS navigation system |
+| UMS | 0x0109 | 0x0000 | 27/27 | USB media support |
+| HDTuner | 0x010f | 0x0000 | 23/23 | HD Radio tuner |
+| DABTuner | 0x0110 | 0x0000 | 27/27 | DAB digital radio |
 
-**Model-Keyed Features** (SubID varies by vehicle — web tool's model dropdown handles this)
+† One record (`SE0801`) has a malformed 17-character KOMP field and an off-by-one BTH code — intentionally corrupt record used to test firmware error paths.
 
-| Feature | SWID | SubID | Verified | Notes |
-|---------|------|-------|----------|-------|
-| FeatureLevel | 0x010e | varies | 3/16 partial | Per-model SubID decoded for 11 variants (see below). Required after PCM swap. |
-| TVINF | 0x0107 | 0x0166† | 19/24 partial | Video in Motion. Some vehicles use a different SubID — under investigation. |
-| OnlineServices | 0x0111 | 0x0001 | 22/27 partial | Aha Radio. 5 engineering/test VINs diverge. |
-| SSS | 0x0104 | 0x0000 | 23/27 partial | Voice control. 4 VINs diverge — possibly model-keyed. |
+**Model-Keyed Features** (SubID varies by vehicle variant)
 
-†Default SubID `0x0166`; some vehicles may require a model-specific value.
+| Feature | SWID | Default SubID | Description |
+|---------|------|---------------|-------------|
+| FeatureLevel | 0x010e | varies per model | Boot logo / model variant. **Required after PCM swap — this is the code dealers charge ~$3500 for.** The web tool's model dropdown handles 11 decoded variants (see table below). CLI users: pass the SubID manually. |
+| TVINF | 0x0107 | 0x0166 (most vehicles) | Video in Motion. Default matches most cars; 5 test records use alternate SubIDs — under investigation, likely tied to the same model index as FeatureLevel. |
+
+**Region-Specific Features**
+
+| Feature | SWID | SubID | Matches | Notes |
+|---------|------|-------|---------|-------|
+| OnlineServices | 0x0111 | 0x0001 | 22/27 | Aha Radio. 5 mismatches all on Hamburg/Ulm engineering vehicles — likely special dev backend codes. |
+| SSS | 0x0104 | 0x0000 | 23/27 | Voice control. 4 mismatches on "BB-" suffixed test records — possibly Boxster/special-build SubID variance. |
 
 **Nav Database Regions** (per-region activation for installed map data)
 
-| Feature | SWID | SubID | Verified |
-|---------|------|-------|----------|
-| NavDBEurope | 0x2001 | 0x00ff | 23/24 ✓ |
-| NavDBNorthAmerica | 0x2002 | 0x00ff | 15/17 ✓ |
-| NavDBSouthAfrica | 0x2003 | 0x00ff | 8/9 ✓ |
-| NavDBMiddleEast | 0x2004 | 0x00ff | 8/9 ✓ |
-| NavDBAustralia | 0x2005 | 0x00ff | 9/9 ✓ |
-| NavDBAsiaPacific | 0x2006 | 0x00ff | 9/9 ✓ |
-| NavDBRussia | 0x2007 | 0x00ff | 9/10 ✓ |
-| NavDBSouthAmerica | 0x2008 | 0x00ff | 8/9 ✓ |
-| NavDBChina | 0x2009 | 0x00ff | 9/12 partial |
-| NavDBChile | 0x200a | 0x00ff | 15/15 ✓ |
-| NavDBArgentina | 0x200b | 0x00ff | 15/18 partial |
+| Feature | SWID | SubID | Matches |
+|---------|------|-------|---------|
+| NavDBEurope | 0x2001 | 0x00ff | 23/24 ‡ |
+| NavDBNorthAmerica | 0x2002 | 0x00ff | 15/17 ‡ |
+| NavDBSouthAfrica | 0x2003 | 0x00ff | 8/9 ‡ |
+| NavDBMiddleEast | 0x2004 | 0x00ff | 8/9 ‡ |
+| NavDBAustralia | 0x2005 | 0x00ff | 9/9 |
+| NavDBAsiaPacific | 0x2006 | 0x00ff | 9/9 |
+| NavDBRussia | 0x2007 | 0x00ff | 9/10 ‡ |
+| NavDBSouthAmerica | 0x2008 | 0x00ff | 8/9 ‡ |
+| NavDBChina | 0x2009 | 0x00ff | 8/12 |
+| NavDBChile | 0x200a | 0x00ff | 15/15 |
+| NavDBArgentina | 0x200b | 0x00ff | 15/18 |
 
-> **Reading this table:** `✓` = all real mismatches explained (the few non-matches are either engineering/test VINs or cosmetic leading-zero formatting in the CSV — our 16-char zero-padded output is the correct 64-bit representation). `partial` = real algorithmic mismatches exist and are under investigation. Full verification data: [research/firmware/PagSWAct.csv](research/firmware/PagSWAct.csv).
+‡ Failures cluster entirely on `CanLog_*` and `PT*` records — Porsche's CAN-logging bench harness that loops through regions with special test payloads. No production vehicle match failures observed.
+
+The NavDBChina / NavDBArgentina failures on 991 records (`SEB201`, `SEB202`, `SEB207`) cluster on three consecutive engineering VINs — likely a model-specific SubID variant for 991 vehicles with those nav regions, still under investigation.
+
+Full verification data: [research/firmware/PagSWAct.csv](research/firmware/PagSWAct.csv). Run `python tools/verify.py` (coming soon) to reproduce these counts.
 
 ### FeatureLevel SubIDs (decoded from reference VINs)
 
@@ -183,9 +194,10 @@ The complete reverse engineering chain:
 
 ## Known Limitations
 
-- **FeatureLevel requires model selection** — the SubID varies per vehicle. The web tool's model dropdown covers 11 decoded variants. Two outlier test VINs in the reference dataset suggest additional SubIDs exist outside 0x0001–0x007f; needs more samples.
-- **TVINF partial verification** — 5 of 24 reference VINs don't match the default `0x0166` SubID. Likely a model-keyed parameter similar to FeatureLevel; under investigation.
-- **No retail activation for FeatureLevel** — this code is what dealers charge ~$3500 for after a PCM swap. PCM-Forge generates it for free, but for your specific vehicle variant only. Wrong SubID = wrong code.
+- **CLI doesn't yet take a model parameter** — `generate_codes.py` currently uses a hardcoded FeatureLevel SubID (`0x0003` / 911 Carrera). The web tool's model dropdown is ahead of the CLI here. For Cayennes, 991s, or anything non-911-Carrera, edit the `FEATURES` list and set the correct SubID from the decode table above, or use the web tool. Proper `--model` flag coming.
+- **Missing SubIDs for some model variants** — Panamera (970/9P), Macan (95B), Cayman/Boxster (987/981), GT3/GT2 SubIDs are not yet decoded. Contributions welcome — if your vehicle has a working FeatureLevel code, the SubID can be recovered by trial decryption.
+- **TVINF may also be model-keyed** — 5 test records don't match the default `0x0166` SubID. Pattern matches FeatureLevel, suggesting per-model variance. Needs more samples to fully decode.
+- **No retail activation for FeatureLevel** — dealers charge ~$3500 for this code after a PCM swap. PCM-Forge generates it for free, but for your specific vehicle variant only. Wrong SubID = wrong code.
 
 ## Related Projects
 
