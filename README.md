@@ -186,16 +186,15 @@ PCM-Forge/
 ├── tools/
 │   ├── verify.py              ← Verification against PagSWAct.csv (100%)
 │   └── diff_fw.py             ← Firmware variant diff tool
-├── research/
-│   ├── ALGORITHM_CRACKED.md       ← Complete algorithm documentation
-│   ├── PCM31_RESEARCH.md          ← Hardware/software architecture
-│   ├── PCM31_SYSTEM_INFO.md       ← Target vehicle details
-│   ├── USB_ENGINEERING_ACCESS.md
-│   ├── CROSS_PLATFORM_NOTES.md    ← PCM 3.1 vs PCM 4/MIB2 comparison
-│   └── firmware/              ← Extracted firmware data
-│       ├── PagSWAct.csv       ← 27 known VIN/code pairs (verification dataset)
-│       └── *.bin, *.txt       ← IOC firmware, Ghidra output
-└── shared/uds/                ← UDS diagnostic stack (shared with MMI3G)
+└── research/
+    ├── ALGORITHM_CRACKED.md       ← Complete algorithm documentation
+    ├── PCM31_RESEARCH.md          ← Hardware/software architecture
+    ├── PCM31_SYSTEM_INFO.md       ← Target vehicle details
+    ├── USB_ENGINEERING_ACCESS.md
+    ├── CROSS_PLATFORM_NOTES.md    ← PCM 3.1 vs PCM 4/MIB2 comparison
+    └── firmware/              ← Extracted firmware data
+        ├── PagSWAct.csv       ← 27 known VIN/code pairs (verification dataset)
+        └── *.bin, *.txt       ← IOC firmware, Ghidra output
 ```
 
 ## How It Was Done
