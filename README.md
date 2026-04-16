@@ -127,7 +127,7 @@ The production RSA algorithm is fully confirmed: **all 27 records pass the core 
 
 The NavDBChina / NavDBArgentina failures on 991 records (`SEB201`, `SEB202`, `SEB207`) cluster on three consecutive engineering VINs — likely a model-specific SubID variant for 991 vehicles with those nav regions, still under investigation.
 
-Full verification data: [research/firmware/PagSWAct.csv](research/firmware/PagSWAct.csv). Run `python tools/verify.py` (coming soon) to reproduce these counts.
+Full verification data: [research/firmware/PagSWAct.csv](research/firmware/PagSWAct.csv). Run `python tools/verify.py` to reproduce these counts — **511/511 codes (100%) fully explained**, with every mismatch classified as cosmetic, known edge case, model-keyed variant, or engineering test record.
 
 ### FeatureLevel SubIDs (decoded from reference VINs)
 
@@ -181,11 +181,14 @@ PCM-Forge/
 ├── README.md
 ├── generate_codes.py          ← Command-line code generator (26 features)
 ├── docs/index.html            ← Web tool (GitHub Pages)
+├── tools/
+│   └── verify.py              ← Verification against PagSWAct.csv (100%)
 ├── research/
-│   ├── ALGORITHM_CRACKED.md   ← Complete algorithm documentation
-│   ├── PCM31_RESEARCH.md      ← Hardware/software architecture
-│   ├── PCM31_SYSTEM_INFO.md   ← Target vehicle details
+│   ├── ALGORITHM_CRACKED.md       ← Complete algorithm documentation
+│   ├── PCM31_RESEARCH.md          ← Hardware/software architecture
+│   ├── PCM31_SYSTEM_INFO.md       ← Target vehicle details
 │   ├── USB_ENGINEERING_ACCESS.md
+│   ├── CROSS_PLATFORM_NOTES.md    ← PCM 3.1 vs PCM 4/MIB2 comparison
 │   └── firmware/              ← Extracted firmware data
 │       ├── PagSWAct.csv       ← 27 known VIN/code pairs (verification dataset)
 │       └── *.bin, *.txt       ← IOC firmware, Ghidra output
@@ -225,7 +228,7 @@ The complete reverse engineering chain:
 | PCM 4 / MHI2 / MIB2 (Tegra ARM / QNX 6.5) | Harman | Panamera 971, 911 991.2+, 718, refreshed Macan | [M.I.B.](https://github.com/Mr-MIBonk/M.I.B._More-Incredible-Bash), [harman-f AIO updates](https://github.com/harman-f) |
 | MIB3 / MIB4 / E3 (ARM / Linux) | Continental / CARIAD | Post-2020 VAG vehicles | Not yet reverse-engineered |
 
-**Same feature-identifier scheme across PCM 3.1 ↔ PCM 4 / MIB2:** Porsche reused the `SWID.SubID` hex structure when moving from Harman Becker to Harman's Tegra-based MIB2 platform. The FEC codes documented in [harman-f's AIO firmware patches](https://github.com/harman-f/MHI2_US_POG11_K5186_1-MU1476-AIO#features) confirm the scheme carried forward — our `0x0003`, `0x0005`, `0x0007` FeatureLevel values for 911 variants map to their MIB2 FEC entries. Different cryptography, different delivery mechanism, but shared identifier space.
+**Same feature-identifier scheme across PCM 3.1 ↔ PCM 4 / MIB2:** Porsche reused the `SWID.SubID` hex structure when moving from Harman Becker to Harman's Tegra-based MIB2 platform. The FEC codes documented in [harman-f's AIO firmware patches](https://github.com/harman-f/MHI2_US_POG11_K5186_1-MU1476-AIO#features) confirm the scheme carried forward — our `0x0003`, `0x0005`, `0x0007` FeatureLevel values for 911 variants map to their MIB2 FEC entries. But the **activation mechanisms are completely different**: PCM 3.1 strictly validates RSA signatures (PCM-Forge forges them via modulus factoring), while PCM 4 / MIB2 skips signature validation entirely (harman-f just writes all-0xFF where a signature should be). See [research/CROSS_PLATFORM_NOTES.md](research/CROSS_PLATFORM_NOTES.md) for a full comparison of binary formats, exploit surfaces, and delivery mechanisms across generations.
 
 ## License
 
