@@ -35,6 +35,11 @@ h1 span{color:var(--accent)}
 .rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .rh h2{font-size:20px;font-weight:700}
 .badge{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:6px 14px;border-radius:6px;color:var(--accent);border:1px solid var(--border)}
+.model-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.model-bar-lbl{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.model-bar select{flex:1;min-width:200px;font-family:var(--sans);font-size:14px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none}
+.model-bar select:focus{border-color:var(--accent)}
+.model-bar .sub-hex{font-family:var(--mono);font-size:12px;color:var(--text2)}
 .mode-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px}
 .mode-btn{flex:1;padding:14px 20px;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--text2);text-align:center}
 .mode-btn.active{background:var(--accent);color:var(--bg)}
@@ -44,17 +49,11 @@ h1 span{color:var(--accent)}
 .cat-hdr.mt{margin-top:20px;padding-top:12px;border-top:1px solid var(--border)}
 .cc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s;gap:12px}
 .cc:hover{border-color:var(--accent)}
-.cc.special{flex-direction:column;align-items:stretch}
-.cc.special .row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .fn{font-weight:700;font-size:15px}.fd{color:var(--text2);font-size:12px;margin-top:2px}
 .cv{font-family:var(--mono);font-size:17px;letter-spacing:2px;color:var(--green);user-select:all;cursor:pointer}
 .cb{font-family:var(--mono);font-size:11px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:5px;cursor:pointer;transition:all .2s;margin-left:12px}
 .cb:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
 .cb.ok{background:var(--green);color:var(--bg);border-color:var(--green)}
-.model-sel{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
-.model-sel label{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);display:block;margin-bottom:6px}
-.model-sel select{width:100%;font-family:var(--sans);font-size:14px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none}
-.model-sel select:focus{border-color:var(--accent)}
 .usb-intro{color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:20px}
 .usb-intro code{font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 8px;border-radius:4px;color:var(--accent)}
 .usb-steps{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:16px 0 24px;font-size:14px}
@@ -68,6 +67,7 @@ h1 span{color:var(--accent)}
 .ft input{accent-color:var(--green);margin-top:2px;flex-shrink:0}
 .ft-name{font-weight:600}.ft-desc{color:var(--text2);font-size:11px;margin-top:2px}
 .ft-warn{color:var(--red);font-size:11px;margin-top:2px}
+.ft-info{color:var(--accent);font-size:11px;margin-top:4px;font-family:var(--mono)}
 .ua{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 .sm{font-family:var(--mono);font-size:13px;margin-top:12px;padding:10px 14px;border-radius:6px;display:none}
 .sm.ok{display:block;background:rgba(78,202,122,.1);color:var(--green);border:1px solid rgba(78,202,122,.2)}
@@ -80,7 +80,7 @@ h1 span{color:var(--accent)}
 .dl-row{display:flex;gap:12px;margin-top:12px}.dl-row .btn{font-size:12px;padding:10px 16px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:600px){.vin-row{flex-direction:column}h1{font-size:28px}.vin-input{font-size:16px;letter-spacing:2px}.cc{flex-wrap:wrap;gap:8px}.cv{font-size:14px;letter-spacing:1px}.fg{grid-template-columns:1fr}.ua{flex-direction:column}.mode-btn{font-size:12px;padding:12px 10px}}
+@media(max-width:600px){.vin-row{flex-direction:column}h1{font-size:28px}.vin-input{font-size:16px;letter-spacing:2px}.cc{flex-wrap:wrap;gap:8px}.cv{font-size:14px;letter-spacing:1px}.fg{grid-template-columns:1fr}.ua{flex-direction:column}.mode-btn{font-size:12px;padding:12px 10px}.model-bar{flex-direction:column;align-items:stretch}}
 </style>
 </head>
 <body>
@@ -101,22 +101,27 @@ h1 span{color:var(--accent)}
   </div>
   <div class="results" id="res">
     <div class="rh"><h2>Activation Codes</h2><span class="badge" id="vb"></span></div>
+    <div class="model-bar">
+      <span class="model-bar-lbl">Vehicle Model</span>
+      <select id="model-dd" onchange="updateFeatLvl(this.value)"></select>
+      <span class="sub-hex" id="sub-hex"></span>
+    </div>
     <div class="mode-toggle">
       <button class="mode-btn active" id="mb-piwis" onclick="setMode('piwis')">🔧 PIWIS</button>
       <button class="mode-btn" id="mb-usb" onclick="setMode('usb')">💾 USB STICK</button>
     </div>
     <div class="view active" id="view-piwis">
-      <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Enter these 16-digit hex codes via PIWIS → Engineering Menu → SWActivation.</p>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Enter these 16-digit hex codes via PIWIS → Engineering Menu → SWActivation. FeatureLevel uses the model selected above.</p>
       <div id="cc"></div>
       <div class="dl-row"><button class="btn btn-accent" onclick="dlTxt()">↓ Export all codes as .txt</button></div>
     </div>
     <div class="view" id="view-usb">
       <p class="usb-intro">Build a USB activation stick. Select features, download both files, copy to <strong>FAT32 USB</strong>.</p>
       <div class="usb-steps">
-        <span class="num">1</span><span class="step">Select features below</span>
-        <span class="num">2</span><span class="step">Download <code>PagSWAct.002</code> and <code>copie_scr.sh</code></span>
-        <span class="num">3</span><span class="step">Copy both to USB root directory</span>
-        <span class="num">4</span><span class="step">Insert USB → ignition on → wait 60 sec → ignition cycle</span>
+        <span class="num">1</span><span class="step">Pick your model above (for FeatureLevel / boot logo)</span>
+        <span class="num">2</span><span class="step">Check features you want to activate</span>
+        <span class="num">3</span><span class="step">Download <code>PagSWAct.002</code> and <code>copie_scr.sh</code></span>
+        <span class="num">4</span><span class="step">Copy both to USB root — insert → ignition on → wait 60 sec → cycle</span>
       </div>
       <div id="fg"></div>
       <div class="ua">
@@ -134,6 +139,10 @@ h1 span{color:var(--accent)}
 const N=0x69f39c927ef94985n,D=0x5483975015d0287bn,E=0x4c1c5eeaf397c0b3n;
 // Boot logo / model variant SubIDs decoded from PagSWAct.csv test VINs
 const MODELS=[
+  {sub:0x0039,nm:'Cayenne 958 base / 957 V6 (E2/E1V6)'},
+  {sub:0x003b,nm:'Cayenne 958 Turbo (E2T)'},
+  {sub:0x003f,nm:'Cayenne 958 V6 (E2V6)'},
+  {sub:0x0041,nm:'Cayenne 957 V6 (E1V6)'},
   {sub:0x0003,nm:'911 991 Carrera (991)'},
   {sub:0x0005,nm:'911 991 Turbo (991T)'},
   {sub:0x0007,nm:'911 991 Cabriolet/Targa'},
@@ -141,10 +150,6 @@ const MODELS=[
   {sub:0x002d,nm:'911 997 Carrera S V8 (G1 V8)'},
   {sub:0x002e,nm:'911 997 Turbo (G1T)'},
   {sub:0x0031,nm:'911 997 (variant)'},
-  {sub:0x0039,nm:'Cayenne 958 base / 957 V6 (E2/E1V6)'},
-  {sub:0x003b,nm:'Cayenne 958 Turbo (E2T)'},
-  {sub:0x003f,nm:'Cayenne 958 V6 (E2V6)'},
-  {sub:0x0041,nm:'Cayenne 957 V6 (E1V6)'},
 ];
 const FEATS=[
   {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Hidden service menu — diagnostics, CAN data, audio calibration, component status',cat:'core'},
@@ -161,7 +166,7 @@ const FEATS=[
   {id:'hdtuner',fh:'010f0000',sw:0x010f,su:0,nm:'HDTuner',ds:'HD Radio — higher quality digital FM/AM broadcasts (North America)',cat:'feat'},
   {id:'dabtuner',fh:'01100000',sw:0x0110,su:0,nm:'DABTuner',ds:'DAB/DAB+ digital radio reception (Europe, Australia, Asia)',cat:'feat'},
   {id:'online',fh:'01110001',sw:0x0111,su:0x0001,nm:'OnlineServices',ds:'Aha Radio app — web radio, podcasts, POI search, weather via phone tethering',cat:'feat'},
-  {id:'featlvl',fh:'010e0039',sw:0x010e,su:0x0039,nm:'FeatureLevel',ds:'Boot logo / model variant — fixes wrong splash screen after PCM swap',cat:'feat',isModel:true},
+  {id:'featlvl',fh:'010e0039',sw:0x010e,su:0x0039,nm:'FeatureLevel',ds:'Boot logo / model variant — use model selector above',cat:'feat',isModel:true},
   {id:'naveu',fh:'200100ff',sw:0x2001,su:0x00ff,nm:'NavDB Europe',ds:'Europe',cat:'nav'},
   {id:'navna',fh:'200200ff',sw:0x2002,su:0x00ff,nm:'NavDB N.America',ds:'North America',cat:'nav'},
   {id:'navza',fh:'200300ff',sw:0x2003,su:0x00ff,nm:'NavDB S.Africa',ds:'South Africa',cat:'nav'},
@@ -179,7 +184,6 @@ function mp(b,x,m){let r=1n;b%=m;while(x>0n){if(x%2n===1n)r=r*b%m;x/=2n;b=b*b%m}
 function v2n(v){const l=v.toLowerCase(),p=[7,9,11,12,13,14,15,16];let r=0,w=10;for(let i=p.length-1;i>=0;i--){const c=l[p[i]];let b=c>='0'&&c<='9'?parseInt(c):c>='a'&&c<='z'?c.charCodeAt(0)%10:0;r=((r+b*w)&0xFFFFFFFF)>>>0;w=(w*10)&0xFFFF}return r}
 function il(a,b){let r='';for(let i=0;i<8;i++)r+=a[i]+b[i];return r}
 function gc(v,fh){const vh=v2n(v).toString(16).padStart(8,'0');return mp(BigInt('0x'+il(fh,vh)),D,N).toString(16).padStart(16,'0')}
-function vc(v,c,fh){const p=mp(BigInt('0x'+c),E,N).toString(16).padStart(16,'0');const af=Array.from({length:8},(_,i)=>p[i*2]).join(''),av=Array.from({length:8},(_,i)=>p[i*2+1]).join('');return af===fh&&av===v2n(v).toString(16).padStart(8,'0')}
 function vv(v){if(v.length!==17)return'VIN must be exactly 17 characters';if(!/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))return'Invalid characters (I, O, Q not allowed)';return null}
 function bp(v,fs){const recs=[];for(const f of fs){const c=gc(v,f.fh),r=new Uint8Array(28);for(let i=0;i<16;i++)r[i]=c.charCodeAt(i);r[18]=f.sw&0xFF;r[19]=(f.sw>>8)&0xFF;r[20]=f.su&0xFF;r[21]=(f.su>>8)&0xFF;r[22]=1;r[24]=1;recs.push(r)}const d=new Uint8Array(recs.length*28);recs.forEach((r,i)=>d.set(r,i*28));return d}
 let CV='',CC=[];
@@ -193,44 +197,54 @@ function updateFeatLvl(modelHex){
   const fLvl=FEATS.find(f=>f.id==='featlvl');
   fLvl.fh='010e'+modelHex;
   fLvl.su=parseInt(modelHex,16);
-  const c=gc(CV,fLvl.fh);
-  // Update PIWIS view code
-  const cv=document.querySelector('#cc-featlvl .cv');if(cv)cv.textContent=c;
-  const cb=document.querySelector('#cc-featlvl .cb');if(cb)cb.setAttribute('onclick',`cp(this,'${c}')`);
-  // Update CC for download
-  const idx=CC.findIndex(c=>c.id==='featlvl');if(idx>=0){CC[idx].fh=fLvl.fh;CC[idx].su=fLvl.su;CC[idx].code=c}
+  if(!CV)return;
+  const newCode=gc(CV,fLvl.fh);
+  // Update PIWIS code display
+  const piwisCv=document.querySelector('#cc-featlvl .cv');if(piwisCv)piwisCv.textContent=newCode;
+  const piwisCb=document.querySelector('#cc-featlvl .cb');if(piwisCb)piwisCb.setAttribute('onclick',`cp(this,'${newCode}')`);
+  // Update USB info line
+  const usbInfo=document.getElementById('ft-featlvl-info');if(usbInfo){const m=MODELS.find(x=>x.sub===fLvl.su);usbInfo.textContent='→ '+(m?m.nm:'SubID 0x'+modelHex)}
+  // Update sub-hex badge
+  document.getElementById('sub-hex').textContent='SubID 0x'+modelHex;
+  // Update CC store
+  const idx=CC.findIndex(x=>x.id==='featlvl');if(idx>=0){CC[idx].fh=fLvl.fh;CC[idx].su=fLvl.su;CC[idx].code=newCode}
 }
 function gen(){
   const v=document.getElementById('vi').value.trim().toUpperCase(),e=vv(v),el=document.getElementById('er');
   if(e){el.textContent='\u26a0 '+e;el.style.display='block';document.getElementById('res').classList.remove('show');return}
   el.style.display='none';CV=v;CC=[];
+  // Populate model dropdown
+  const dd=document.getElementById('model-dd');dd.innerHTML='';
+  for(const m of MODELS){
+    const opt=document.createElement('option');
+    opt.value=m.sub.toString(16).padStart(4,'0');
+    opt.textContent=m.nm;
+    if(m.sub===0x0039)opt.selected=true;
+    dd.appendChild(opt);
+  }
+  document.getElementById('sub-hex').textContent='SubID 0x0039';
+  // Set FeatureLevel to dropdown default
+  const fLvl=FEATS.find(f=>f.id==='featlvl');fLvl.fh='010e0039';fLvl.su=0x0039;
   const cd=document.getElementById('cc'),fg=document.getElementById('fg');cd.innerHTML='';fg.innerHTML='';
   let lastCat='';
   for(const f of FEATS){
-    const c=gc(v,f.fh),ok=vc(v,c,f.fh);CC.push({...f,code:c,ok});
+    const c=gc(v,f.fh);CC.push({...f,code:c});
     if(f.cat!==lastCat) cd.innerHTML+=`<div class="cat-hdr${lastCat?' mt':''}">— ${CATS[f.cat]} —</div>`;
     if(f.isModel){
-      // Special FeatureLevel row with model dropdown
-      const opts=MODELS.map(m=>`<option value="${m.sub.toString(16).padStart(4,'0')}" ${m.sub===f.su?'selected':''}>${m.nm}</option>`).join('');
-      cd.innerHTML+=`<div class="cc special" id="cc-featlvl">
-        <div class="row">
-          <div><div class="fn">${f.nm}</div><div class="fd">${f.ds}</div></div>
-          <div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div>
-        </div>
-        <div class="model-sel"><label>Select your model variant</label><select onchange="updateFeatLvl(this.value)">${opts}</select></div>
-      </div>`;
+      cd.innerHTML+=`<div class="cc" id="cc-featlvl"><div><div class="fn">${f.nm}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
     } else {
-      cd.innerHTML+=`<div class="cc"><div><div class="fn">${f.nm} ${ok?'<span class="chk">\u2713</span>':''}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
+      cd.innerHTML+=`<div class="cc"><div><div class="fn">${f.nm}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
     }
     if(f.cat!==lastCat){
       fg.innerHTML+=`<div class="fg-section"><div class="fg-title">— ${CATS[f.cat]} —</div><div class="fg" id="fg-${f.cat}"></div></div>`;
     }
     lastCat=f.cat;
   }
+  // Populate USB checkboxes (all unchecked)
   for(const f of CC){
     const el=document.getElementById('fg-'+f.cat);if(!el)continue;
-    const warn=f.isModel?'<div class="ft-warn">\u26a0 Sets boot logo — pick model in PIWIS view first</div>':'';
-    el.innerHTML+=`<label class="ft"><input type="checkbox" data-f="${f.id}"> <div><div class="ft-name">${f.nm}</div><div class="ft-desc">${f.ds}</div>${warn}</div></label>`;
+    const info=f.isModel?`<div class="ft-info" id="ft-featlvl-info">→ ${MODELS.find(m=>m.sub===0x0039).nm}</div>`:'';
+    el.innerHTML+=`<label class="ft"><input type="checkbox" data-f="${f.id}"> <div><div class="ft-name">${f.nm}</div><div class="ft-desc">${f.ds}</div>${info}</div></label>`;
   }
   fg.querySelectorAll('.ft').forEach(el=>el.addEventListener('click',e=>{if(e.target.tagName==='INPUT')el.classList.toggle('on',e.target.checked)}));
   document.getElementById('vb').textContent=v;
