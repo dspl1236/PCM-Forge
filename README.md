@@ -25,9 +25,25 @@ Visit [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/), ent
 
 ### Command Line
 ```bash
+# List all 26 codes (defaults to 911 Carrera for FeatureLevel)
 python generate_codes.py WP1AE2A28GLA64179
-python generate_codes.py WP1AE2A28GLA64179 E:\   # write directly to USB
+
+# Specify your model so FeatureLevel is correct
+python generate_codes.py WP1AE2A28GLA64179 --model cayenne-958
+
+# Write activation files directly to a USB drive
+python generate_codes.py WP1AE2A28GLA64179 E:\ --model cayenne-958
+
+# See all available model keys
+python generate_codes.py --list-models
+
+# Unknown model? Override the FeatureLevel SubID directly
+python generate_codes.py <VIN> --featlevel-subid 0x0039
 ```
+
+**Available models:** `cayenne-958`, `cayenne-958t`, `cayenne-958-v6`, `cayenne-957-v6`, `991`, `991t`, `991-cab`, `997-v6`, `997-s-v8`, `997t`, `997-variant`. Panamera, Macan, and Boxster/Cayman SubIDs are not yet decoded — use `--featlevel-subid` if you know the value for your vehicle.
+
+**Other flags:** `--quiet` for scripting (one code per line), `--list-models` to see all options.
 
 ### USB Activation
 1. Format a USB stick as **FAT32**
@@ -194,8 +210,7 @@ The complete reverse engineering chain:
 
 ## Known Limitations
 
-- **CLI doesn't yet take a model parameter** — `generate_codes.py` currently uses a hardcoded FeatureLevel SubID (`0x0003` / 911 Carrera). The web tool's model dropdown is ahead of the CLI here. For Cayennes, 991s, or anything non-911-Carrera, edit the `FEATURES` list and set the correct SubID from the decode table above, or use the web tool. Proper `--model` flag coming.
-- **Missing SubIDs for some model variants** — Panamera (970/9P), Macan (95B), Cayman/Boxster (987/981), GT3/GT2 SubIDs are not yet decoded. Contributions welcome — if your vehicle has a working FeatureLevel code, the SubID can be recovered by trial decryption.
+- **Missing SubIDs for some model variants** — Panamera (970/9P), Macan (95B), Cayman/Boxster (987/981), GT3/GT2 SubIDs are not yet decoded. If you have a working FeatureLevel code for one of these, open an issue — the SubID can be recovered by trial decryption and added to the model table.
 - **TVINF may also be model-keyed** — 5 test records don't match the default `0x0166` SubID. Pattern matches FeatureLevel, suggesting per-model variance. Needs more samples to fully decode.
 - **No retail activation for FeatureLevel** — dealers charge ~$3500 for this code after a PCM swap. PCM-Forge generates it for free, but for your specific vehicle variant only. Wrong SubID = wrong code.
 
