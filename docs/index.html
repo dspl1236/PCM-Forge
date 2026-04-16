@@ -78,6 +78,16 @@ h1 span{color:var(--accent)}
 .footer a{color:var(--accent);text-decoration:none}
 .chk{color:var(--green)}
 .dl-row{display:flex;gap:12px;margin-top:12px}.dl-row .btn{font-size:12px;padding:10px 16px}
+.diag-box{margin-top:16px;padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px}
+.diag-head{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.diag-head input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.diag-title{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.diag-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding-left:26px}
+.diag-desc code{font-family:var(--mono);background:var(--bg);padding:1px 6px;border-radius:3px;color:var(--accent);font-size:11px}
+.diag-active .usb-steps{opacity:.4}
+.diag-callout{display:none;background:rgba(200,164,78,.1);border:1px solid var(--accent);border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13px;line-height:1.6}
+.diag-active .diag-callout{display:block}
+.diag-callout strong{color:var(--accent);font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){.vin-row{flex-direction:column}h1{font-size:28px}.vin-input{font-size:16px;letter-spacing:2px}.cc{flex-wrap:wrap;gap:8px}.cv{font-size:14px;letter-spacing:1px}.fg{grid-template-columns:1fr}.ua{flex-direction:column}.mode-btn{font-size:12px;padding:12px 10px}.model-bar{flex-direction:column;align-items:stretch}}
@@ -124,10 +134,26 @@ h1 span{color:var(--accent)}
         <span class="num">4</span><span class="step">Copy both to USB root — insert → ignition on → wait 60 sec → cycle</span>
       </div>
       <div id="fg"></div>
+      <div class="diag-box" id="diag-box">
+        <label class="diag-head" for="diag-chk">
+          <input type="checkbox" id="diag-chk" onchange="toggleDiag()">
+          <span class="diag-title">🔍 Diagnostic Mode</span>
+        </label>
+        <div class="diag-desc">
+          If the PCM isn't responding to activation, enable this. It replaces <code>copie_scr.sh</code> with a probe that writes <code>pcm_debug.log</code> back to the USB — QNX version, mount table, process list, filesystem layout, and whether our copy into <code>/HBpersistence/</code> actually worked. Insert USB, wait 60 sec, remove, and send the log to us.
+        </div>
+      </div>
       <div class="ua">
         <button class="btn btn-usb" onclick="writeUsb()">📁 Write Both to USB</button>
         <button class="btn btn-accent" onclick="dlBin()">↓ PagSWAct.002</button>
         <button class="btn btn-accent" onclick="dlScr()">↓ copie_scr.sh</button>
+      </div>
+      <div class="diag-callout">
+        <strong>After you run the diagnostic USB</strong>
+        1. Insert USB with ignition on, wait 60–90 sec.<br>
+        2. Remove USB, put it back in your PC.<br>
+        3. You should see <code>pcm_debug.log</code> on it (and maybe <code>pcm_ran.txt</code>). If <code>pcm_debug.log</code> is missing, the PCM never ran the script — tell us that.<br>
+        4. Drag the log into the chat. We'll read it and figure out the next move.
       </div>
       <div class="sm" id="sm"></div>
     </div>
@@ -254,6 +280,126 @@ function gen(){
 }
 function sf(){const ids=new Set();document.querySelectorAll('.ft input:checked').forEach(c=>ids.add(c.dataset.f));return CC.filter(f=>ids.has(f.id))}
 const COPIE="#!/bin/ksh\n# PCM-Forge \u2014 https://github.com/dspl1236/PCM-Forge\nfor USBPATH in /fs/usb0 /fs/usb1 /fs/usb /media/usb0; do\n    [ -f \"${USBPATH}/PagSWAct.002\" ] && break\ndone\n[ -f \"${USBPATH}/PagSWAct.002\" ] && cp \"${USBPATH}/PagSWAct.002\" /HBpersistence/PagSWAct.002\ntouch /HBpersistence/DBGModeActive\nsync\n";
+
+// Diagnostic-mode copie_scr.sh — writes pcm_debug.log back to USB so we can
+// see what the PCM actually does. Still attempts the activation copy at the
+// end so you can test both in one run.
+const COPIE_DIAG = "#!/bin/ksh\n\
+# PCM-Forge DIAGNOSTIC MODE - writes log back to USB\n\
+# https://github.com/dspl1236/PCM-Forge\n\
+USBROOT=\"\"\n\
+for p in /fs/usb0 /fs/usb1 /fs/usb /media/usb0 /mnt/usb0 /fs/hd0/usb0; do\n\
+    [ -d \"$p\" ] && USBROOT=\"$p\" && break\n\
+done\n\
+if [ -z \"$USBROOT\" ]; then\n\
+    for p in /fs/*; do\n\
+        if [ -d \"$p\" ] && [ -f \"$p/copie_scr.sh\" ]; then\n\
+            USBROOT=\"$p\"\n\
+            break\n\
+        fi\n\
+    done\n\
+fi\n\
+[ -z \"$USBROOT\" ] && USBROOT=\"/fs/usb0\"\n\
+LOG=\"${USBROOT}/pcm_debug.log\"\n\
+{\n\
+    echo \"=== PCM-Forge diagnostic ===\"\n\
+    echo \"Started: $(date 2>/dev/null || echo unknown)\"\n\
+    echo \"PID: $$\"\n\
+    echo \"PWD: $(pwd 2>/dev/null)\"\n\
+    echo \"USBROOT: $USBROOT\"\n\
+    echo \"\"\n\
+    echo \"=== System ID ===\"\n\
+    uname -a 2>&1\n\
+    cat /proc/version 2>&1\n\
+    cat /etc/qnx-version 2>&1\n\
+    cat /etc/qnx_version 2>&1\n\
+    hostname 2>&1\n\
+    echo \"\"\n\
+    echo \"=== CPU ===\"\n\
+    cat /proc/cpuinfo 2>&1 | head -20\n\
+    echo \"\"\n\
+    echo \"=== Env ===\"\n\
+    set 2>&1 | head -30\n\
+    echo \"\"\n\
+    echo \"=== / ===\"\n\
+    ls -la / 2>&1\n\
+    echo \"\"\n\
+    echo \"=== /fs ===\"\n\
+    ls -la /fs 2>&1\n\
+    echo \"\"\n\
+    echo \"=== USBROOT contents ===\"\n\
+    ls -la \"$USBROOT\" 2>&1\n\
+    echo \"\"\n\
+    echo \"=== /HBpersistence ===\"\n\
+    ls -la /HBpersistence/ 2>&1\n\
+    echo \"\"\n\
+    echo \"=== Existing PagSWAct.002 ===\"\n\
+    if [ -f /HBpersistence/PagSWAct.002 ]; then\n\
+        ls -l /HBpersistence/PagSWAct.002 2>&1\n\
+        od -A x -t x1z -v /HBpersistence/PagSWAct.002 2>&1 | head -40\n\
+    else\n\
+        echo \"not present\"\n\
+    fi\n\
+    echo \"\"\n\
+    echo \"=== DBGModeActive ===\"\n\
+    ls -la /HBpersistence/DBGModeActive 2>&1\n\
+    echo \"\"\n\
+    echo \"=== mount ===\"\n\
+    mount 2>&1\n\
+    echo \"\"\n\
+    echo \"=== ps ===\"\n\
+    ps -ef 2>&1 | head -80\n\
+    ps 2>&1 | head -40\n\
+    echo \"\"\n\
+    echo \"=== Key dirs ===\"\n\
+    for d in /etc /opt /var /scripts /bin /sbin /usr/bin /HBpersistence; do\n\
+        echo \"--- $d ---\"\n\
+        ls -la \"$d\" 2>&1 | head -15\n\
+    done\n\
+    echo \"\"\n\
+    echo \"=== /mnt /media /fs/hd0 /fs/sd0 ===\"\n\
+    for d in /mnt /media /fs/hd0 /fs/hd1 /fs/sd0 /fs/disk; do\n\
+        [ -d \"$d\" ] && { echo \"--- $d ---\"; ls -la \"$d\" 2>&1 | head -10; }\n\
+    done\n\
+    echo \"\"\n\
+    echo \"=== Log destinations ===\"\n\
+    for f in /var/log/messages /var/log/syslog /tmp/messages /dev/shmem/sw_trainname.txt /dev/shmem/hw_version.txt; do\n\
+        [ -f \"$f\" ] && { echo \"--- $f ---\"; tail -20 \"$f\" 2>&1; }\n\
+    done\n\
+    echo \"\"\n\
+    echo \"=== Network ===\"\n\
+    ifconfig -a 2>&1 | head -30\n\
+    echo \"\"\n\
+    echo \"=== medialauncher ===\"\n\
+    ls -la /dev/medialauncher 2>&1\n\
+    ps -ef 2>&1 | grep -i 'script\\|media\\|launcher\\|usb' | grep -v grep\n\
+    echo \"\"\n\
+    echo \"=== Activation attempt ===\"\n\
+    if [ -f \"${USBROOT}/PagSWAct.002\" ]; then\n\
+        echo \"Source size: $(ls -l ${USBROOT}/PagSWAct.002 | awk '{print $5}')\"\n\
+        cp -v \"${USBROOT}/PagSWAct.002\" /HBpersistence/PagSWAct.002 2>&1\n\
+        echo \"cp rc: $?\"\n\
+        touch /HBpersistence/DBGModeActive 2>&1\n\
+        echo \"touch rc: $?\"\n\
+        sync\n\
+        echo \"--- /HBpersistence after ---\"\n\
+        ls -la /HBpersistence/ 2>&1\n\
+    else\n\
+        echo \"source not on USB\"\n\
+    fi\n\
+    echo \"\"\n\
+    echo \"=== Done: $(date 2>/dev/null || echo now) ===\"\n\
+} > \"$LOG\" 2>&1\n\
+sync\n\
+echo \"PCM-Forge diag ran at: $(date 2>/dev/null)\" > \"${USBROOT}/pcm_ran.txt\" 2>/dev/null\n\
+sync\n";
+
+function isDiag(){return document.getElementById('diag-chk') && document.getElementById('diag-chk').checked}
+function currentScript(){return isDiag() ? COPIE_DIAG : COPIE}
+function toggleDiag(){
+  const box = document.getElementById('diag-box');
+  if (isDiag()) box.classList.add('diag-active'); else box.classList.remove('diag-active');
+}
 async function writeUsb(){
   const s=document.getElementById('sm');if(!CV)return;const fs=sf();
   if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}
@@ -262,12 +408,13 @@ async function writeUsb(){
     const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
     const d=bp(CV,fs);
     let fh=await dh.getFileHandle('PagSWAct.002',{create:true}),w=await fh.createWritable();await w.write(d);await w.close();
-    fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(COPIE);await w.close();
-    s.className='sm ok';s.textContent=`\u2713 Written PagSWAct.002 + copie_scr.sh \u2192 ${dh.name}/ (${fs.length} feature${fs.length>1?'s':''})`;
+    fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(currentScript());await w.close();
+    const mode = isDiag() ? ' (DIAGNOSTIC mode — log will write to pcm_debug.log on USB)' : '';
+    s.className='sm ok';s.textContent=`\u2713 Written PagSWAct.002 + copie_scr.sh \u2192 ${dh.name}/ (${fs.length} feature${fs.length>1?'s':''})${mode}`;
   }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='\u26a0 '+e.message}
 }
 function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
-function dlScr(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([COPIE],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh \u2014 place in USB root alongside PagSWAct.002'}
+function dlScr(){const script=currentScript();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([script],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();const mode = isDiag() ? ' \u2014 DIAGNOSTIC version (writes pcm_debug.log to USB)' : ' \u2014 place in USB root alongside PagSWAct.002';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh'+mode}
 function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPTIONAL FEATURES',nav:'NAVIGATION DATABASES'};let t=`PCM-Forge \u2014 Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(55)}\n`;let lc='';for(const c of CC){if(c.cat!==lc){t+=`\n  ${cats[c.cat]}\n`;lc=c.cat}t+=`  ${c.nm.padEnd(22)} ${c.code}\n`}t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
