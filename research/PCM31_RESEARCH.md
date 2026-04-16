@@ -16,12 +16,12 @@
 - Application: Java on IBM J9 JVM
 - IPC: HPIPC shared memory between main CPU and V850
 
-### To Confirm
-- Exact CPU (SH4 like MMI3G, or different?)
-- QNX version (6.3 or 6.5?)
-- J9 JVM presence and version
-- V850 IOC firmware format
-- USB boot mechanism details
+### Confirmed by Firmware Analysis
+- CPU: Renesas SH4A (SuperH), confirmed from ELF headers
+- QNX version: 6.3.0 SP1 (TAGID=330)
+- No J9 JVM — native C++ application (PCM3Root, 5.8MB ELF)
+- V850 IOC: CMX-RTX RTOS, 720KB firmware
+- USB: copie_scr.sh autorun via proc_scriptlauncher (same as MMI3G)
 
 ## Engineering Menu
 
