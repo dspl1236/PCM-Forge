@@ -182,7 +182,8 @@ PCM-Forge/
 ├── generate_codes.py          ← Command-line code generator (26 features)
 ├── docs/index.html            ← Web tool (GitHub Pages)
 ├── tools/
-│   └── verify.py              ← Verification against PagSWAct.csv (100%)
+│   ├── verify.py              ← Verification against PagSWAct.csv (100%)
+│   └── diff_fw.py             ← Firmware variant diff tool
 ├── research/
 │   ├── ALGORITHM_CRACKED.md       ← Complete algorithm documentation
 │   ├── PCM31_RESEARCH.md          ← Hardware/software architecture
@@ -229,6 +230,19 @@ The complete reverse engineering chain:
 | MIB3 / MIB4 / E3 (ARM / Linux) | Continental / CARIAD | Post-2020 VAG vehicles | Not yet reverse-engineered |
 
 **Same feature-identifier scheme across PCM 3.1 ↔ PCM 4 / MIB2:** Porsche reused the `SWID.SubID` hex structure when moving from Harman Becker to Harman's Tegra-based MIB2 platform. The FEC codes documented in [harman-f's AIO firmware patches](https://github.com/harman-f/MHI2_US_POG11_K5186_1-MU1476-AIO#features) confirm the scheme carried forward — our `0x0003`, `0x0005`, `0x0007` FeatureLevel values for 911 variants map to their MIB2 FEC entries. But the **activation mechanisms are completely different**: PCM 3.1 strictly validates RSA signatures (PCM-Forge forges them via modulus factoring), while PCM 4 / MIB2 skips signature validation entirely (harman-f just writes all-0xFF where a signature should be). See [research/CROSS_PLATFORM_NOTES.md](research/CROSS_PLATFORM_NOTES.md) for a full comparison of binary formats, exploit surfaces, and delivery mechanisms across generations.
+
+**Tools on the VAG side of the Harman family tree:**
+
+- [**jilleb/mib2-toolbox**](https://github.com/jilleb/mib2-toolbox) — The canonical MIB2-HIGH toolbox (848 ⭐). Same generation as PCM 4; different brand (VAG passenger cars vs Porsche). Pattern our MMI3G-Toolkit is inspired by
+- [**jilleb/mib1-toolbox**](https://github.com/jilleb/mib1-toolbox) — MIB1-HIGH predecessor. Closest VAG analog to our PCM 3.1 generation
+- [**jilleb/odis2vcp**](https://github.com/jilleb/odis2vcp) — Converts ODIS XML to VCP XML. Useful if you have ODIS and want to pull datasets for use with VCDS/VCP tools
+- [**jilleb/binary_tools**](https://github.com/jilleb/binary_tools) — Minimal Python scripts for binary file comparison. PCM-Forge's `tools/diff_fw.py` is an expanded version of this approach
+
+## Credits
+
+- **harman-f** — PCM 4 / MIB2 firmware patching research. Their `addfec` shell script was the Rosetta Stone for documenting the MIB2 FecContainer.fec binary format in our [CROSS_PLATFORM_NOTES.md](research/CROSS_PLATFORM_NOTES.md)
+- **jilleb** — The `tools/diff_fw.py` firmware comparison tool was inspired by [jilleb/binary_tools](https://github.com/jilleb/binary_tools) `find_identical_ranges.py`. The concept of toolbox-shaped feature flag exploration came from [jilleb/mib1-toolbox](https://github.com/jilleb/mib1-toolbox) and [mib2-toolbox](https://github.com/jilleb/mib2-toolbox)
+- **The Porsche/Harman IOC firmware engineers** — for leaving PagSWAct.csv (27 test vectors) inside the firmware bundle. Those 27 records made 100% algorithm verification possible
 
 ## License
 
