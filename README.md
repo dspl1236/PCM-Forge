@@ -31,7 +31,7 @@ python generate_codes.py WP1AE2A28GLA64179 E:\   # write directly to USB
 
 ### USB Activation
 1. Format a USB stick as **FAT32**
-2. Copy `copie_scr.sh` and `PagSWAct.002` to the USB root
+2. Copy `copie_scr.sh` and `PagSWAct.002` to the USB root (**LF line endings only** — CRLF breaks it)
 3. Insert into the PCM's USB port with ignition on
 4. The PCM's `proc_scriptlauncher` detects and processes the files
 5. Reboot — features are activated
@@ -49,20 +49,91 @@ d (private)  = 0x5483975015d0287b
 
 Code generation: `activation_code = pow(plaintext, d, n)`
 
-The plaintext is constructed by **interleaving** a feature constant with a VIN-derived number. All 27 known VIN/code pairs from the firmware verified with 100% accuracy.
+The plaintext is constructed by **interleaving** a feature constant (SWID + SubID) with a VIN-derived number, character-by-character.
 
 See [research/ALGORITHM_CRACKED.md](research/ALGORITHM_CRACKED.md) for the complete algorithm and implementation details.
 
-### Features
+### Feature Coverage
 
-| Feature | SWID | Status |
-|---------|------|--------|
-| ENGINEERING | 0x010b | ✓ Verified |
-| BTH (Bluetooth) | 0x010a | ✓ Verified |
-| KOMP (Component) | 0x0106 | ✓ Verified |
+All 26 PCM 3.1 features are implemented and tested against 27 reference VINs from the firmware's `PagSWAct.csv`. Verification status as of this commit:
+
+**Core Features** (model-agnostic — single SubID works for every vehicle)
+
+| Feature | SWID | SubID | Verified | Description |
+|---------|------|-------|----------|-------------|
+| ENGINEERING | 0x010b | 0x0000 | 27/27 ✓ | Engineering & diagnostic menu |
+| BTH | 0x010a | 0x0000 | 26/27 ✓ | Bluetooth telephony |
+| KOMP | 0x0106 | 0x0000 | 27/27 ✓ | Component activation |
+| FB | 0x0103 | 0x0000 | 27/27 ✓ | Feature base / boot image |
+| SC | 0x0105 | 0x0000 | 25/25 ✓ | Sport Chrono |
+| SDARS | 0x0108 | 0x0000 | 15/15 ✓ | SiriusXM satellite radio |
+| INDMEM | 0x010d | 0x0000 | 24/24 ✓ | Individual memory |
+| Navigation | 0x0101 | 0x0000 | 27/27 ✓ | GPS navigation system |
+| UMS | 0x0109 | 0x0000 | 27/27 ✓ | USB media support |
+| HDTuner | 0x010f | 0x0000 | 23/23 ✓ | HD Radio tuner |
+| DABTuner | 0x0110 | 0x0000 | 27/27 ✓ | DAB digital radio |
+
+**Model-Keyed Features** (SubID varies by vehicle — web tool's model dropdown handles this)
+
+| Feature | SWID | SubID | Verified | Notes |
+|---------|------|-------|----------|-------|
+| FeatureLevel | 0x010e | varies | 3/16 partial | Per-model SubID decoded for 11 variants (see below). Required after PCM swap. |
+| TVINF | 0x0107 | 0x0166† | 19/24 partial | Video in Motion. Some vehicles use a different SubID — under investigation. |
+| OnlineServices | 0x0111 | 0x0001 | 22/27 partial | Aha Radio. 5 engineering/test VINs diverge. |
+| SSS | 0x0104 | 0x0000 | 23/27 partial | Voice control. 4 VINs diverge — possibly model-keyed. |
+
+†Default SubID `0x0166`; some vehicles may require a model-specific value.
+
+**Nav Database Regions** (per-region activation for installed map data)
+
+| Feature | SWID | SubID | Verified |
+|---------|------|-------|----------|
+| NavDBEurope | 0x2001 | 0x00ff | 23/24 ✓ |
+| NavDBNorthAmerica | 0x2002 | 0x00ff | 15/17 ✓ |
+| NavDBSouthAfrica | 0x2003 | 0x00ff | 8/9 ✓ |
+| NavDBMiddleEast | 0x2004 | 0x00ff | 8/9 ✓ |
+| NavDBAustralia | 0x2005 | 0x00ff | 9/9 ✓ |
+| NavDBAsiaPacific | 0x2006 | 0x00ff | 9/9 ✓ |
+| NavDBRussia | 0x2007 | 0x00ff | 9/10 ✓ |
+| NavDBSouthAmerica | 0x2008 | 0x00ff | 8/9 ✓ |
+| NavDBChina | 0x2009 | 0x00ff | 9/12 partial |
+| NavDBChile | 0x200a | 0x00ff | 15/15 ✓ |
+| NavDBArgentina | 0x200b | 0x00ff | 15/18 partial |
+
+> **Reading this table:** `✓` = all real mismatches explained (the few non-matches are either engineering/test VINs or cosmetic leading-zero formatting in the CSV — our 16-char zero-padded output is the correct 64-bit representation). `partial` = real algorithmic mismatches exist and are under investigation. Full verification data: [research/firmware/PagSWAct.csv](research/firmware/PagSWAct.csv).
+
+### FeatureLevel SubIDs (decoded from reference VINs)
+
+FeatureLevel controls the boot logo and model variant identification. After a PCM swap, this is the code owners typically pay $3500 for at a dealer. Decoded variants:
+
+| SubID | Model |
+|-------|-------|
+| 0x0003 | 911 (991) Carrera |
+| 0x0005 | 911 (991) Turbo |
+| 0x0007 | 911 (991) Cabriolet/Targa |
+| 0x002a | 911 (997) Carrera V6 |
+| 0x002d | 911 (997) Carrera S V8 |
+| 0x002e | 911 (997) Turbo |
+| 0x0031 | 911 (997) variant |
+| 0x0039 | Cayenne 958 base / 957 V6 |
+| 0x003b | Cayenne 958 Turbo |
+| 0x003f | Cayenne 958 V6 |
+| 0x0041 | Cayenne 957 V6 |
+
+Unknown / needs samples: Panamera (970/9P), Macan (95B), Cayman/Boxster (987/981), GT3/GT2.
 
 ### USB Delivery Mechanism
-The PCM uses `proc_scriptlauncher` — the same `copie_scr.sh` autorun mechanism as the Audi MMI3G. When a USB stick is inserted, the launcher looks for `/copie_scr.sh`, decodes it (XOR with PRNG, seed 0 = plaintext), and executes it with `/bin/ksh`. The script copies activation data to the PCM's internal `/HBpersistence/` partition.
+The PCM uses `proc_scriptlauncher` — the same `copie_scr.sh` autorun mechanism as the Audi MMI3G. When a USB stick is inserted at `/fs/usb0`, the launcher looks for `/copie_scr.sh`, decodes it (XOR with PRNG, seed 0 = plaintext), and executes it with `/bin/ksh`. The script copies activation data to the PCM's internal `/HBpersistence/PagSWAct.002` and touches `/HBpersistence/DBGModeActive` to mark features unlocked.
+
+### PagSWAct.002 binary format
+28 bytes per record:
+- `[0..15]` — 16 ASCII hex characters of the activation code
+- `[16..17]` — padding
+- `[18..19]` — SWID (u16 little-endian)
+- `[20..21]` — SubID (u16 little-endian)
+- `[22]` — state (`1` = unlocked)
+- `[23]` — padding
+- `[24..27]` — type (u32 LE, `1` = permanent)
 
 ### Firmware Architecture
 
@@ -81,7 +152,7 @@ The PCM uses `proc_scriptlauncher` — the same `copie_scr.sh` autorun mechanism
 ```
 PCM-Forge/
 ├── README.md
-├── generate_codes.py          ← Command-line code generator
+├── generate_codes.py          ← Command-line code generator (26 features)
 ├── docs/index.html            ← Web tool (GitHub Pages)
 ├── research/
 │   ├── ALGORITHM_CRACKED.md   ← Complete algorithm documentation
@@ -89,7 +160,7 @@ PCM-Forge/
 │   ├── PCM31_SYSTEM_INFO.md   ← Target vehicle details
 │   ├── USB_ENGINEERING_ACCESS.md
 │   └── firmware/              ← Extracted firmware data
-│       ├── PagSWAct.csv       ← 27 known VIN/code pairs
+│       ├── PagSWAct.csv       ← 27 known VIN/code pairs (verification dataset)
 │       └── *.bin, *.txt       ← IOC firmware, Ghidra output
 └── shared/uds/                ← UDS diagnostic stack (shared with MMI3G)
 ```
@@ -109,6 +180,12 @@ The complete reverse engineering chain:
 9. **VIN mapping** — Weighted sum with 16-bit overflow, verified against all 27 known pairs
 10. **Plaintext discovery** — Character-by-character interleaving (not concatenation)
 11. **USB delivery** — `proc_scriptlauncher` + `copie_scr.sh` autorun mechanism
+
+## Known Limitations
+
+- **FeatureLevel requires model selection** — the SubID varies per vehicle. The web tool's model dropdown covers 11 decoded variants. Two outlier test VINs in the reference dataset suggest additional SubIDs exist outside 0x0001–0x007f; needs more samples.
+- **TVINF partial verification** — 5 of 24 reference VINs don't match the default `0x0166` SubID. Likely a model-keyed parameter similar to FeatureLevel; under investigation.
+- **No retail activation for FeatureLevel** — this code is what dealers charge ~$3500 for after a PCM swap. PCM-Forge generates it for free, but for your specific vehicle variant only. Wrong SubID = wrong code.
 
 ## Related Projects
 
