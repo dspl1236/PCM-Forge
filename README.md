@@ -216,8 +216,16 @@ The complete reverse engineering chain:
 
 ## Related Projects
 
-- **[MMI3G-Toolkit](https://github.com/dspl1236/MMI3G-Toolkit)** — Sister project for Audi MMI3G/3G+ (same Harman Becker platform)
-- [M.I.B.](https://github.com/Mr-MIBonk/M.I.B._More-Incredible-Bash) — For PCM 4.x / MIB2 systems
+**By platform:**
+
+| Generation | Platform | Your car? | Tool |
+|-----------|----------|-----------|------|
+| PCM 3.1 (SH4 / QNX 6.3) | Harman Becker | Cayenne 958, 911 991.1, Panamera 970, Boxster/Cayman 981, Macan 95B | **PCM-Forge** (this repo) |
+| MMI 3G / 3G+ (SH4 / QNX 6.3) | Harman Becker | Audi A4–A8 (B8/B8.5/C6/C7/D3/D4), VW Touareg 7P with RNS-850 | **[MMI3G-Toolkit](https://github.com/dspl1236/MMI3G-Toolkit)** |
+| PCM 4 / MHI2 / MIB2 (Tegra ARM / QNX 6.5) | Harman | Panamera 971, 911 991.2+, 718, refreshed Macan | [M.I.B.](https://github.com/Mr-MIBonk/M.I.B._More-Incredible-Bash), [harman-f AIO updates](https://github.com/harman-f) |
+| MIB3 / MIB4 / E3 (ARM / Linux) | Continental / CARIAD | Post-2020 VAG vehicles | Not yet reverse-engineered |
+
+**Same feature-identifier scheme across PCM 3.1 ↔ PCM 4 / MIB2:** Porsche reused the `SWID.SubID` hex structure when moving from Harman Becker to Harman's Tegra-based MIB2 platform. The FEC codes documented in [harman-f's AIO firmware patches](https://github.com/harman-f/MHI2_US_POG11_K5186_1-MU1476-AIO#features) confirm the scheme carried forward — our `0x0003`, `0x0005`, `0x0007` FeatureLevel values for 911 variants map to their MIB2 FEC entries. Different cryptography, different delivery mechanism, but shared identifier space.
 
 ## License
 
