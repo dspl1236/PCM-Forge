@@ -103,9 +103,32 @@ h1 span{color:var(--accent)}
 <script>
 const N=0x69f39c927ef94985n,D=0x5483975015d0287bn,E=0x4c1c5eeaf397c0b3n;
 const FEATS=[
-  {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Full engineering & diagnostic menu'},
-  {id:'bth',fh:'010a0000',sw:0x010a,su:0,nm:'BTH',ds:'Bluetooth telephony'},
-  {id:'komp',fh:'01060000',sw:0x0106,su:0,nm:'KOMP',ds:'Component activation'},
+  {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Engineering & diagnostic menu',cat:'core'},
+  {id:'bth',fh:'010a0000',sw:0x010a,su:0,nm:'BTH',ds:'Bluetooth telephony',cat:'core'},
+  {id:'komp',fh:'01060000',sw:0x0106,su:0,nm:'KOMP',ds:'Component activation',cat:'core'},
+  {id:'nav',fh:'01010000',sw:0x0101,su:0,nm:'Navigation',ds:'Navigation system',cat:'core'},
+  {id:'ums',fh:'01090000',sw:0x0109,su:0,nm:'UMS',ds:'USB media support',cat:'core'},
+  {id:'fb',fh:'01030000',sw:0x0103,su:0,nm:'FB',ds:'Feature base / boot image',cat:'feat'},
+  {id:'sss',fh:'01040000',sw:0x0104,su:0,nm:'SSS',ds:'Voice control (Speech)',cat:'feat'},
+  {id:'sc',fh:'01050000',sw:0x0105,su:0,nm:'SC',ds:'Sport Chrono',cat:'feat'},
+  {id:'tvinf',fh:'01070166',sw:0x0107,su:0x0166,nm:'TVINF',ds:'Video in Motion (TV free)',cat:'feat'},
+  {id:'sdars',fh:'01080000',sw:0x0108,su:0,nm:'SDARS',ds:'Satellite radio (SiriusXM)',cat:'feat'},
+  {id:'indmem',fh:'010d0000',sw:0x010d,su:0,nm:'INDMEM',ds:'Individual memory',cat:'feat'},
+  {id:'hdtuner',fh:'010f0000',sw:0x010f,su:0,nm:'HDTuner',ds:'HD Radio tuner',cat:'feat'},
+  {id:'dabtuner',fh:'01100000',sw:0x0110,su:0,nm:'DABTuner',ds:'DAB digital radio',cat:'feat'},
+  {id:'online',fh:'01110001',sw:0x0111,su:0x0001,nm:'OnlineServices',ds:'Online services / Aha Radio',cat:'feat'},
+  {id:'featlvl',fh:'010e0003',sw:0x010e,su:0x0003,nm:'FeatureLevel',ds:'Feature level (caution — may change splash)',cat:'feat'},
+  {id:'naveu',fh:'200100ff',sw:0x2001,su:0x00ff,nm:'NavDB Europe',ds:'Navigation database: Europe',cat:'nav'},
+  {id:'navna',fh:'200200ff',sw:0x2002,su:0x00ff,nm:'NavDB N.America',ds:'Navigation database: North America',cat:'nav'},
+  {id:'navza',fh:'200300ff',sw:0x2003,su:0x00ff,nm:'NavDB S.Africa',ds:'Navigation database: South Africa',cat:'nav'},
+  {id:'navme',fh:'200400ff',sw:0x2004,su:0x00ff,nm:'NavDB MidEast',ds:'Navigation database: Middle East',cat:'nav'},
+  {id:'navau',fh:'200500ff',sw:0x2005,su:0x00ff,nm:'NavDB Australia',ds:'Navigation database: Australia',cat:'nav'},
+  {id:'navap',fh:'200600ff',sw:0x2006,su:0x00ff,nm:'NavDB AsiaPac',ds:'Navigation database: Asia Pacific',cat:'nav'},
+  {id:'navru',fh:'200700ff',sw:0x2007,su:0x00ff,nm:'NavDB Russia',ds:'Navigation database: Russia',cat:'nav'},
+  {id:'navsa',fh:'200800ff',sw:0x2008,su:0x00ff,nm:'NavDB S.America',ds:'Navigation database: South America',cat:'nav'},
+  {id:'navcn',fh:'200900ff',sw:0x2009,su:0x00ff,nm:'NavDB China',ds:'Navigation database: China',cat:'nav'},
+  {id:'navcl',fh:'200a00ff',sw:0x200a,su:0x00ff,nm:'NavDB Chile',ds:'Navigation database: Chile',cat:'nav'},
+  {id:'navar',fh:'200b00ff',sw:0x200b,su:0x00ff,nm:'NavDB Argentina',ds:'Navigation database: Argentina',cat:'nav'},
 ];
 function mp(b,x,m){let r=1n;b%=m;while(x>0n){if(x%2n===1n)r=r*b%m;x/=2n;b=b*b%m}return r}
 function v2n(v){const l=v.toLowerCase(),p=[7,9,11,12,13,14,15,16];let r=0,w=10;for(let i=p.length-1;i>=0;i--){const c=l[p[i]];let b=c>='0'&&c<='9'?parseInt(c):c>='a'&&c<='z'?c.charCodeAt(0)%10:0;r=((r+b*w)&0xFFFFFFFF)>>>0;w=(w*10)&0xFFFF}return r}
@@ -120,10 +143,13 @@ function gen(){
   if(e){el.textContent='⚠ '+e;el.style.display='block';document.getElementById('res').classList.remove('show');return}
   el.style.display='none';CV=v;CC=[];
   const cd=document.getElementById('cc'),fg=document.getElementById('fg');cd.innerHTML='';fg.innerHTML='';
+  const cats={core:'Core Features',feat:'Optional Features',nav:'Navigation Databases'};
+  let lastCat='';
   for(const f of FEATS){
     const c=gc(v,f.fh),ok=vc(v,c,f.fh);CC.push({...f,code:c,ok});
+    if(f.cat!==lastCat){cd.innerHTML+=`<div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:${lastCat?'20':'0'}px 0 10px;padding-top:${lastCat?'12':'0'}px;${lastCat?'border-top:1px solid var(--border)':''}">— ${cats[f.cat]} —</div>`;lastCat=f.cat}
     cd.innerHTML+=`<div class="cc"><div><div class="fn">${f.nm} ${ok?'<span class="chk">✓</span>':''}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
-    fg.innerHTML+=`<label class="ft on"><input type="checkbox" checked data-f="${f.id}"> ${f.nm}</label>`;
+    fg.innerHTML+=`<label class="ft on"><input type="checkbox" ${f.id==='featlvl'?'':'checked'} data-f="${f.id}"> ${f.nm}</label>`;
   }
   fg.querySelectorAll('.ft').forEach(el=>el.addEventListener('click',e=>{if(e.target.tagName==='INPUT')el.classList.toggle('on',e.target.checked)}));
   document.getElementById('vb').textContent=v;document.getElementById('res').classList.add('show');
