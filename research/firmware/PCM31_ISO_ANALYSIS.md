@@ -210,3 +210,74 @@ The firmware uses different names than the PagSWAct.csv headers:
 The activation codes from PCM-Forge's `generate_codes.py` write to
 this exact file format. The RSA-1024 algorithm we reversed produces
 codes that the firmware accepts.
+
+## CRITICAL DISCOVERY: Network Access Without IFS Modification!
+
+Unlike the Audi MMI3G where telnet requires IFS patching, the
+PCM 3.1 **already has full network support built in**. It just
+needs a trigger file in persistence!
+
+### start-net.sh — Built-in Network Bootstrap
+
+```bash
+# qconn (GDB remote debug) starts AUTOMATICALLY
+/usr/sbin/qconn&
+
+# Telnet/FTP starts if this file exists:
+if [[ -a /HBpersistence/DBGModeActive ]]; then
+   /usr/sbin/inetd&
+fi
+
+# Static IP assigned if /HBpersistence/incar exists:
+/sbin/ifconfig en0 192.168.0.90
+/sbin/ifconfig en0 alias 172.16.250.252
+```
+
+### How to Enable Full Network Access
+
+**Via copie_scr.sh (SD card, no firmware mods!):**
+```bash
+#!/bin/ksh
+touch /HBpersistence/DBGModeActive
+touch /HBpersistence/incar
+sync
+```
+
+**After reboot:**
+- Connect USB-Ethernet adapter (ASIX chipset, devn-asix.so)
+- Set PC to 192.168.0.x subnet
+- `telnet 192.168.0.90` → root shell
+- `gdb` connect to 192.168.0.90:8000 (qconn)
+- inetd provides: telnet, ftp, possibly more
+
+### Network Addresses
+- DHCP by default (if no trigger files)
+- Static: 192.168.0.90 (if /HBpersistence/incar exists)
+- Alias: 172.16.250.252 (always set in incar mode)
+- USB Ethernet: devn-asix.so (ASIX USB-to-Ethernet chips)
+
+### Debug Modes
+- `/HBpersistence/DBGModeActive` → enables inetd (telnet/ftp)
+- `/HBpersistence/incar` → static IP assignment
+- `/HBpersistence/bluePiraT` → alternate debug mode (name suggests Bluetooth pirate/debug tool)
+
+### Custom Boot Screen Path
+```
+/HBpersistence/CustomBootscreen_000.bin
+```
+Writable from copie_scr.sh! Format determined by PCM3Root's
+`copy bootscreen from %s to flash: system(%s)` logic.
+
+## Comparison: Audi vs Porsche Network Access
+
+| Feature | Audi MMI3G | Porsche PCM 3.1 |
+|---------|:---:|:---:|
+| Telnet | Requires IFS patch | Just `touch DBGModeActive` |
+| qconn/GDB | Requires IFS patch | **Already starts by default** |
+| Static IP | Manual config | Built-in (192.168.0.90) |
+| USB Ethernet | D-Link DUB-E100 | ASIX chipset (same chip) |
+| Trigger | IFS modification | `/HBpersistence/` file |
+| Risk level | Medium (IFS mod) | **Zero (persistence file)** |
+
+This means the Cayenne PCM 3.1 can be fully debugged with just
+an SD card — no firmware modification needed at all!
