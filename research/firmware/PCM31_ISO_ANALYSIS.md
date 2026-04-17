@@ -155,3 +155,58 @@ IFS-Type:        IFS_G1_E2
 5. **Same IFS tools** — inflate_ifs.py + extract_qnx_ifs.py work
 6. **Debug tools accessible** — persdump2, mmecli already on HDD
 7. **Diagnosis controller** exists — CDiagnosisPresCtrl
+
+## Feature Name Mapping — PCM-Forge ↔ Firmware
+
+The firmware uses different names than the PagSWAct.csv headers:
+
+| PCM-Forge Name | SWID | Firmware Name | Index |
+|----------------|:---:|---------------|:---:|
+| ENGINEERING | 0x010b | EngineeringMode | 10 |
+| BTH | 0x010a | BT_HPF | 9 |
+| KOMP | 0x0106 | Compass | 5 |
+| Navigation | 0x0101 | Navigation | 0 |
+| UMS | 0x0109 | UMS | 8 |
+| FB | 0x0103 | DriversLog | 2 |
+| SSS | 0x0104 | SSS | 3 |
+| SC | 0x0105 | SportChrono | 4 |
+| TVINF | 0x0107 | TVTuner | 6 |
+| SDARS | 0x0108 | SDARS | 7 |
+| INDMEM | 0x010d | IndividualMem | 20 |
+| FeatureLevel | 0x010e | FeatureLevel | 26 |
+| HDTuner | 0x010f | HDTuner | 24 |
+| DABTuner | 0x0110 | DABTuner | 25 |
+| OnlineServices | 0x0111 | OnlineServices | 27 |
+| NavDBEurope | 0x2001 | DB_Europe | 11 |
+| NavDBNorthAmerica | 0x2002 | DB_NorthAmerica | 12 |
+| NavDBSouthAfrica | 0x2003 | DB_SouthAfrica | 13 |
+| NavDBMiddleEast | 0x2004 | DB_MiddleEast | 14 |
+| NavDBAustralia | 0x2005 | DB_Australia | 15 |
+| NavDBAsiaPacific | 0x2006 | DB_Asia | 16 |
+| NavDBRussia | 0x2007 | DB_Russia | 17 |
+| NavDBSouthAmerica | 0x2008 | DB_LatinAmerica | 18 |
+| NavDBChina | 0x2009 | DB_China | 23 |
+| NavDBChile | 0x200a | DB_Chile | 28 |
+| NavDBArgentina | 0x200b | DB_Argentina | 29 |
+
+**Firmware-only features (no activation code needed?):**
+- Offroad (index 1) — offroad navigation
+- Speller (index 19) — text input speller
+- Telephone (index 21) — phone module
+- HandSet (index 22) — Porsche phone handset accessory
+
+## PCM 3.1 Activation Code Flow
+
+```
+1. PCM reads /HBpersistence/PagSWAct.002 on boot
+2. SysInfoPresCtrl processes activation codes
+3. For each feature: "Got activationCode SWID %#x"
+4. Unlock code verified: "Got UnlockCode %s"
+5. If FeatureLevel missing: "No unlock code for FeatureLevel present"
+6. Navigation check: "navigation_allowed" flag set
+7. Boot screen selected based on FeatureLevel
+```
+
+The activation codes from PCM-Forge's `generate_codes.py` write to
+this exact file format. The RSA-1024 algorithm we reversed produces
+codes that the firmware accepts.
