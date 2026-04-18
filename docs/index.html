@@ -157,6 +157,26 @@ h1 span{color:var(--accent)}
         3. You should see <code>pcm_debug.log</code> on it (and maybe <code>pcm_ran.txt</code>). If <code>pcm_debug.log</code> is missing, the PCM never ran the script — tell us that.<br>
         4. Drag the log into the chat. We'll read it and figure out the next move.
       </div>
+
+      <div style="margin-top:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;cursor:pointer" onclick="document.getElementById('bs-panel').style.display=document.getElementById('bs-panel').style.display==='none'?'block':'none'">🖼️ CUSTOM BOOT SCREEN ▾</div>
+        <div id="bs-panel" style="display:none">
+          <div style="color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:14px">
+            Upload any image to use as your PCM startup screen. It will be resized to <strong>800×480</strong> and exported as a PNG <code>.bin</code> file. Copy to USB alongside your activation files.
+          </div>
+          <div style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:14px" id="bs-drop" onclick="document.getElementById('bs-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBootImg(event.dataTransfer.files[0])">
+            <div style="font-size:24px;margin-bottom:6px">🖼️</div>
+            <div style="color:var(--text2);font-size:13px">Drop image here or click to browse</div>
+            <input type="file" id="bs-file" accept="image/*" style="display:none" onchange="handleBootImg(this.files[0])">
+          </div>
+          <canvas id="bs-canvas" width="800" height="480" style="display:none;width:100%;max-width:800px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;background:#000"></canvas>
+          <div id="bs-actions" style="display:none;flex-wrap:wrap;gap:12px">
+            <button class="btn btn-green" onclick="dlBootscreen()">↓ Download CustomBootscreen.bin</button>
+            <button class="btn btn-outline" onclick="dlBootscreenUSB()">↓ Download with USB run.sh</button>
+          </div>
+          <div id="bs-status" class="sm" style="margin-top:10px"></div>
+        </div>
+      </div>
       <div class="sm" id="sm"></div>
     </div>
     <div class="view" id="view-manage">
@@ -466,6 +486,54 @@ function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPT
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
 document.getElementById('vi').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
+
+// ===== Boot Screen Builder =====
+let bsBlob=null;
+function handleBootImg(file){
+  if(!file||!file.type.startsWith('image/'))return;
+  const img=new Image();
+  img.onload=function(){
+    const canvas=document.getElementById('bs-canvas');
+    const ctx=canvas.getContext('2d');
+    canvas.style.display='block';
+    // Cover-fit: fill 800x480, crop center
+    const scale=Math.max(800/img.width,480/img.height);
+    const sw=800/scale, sh=480/scale;
+    const sx=(img.width-sw)/2, sy=(img.height-sh)/2;
+    ctx.drawImage(img,sx,sy,sw,sh,0,0,800,480);
+    canvas.toBlob(function(blob){
+      bsBlob=blob;
+      document.getElementById('bs-actions').style.display='flex';
+      document.getElementById('bs-drop').style.borderColor='var(--green)';
+      document.getElementById('bs-drop').querySelector('div:last-child').textContent=
+        `${file.name} → 800×480 (${(blob.size/1024).toFixed(1)} KB)`;
+    },'image/png');
+  };
+  img.src=URL.createObjectURL(file);
+}
+function dlBootscreen(){
+  if(!bsBlob)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(bsBlob);
+  a.download='CustomBootscreen_067.bin';a.click();
+  document.getElementById('bs-status').className='sm ok';
+  document.getElementById('bs-status').textContent='\u2713 Downloaded CustomBootscreen_067.bin — copy to USB root alongside run.sh';
+}
+function dlBootscreenUSB(){
+  if(!bsBlob)return;
+  // Download boot screen
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(bsBlob);
+  a.download='CustomBootscreen_067.bin';a.click();
+  // Download run.sh that installs it
+  const runSh='#!/bin/ksh\n# PCM-Forge — install custom boot screen\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nif [ -f "${USBROOT}/CustomBootscreen_067.bin" ]; then\n    cp "${USBROOT}/CustomBootscreen_067.bin" /HBpersistence/CustomBootscreen_067.bin\nfi\necho "Boot screen updated" > "${USBROOT}/pcm_ran.txt"\n';
+  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([runSh],{type:'application/octet-stream'}));a.download='run.sh';a.click()},200);
+  // Download copie_scr.sh bootstrap
+  const enc=encodeBootstrap();
+  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click()},400);
+  document.getElementById('bs-status').className='sm ok';
+  document.getElementById('bs-status').textContent='\u2713 Downloading 3 files — copy all to FAT32 USB, insert, wait 60s, reboot';
+}
 </script>
 </body>
 </html>
