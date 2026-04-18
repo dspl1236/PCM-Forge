@@ -119,6 +119,7 @@ h1 span{color:var(--accent)}
     <div class="mode-toggle">
       <button class="mode-btn active" id="mb-piwis" onclick="setMode('piwis')">🔧 PIWIS</button>
       <button class="mode-btn" id="mb-usb" onclick="setMode('usb')">💾 USB STICK</button>
+      <button class="mode-btn" id="mb-manage" onclick="setMode('manage')">📂 MANAGE BACKUP</button>
     </div>
     <div class="view active" id="view-piwis">
       <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Enter these 16-digit hex codes via PIWIS → Engineering Menu → SWActivation. FeatureLevel uses the model selected above.</p>
@@ -157,6 +158,25 @@ h1 span{color:var(--accent)}
         4. Drag the log into the chat. We'll read it and figure out the next move.
       </div>
       <div class="sm" id="sm"></div>
+    </div>
+    <div class="view" id="view-manage">
+      <p class="usb-intro">Upload your <code>PagSWAct_backup.002</code> from the diagnostic USB to see what's activated, then add features and download a merged file.</p>
+      <div style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;margin-bottom:20px;cursor:pointer;transition:border-color .2s" id="drop-zone" onclick="document.getElementById('file-upload').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBackupFile(event.dataTransfer.files[0])">
+        <div style="font-size:28px;margin-bottom:8px">📂</div>
+        <div style="color:var(--text2);font-size:14px">Drop <code>PagSWAct_backup.002</code> here or click to browse</div>
+        <input type="file" id="file-upload" accept=".002,.bin" style="display:none" onchange="handleBackupFile(this.files[0])">
+      </div>
+      <div id="backup-info" style="display:none">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">CURRENT FEATURES</div>
+        <div id="backup-features"></div>
+        <div style="margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">ADD FEATURES</div>
+        <div id="add-features"></div>
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-usb" onclick="dlMerged()">↓ Download merged PagSWAct.002</button>
+          <button class="btn btn-accent" onclick="dlMergedUSB()">📁 Download full USB kit</button>
+        </div>
+        <div class="sm" id="sm-manage"></div>
+      </div>
     </div>
     <div class="cn">RSA-64 · n=0x69f39c927ef94985 · d=0x5483975015d0287b · All computation runs locally in your browser</div>
   </div>
@@ -217,8 +237,10 @@ let CV='',CC=[];
 function setMode(m){
   document.getElementById('mb-piwis').classList.toggle('active',m==='piwis');
   document.getElementById('mb-usb').classList.toggle('active',m==='usb');
+  document.getElementById('mb-manage').classList.toggle('active',m==='manage');
   document.getElementById('view-piwis').classList.toggle('active',m==='piwis');
   document.getElementById('view-usb').classList.toggle('active',m==='usb');
+  document.getElementById('view-manage').classList.toggle('active',m==='manage');
 }
 function updateFeatLvl(modelHex){
   const fLvl=FEATS.find(f=>f.id==='featlvl');
@@ -338,6 +360,108 @@ async function writeUsb(){
 function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
 function dlScr(){const enc=encodeBootstrap();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh (XOR encoded bootstrap, '+enc.length+' bytes)'}
 function dlRun(){const run=currentRunSh();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([run],{type:'application/octet-stream'}));a.download='run.sh';a.click();const mode=isDiag()?'DIAGNOSTIC':'activation';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded run.sh ('+mode+', '+run.length+' bytes)'}
+
+// ===== TAB 3: Manage Backup =====
+const FEAT_SWMAP={};FEATS.forEach(f=>{FEAT_SWMAP[(f.sw<<16|f.su)>>>0]=f});
+let backupRecords=[];
+
+function handleBackupFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const data=new Uint8Array(e.target.result);
+    if(data.length%28!==0||data.length===0){
+      document.getElementById('drop-zone').style.borderColor='var(--red)';
+      return;
+    }
+    backupRecords=[];
+    for(let i=0;i<data.length;i+=28){
+      const code=String.fromCharCode(...data.slice(i,i+16));
+      const sw=data[i+18]|(data[i+19]<<8);
+      const su=data[i+20]|(data[i+21]<<8);
+      const active=data[i+22];
+      backupRecords.push({code,sw,su,active,key:(sw<<16|su)>>>0});
+    }
+    renderBackup();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderBackup(){
+  const existKeys=new Set(backupRecords.map(r=>r.key));
+  const bf=document.getElementById('backup-features');
+  const af=document.getElementById('add-features');
+  bf.innerHTML='';af.innerHTML='';
+
+  // Show existing features
+  for(const rec of backupRecords){
+    const feat=FEAT_SWMAP[rec.key];
+    const name=feat?feat.nm:`Unknown (0x${rec.sw.toString(16).padStart(4,'0')})`;
+    const desc=feat?feat.ds:'';
+    bf.innerHTML+=`<div class="ft on" style="opacity:0.85"><input type="checkbox" checked disabled><div><div class="feat-name">\u2705 ${name}</div><div class="feat-desc">${desc}</div><div class="ft-info">${rec.code}</div></div></div>`;
+  }
+  if(!backupRecords.length) bf.innerHTML='<div style="color:var(--text2);font-size:13px">No features found in backup</div>';
+
+  // Show features that can be added
+  let hasNew=false;
+  for(const f of FEATS){
+    const key=(f.sw<<16|f.su)>>>0;
+    if(existKeys.has(key))continue;
+    hasNew=true;
+    af.innerHTML+=`<label class="ft"><input type="checkbox" data-fh="${f.fh}" data-sw="${f.sw}" data-su="${f.su}" onchange="this.closest('.ft').classList.toggle('on',this.checked)"><div><div class="feat-name">${f.nm}</div><div class="feat-desc">${f.ds}</div></div></label>`;
+  }
+  if(!hasNew) af.innerHTML='<div style="color:var(--green);font-size:13px">\u2713 All features already activated!</div>';
+
+  document.getElementById('backup-info').style.display='block';
+  document.getElementById('drop-zone').style.borderColor='var(--green)';
+  document.getElementById('drop-zone').querySelector('div:last-child').textContent=`Loaded: ${backupRecords.length} features (${backupRecords.length*28} bytes)`;
+}
+
+function buildMerged(){
+  if(!CV){document.getElementById('sm-manage').className='sm bad';document.getElementById('sm-manage').textContent='\u26a0 Enter a VIN at the top first';return null}
+  // Start with existing records
+  const recs=[...backupRecords.map(r=>{const d=new Uint8Array(28);for(let i=0;i<16;i++)d[i]=r.code.charCodeAt(i);d[18]=r.sw&0xFF;d[19]=(r.sw>>8)&0xFF;d[20]=r.su&0xFF;d[21]=(r.su>>8)&0xFF;d[22]=1;d[24]=1;return d})];
+  // Add new features
+  let added=0;
+  document.querySelectorAll('#add-features input:checked').forEach(cb=>{
+    const fh=cb.dataset.fh;
+    const code=gc(CV,fh);
+    const sw=parseInt(cb.dataset.sw);
+    const su=parseInt(cb.dataset.su);
+    const r=new Uint8Array(28);
+    for(let i=0;i<16;i++)r[i]=code.charCodeAt(i);
+    r[18]=sw&0xFF;r[19]=(sw>>8)&0xFF;r[20]=su&0xFF;r[21]=(su>>8)&0xFF;r[22]=1;r[24]=1;
+    recs.push(r);
+    added++;
+  });
+  const d=new Uint8Array(recs.length*28);
+  recs.forEach((r,i)=>d.set(r,i*28));
+  return {data:d,existing:backupRecords.length,added};
+}
+
+function dlMerged(){
+  const result=buildMerged();
+  if(!result)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([result.data],{type:'application/octet-stream'}));
+  a.download='PagSWAct.002';a.click();
+  document.getElementById('sm-manage').className='sm ok';
+  document.getElementById('sm-manage').textContent=`\u2713 Downloaded PagSWAct.002 (${result.data.length} bytes \u2014 ${result.existing} existing + ${result.added} new features)`;
+}
+
+function dlMergedUSB(){
+  const result=buildMerged();
+  if(!result)return;
+  // Download all 3 files
+  const enc=encodeBootstrap();
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([result.data],{type:'application/octet-stream'}));
+  a.download='PagSWAct.002';a.click();
+  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click()},200);
+  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([RUN_ACTIVATE],{type:'application/octet-stream'}));a.download='run.sh';a.click()},400);
+  document.getElementById('sm-manage').className='sm ok';
+  document.getElementById('sm-manage').textContent=`\u2713 Downloading 3 files (${result.existing} existing + ${result.added} new features) \u2014 copy all to FAT32 USB`;
+}
 function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPTIONAL FEATURES',nav:'NAVIGATION DATABASES'};let t=`PCM-Forge \u2014 Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(55)}\n`;let lc='';for(const c of CC){if(c.cat!==lc){t+=`\n  ${cats[c.cat]}\n`;lc=c.cat}t+=`  ${c.nm.padEnd(22)} ${c.code}\n`}t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
