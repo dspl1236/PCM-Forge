@@ -366,6 +366,45 @@ LOG=\"${USBROOT}/pcm_debug.log\"\n\
     echo \"=== mount ===\"\n\
     mount 2>&1\n\
     echo \"\"\n\
+    echo \"=== Disk Usage ===\"\n\
+    df -h 2>&1 || df 2>&1\n\
+    echo \"\"\n\
+    echo \"=== HDD Partition Table ===\"\n\
+    fdisk /dev/hd0 show 2>&1\n\
+    echo \"\"\n\
+    echo \"=== HDD SMART Data ===\"\n\
+    /HBbin/readsmart 2>&1 | head -30\n\
+    /mnt/data/tools/readsmart 2>&1 | head -30\n\
+    echo \"\"\n\
+    echo \"=== HDD Top-Level Layout ===\"\n\
+    for part in /dev/hd0t77 /dev/hd0t78 /dev/hd0t79 /dev/hd0t80 /dev/hd0t81; do\n\
+        mnt=$(mount 2>/dev/null | grep \"$part\" | awk '{print $1}')\n\
+        if [ -n \"$mnt\" ]; then\n\
+            echo \"--- $part mounted at $mnt ---\"\n\
+            ls -la \"$mnt\" 2>&1 | head -25\n\
+            du -sh \"$mnt\"/* 2>&1 | head -20\n\
+        else\n\
+            echo \"--- $part not mounted ---\"\n\
+        fi\n\
+    done\n\
+    echo \"\"\n\
+    echo \"=== HDD Data Directories ===\"\n\
+    for d in /mnt/data /mnt/share /HBdata /HBproject /mnt/data/tools; do\n\
+        if [ -d \"$d\" ]; then\n\
+            echo \"--- $d ---\"\n\
+            ls -la \"$d\" 2>&1 | head -20\n\
+        fi\n\
+    done\n\
+    echo \"\"\n\
+    echo \"=== Nav Database ===\"\n\
+    ls -la /mnt/data/nav* 2>&1 | head -10\n\
+    ls -la /mnt/share/nav* 2>&1 | head -10\n\
+    ls -la /HBdata/nav* 2>&1 | head -10\n\
+    echo \"\"\n\
+    echo \"=== Browser + Tools on HDD ===\"\n\
+    ls -la /mnt/share/Browser/ 2>&1 | head -10\n\
+    ls -la /mnt/data/tools/ 2>&1 | head -15\n\
+    echo \"\"\n\
     echo \"=== ps ===\"\n\
     ps -ef 2>&1 | head -80\n\
     ps 2>&1 | head -40\n\
