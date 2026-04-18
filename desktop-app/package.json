@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Porsche PCM 3.1 Activation Code Generator & ESP32 Device Programmer",
   "main": "main.js",
+  "repository": "https://github.com/dspl1236/PCM-Forge",
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win --x64 --publish never"
@@ -19,6 +20,7 @@
   "build": {
     "appId": "com.dspl1236.pcm-forge",
     "productName": "PCM-Forge",
+    "publish": null,
     "files": [
       "main.js",
       "preload.js",
