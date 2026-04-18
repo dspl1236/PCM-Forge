@@ -1,0 +1,84 @@
+name: Build & Release Desktop App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop-app/**'
+      - '.github/workflows/build-desktop.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop-app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows x64
+        run: npx electron-builder --win --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "PCM-Forge Desktop ${{ steps.version.outputs.version }} (${{ steps.version.outputs.date }})"
+          body: |
+            **PCM-Forge Desktop App** — Windows x64
+
+            Porsche PCM 3.1 activation code generator & ESP32 device programmer.
+
+            ### What's included
+            - **Tab 1:** VIN → activation codes (all 26 features)
+            - **Tab 2:** ESP32-CAN device programmer (COM port + auto VIN read)
+
+            ### Install
+            Download and run `PCM-Forge-Setup-${{ steps.version.outputs.version }}.exe`
+
+            Built from commit `${{ github.sha }}`
+          files: |
+            desktop-app/dist/PCM-Forge Setup *.exe
+            desktop-app/dist/PCM-Forge-Setup-*.exe
+            desktop-app/dist/*.exe
+          draft: false
+          prerelease: false
+
+  cleanup-old-releases:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old releases (keep last 4)
+        uses: dev-drprasad/delete-older-releases@v0.3.4
+        with:
+          keep_latest: 4
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

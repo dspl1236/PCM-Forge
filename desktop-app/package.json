@@ -24,8 +24,17 @@
     "productName": "PCM-Forge",
     "files": ["**/*"],
     "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico",
+      "artifactName": "PCM-Forge-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": true
     },
     "mac": {
       "target": "dmg"

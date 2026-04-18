@@ -6,6 +6,8 @@
 
 🌐 **Web tool:** [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/)
 
+💻 **Desktop app:** [Download latest (Windows x64)](https://github.com/dspl1236/PCM-Forge/releases/latest) — offline code generator + ESP32 device programmer
+
 📋 **What can I activate?** → See [FEATURES.md](FEATURES.md) for the full list of 26 features with descriptions, retail costs, and hardware requirements.
 
 ## Supported Vehicles
