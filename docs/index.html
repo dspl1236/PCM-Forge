@@ -133,16 +133,16 @@ h1 span{color:var(--accent)}
         <span class="num">3</span><span class="step">Download <code>PagSWAct.002</code> and <code>copie_scr.sh</code></span>
         <span class="num">4</span><span class="step">Copy both to USB root — insert → ignition on → wait 60 sec → cycle</span>
       </div>
-      <div id="fg"></div>
       <div class="diag-box" id="diag-box">
         <label class="diag-head" for="diag-chk">
           <input type="checkbox" id="diag-chk" onchange="toggleDiag()">
-          <span class="diag-title">🔍 Diagnostic Mode</span>
+          <span class="diag-title">🔍 Diagnostic Mode (run this first!)</span>
         </label>
         <div class="diag-desc">
-          If the PCM isn't responding to activation, enable this. It replaces <code>copie_scr.sh</code> with a probe that writes <code>pcm_debug.log</code> back to the USB — QNX version, mount table, process list, filesystem layout, and whether our copy into <code>/HBpersistence/</code> actually worked. Insert USB, wait 60 sec, remove, and send the log to us.
+          Before activating features, run a diagnostic pass first. This replaces <code>copie_scr.sh</code> with a probe that writes <code>pcm_debug.log</code> back to the USB — QNX version, PCM firmware build, HDD layout, SMART data, existing activation files, and whether the copy into <code>/HBpersistence/</code> actually worked. Insert USB, wait 60 sec, remove, and check the log.
         </div>
       </div>
+      <div id="fg"></div>
       <div class="ua">
         <button class="btn btn-usb" onclick="writeUsb()">📁 Write Both to USB</button>
         <button class="btn btn-accent" onclick="dlBin()">↓ PagSWAct.002</button>
