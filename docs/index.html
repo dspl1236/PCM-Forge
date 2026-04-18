@@ -394,6 +394,30 @@ sync\n\
 echo \"PCM-Forge diag ran at: $(date 2>/dev/null)\" > \"${USBROOT}/pcm_ran.txt\" 2>/dev/null\n\
 sync\n";
 
+// XOR PRNG cipher — matches proc_scriptlauncher in MMI3G/PCM3.1 firmware
+// Ported from MMI3G-Toolkit builder/encoder.py (Harman Becker L. Koslowski 2008)
+function xorEncode(plainBytes){
+  let seed=0x001be3ac;
+  function prng(){
+    const r0=seed>>>0;
+    let r1=((seed>>>1)|(seed<<31))>>>0;
+    let r3=((((r1>>>16)&0xFF)+r1)>>>0);
+    r1=((((r3>>>8)&0xFF)<<16)>>>0);
+    r3=((r3-r1)>>>0);
+    seed=r3;
+    return r0;
+  }
+  prng(); // first call discarded
+  const out=new Uint8Array(plainBytes.length);
+  for(let i=0;i<plainBytes.length;i++) out[i]=plainBytes[i]^(prng()&0xFF);
+  return out;
+}
+function encodeScript(){
+  const plain=currentScript();
+  const bytes=new TextEncoder().encode(plain.replace(/\r\n/g,'\n'));
+  return xorEncode(bytes);
+}
+
 function isDiag(){return document.getElementById('diag-chk') && document.getElementById('diag-chk').checked}
 function currentScript(){return isDiag() ? COPIE_DIAG : COPIE}
 function toggleDiag(){
@@ -408,13 +432,14 @@ async function writeUsb(){
     const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
     const d=bp(CV,fs);
     let fh=await dh.getFileHandle('PagSWAct.002',{create:true}),w=await fh.createWritable();await w.write(d);await w.close();
-    fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(currentScript());await w.close();
-    const mode = isDiag() ? ' (DIAGNOSTIC mode — log will write to pcm_debug.log on USB)' : '';
-    s.className='sm ok';s.textContent=`\u2713 Written PagSWAct.002 + copie_scr.sh \u2192 ${dh.name}/ (${fs.length} feature${fs.length>1?'s':''})${mode}`;
+    const enc=encodeScript();
+    fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(enc);await w.close();
+    const mode = isDiag() ? ' (DIAGNOSTIC mode \u2014 log will write to pcm_debug.log on USB)' : '';
+    s.className='sm ok';s.textContent=`\u2713 Written PagSWAct.002 + copie_scr.sh (XOR encoded) \u2192 ${dh.name}/ (${fs.length} feature${fs.length>1?'s':''})${mode}`;
   }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='\u26a0 '+e.message}
 }
 function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
-function dlScr(){const script=currentScript();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([script],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();const mode = isDiag() ? ' \u2014 DIAGNOSTIC version (writes pcm_debug.log to USB)' : ' \u2014 place in USB root alongside PagSWAct.002';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh'+mode}
+function dlScr(){const enc=encodeScript();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();const mode = isDiag() ? ' \u2014 DIAGNOSTIC version (writes pcm_debug.log to USB)' : ' \u2014 place in USB root alongside PagSWAct.002';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh (XOR encoded, '+enc.length+' bytes)'+mode}
 function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPTIONAL FEATURES',nav:'NAVIGATION DATABASES'};let t=`PCM-Forge \u2014 Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(55)}\n`;let lc='';for(const c of CC){if(c.cat!==lc){t+=`\n  ${cats[c.cat]}\n`;lc=c.cat}t+=`  ${c.nm.padEnd(22)} ${c.code}\n`}t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
