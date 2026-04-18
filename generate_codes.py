@@ -13,19 +13,19 @@ Usage:
   python generate_codes.py --list-models             # show available models
 
 Model keys (for correct FeatureLevel / boot logo):
-  cayenne-958      Cayenne 958 base or 957 V6           (SubID 0x0039)  [default Cayenne]
-  cayenne-958t     Cayenne 958 Turbo                    (SubID 0x003b)
-  cayenne-958-v6   Cayenne 958 V6                       (SubID 0x003f)
-  cayenne-957-v6   Cayenne 957 V6 (alt coding)          (SubID 0x0041)
-  991              911 (991) Carrera                    (SubID 0x0003)  [default]
-  991t             911 (991) Turbo                      (SubID 0x0005)
-  991-cab          911 (991) Cabriolet / Targa          (SubID 0x0007)
-  997-v6           911 (997) Carrera V6                 (SubID 0x002a)
-  997-s-v8         911 (997) Carrera S V8               (SubID 0x002d)
-  997t             911 (997) Turbo                      (SubID 0x002e)
-  997-variant      911 (997) variant                    (SubID 0x0031)
+  cayenne-958      Cayenne 958 base / 957 V6             (SubID 0x0039)  [default Cayenne]
+  cayenne-958t     Cayenne 958 Turbo                      (SubID 0x003b)
+  cayenne-958-v6   Cayenne 958 V6                         (SubID 0x003f)
+  991              911 (991) Carrera                      (SubID 0x0003)  [default]
+  991-base         911 (991) base variant                 (SubID 0x0000)
+  991t             911 (991) Turbo                        (SubID 0x0005)
+  boxster-cayman   Boxster / Cayman (981)                 (SubID 0x0007)
+  997              911 (997) Carrera                      (SubID 0x002a)
+  panamera         Panamera (970) V8                      (SubID 0x002d)
+  997t             911 (997) Turbo                        (SubID 0x002e)
+  997-alt          911 (997) alternate coding             (SubID 0x0031)
 
-For unknown models (Panamera 970, Macan 95B, Boxster/Cayman 981, GT3/GT2):
+For unknown models (Macan 95B, GT3/GT2):
   Pass --featlevel-subid 0xNNNN with the known SubID for that vehicle.
 """
 import struct, sys, os, argparse
@@ -34,19 +34,19 @@ N = 0x69f39c927ef94985
 E = 0x4c1c5eeaf397c0b3
 D = 0x5483975015d0287b
 
-# Model → FeatureLevel SubID mapping (from PagSWAct.csv decoding)
+# Model → FeatureLevel SubID mapping (brute-forced from PagSWAct.csv + VIN decode)
 MODELS = {
     'cayenne-958':    (0x0039, 'Cayenne 958 base / 957 V6 (E2 / E1V6)'),
     'cayenne-958t':   (0x003b, 'Cayenne 958 Turbo (E2T)'),
     'cayenne-958-v6': (0x003f, 'Cayenne 958 V6 (E2V6)'),
-    'cayenne-957-v6': (0x0041, 'Cayenne 957 V6 (alt coding)'),
     '991':            (0x0003, '911 (991) Carrera'),
+    '991-base':       (0x0000, '911 (991) base variant'),
     '991t':           (0x0005, '911 (991) Turbo'),
-    '991-cab':        (0x0007, '911 (991) Cabriolet / Targa'),
-    '997-v6':         (0x002a, '911 (997) Carrera V6 (G1V6)'),
-    '997-s-v8':       (0x002d, '911 (997) Carrera S V8 (G1 V8)'),
+    'boxster-cayman': (0x0007, 'Boxster / Cayman (981)'),
+    '997':            (0x002a, '911 (997) Carrera'),
+    'panamera':       (0x002d, 'Panamera (970) V8'),
     '997t':           (0x002e, '911 (997) Turbo (G1T)'),
-    '997-variant':    (0x0031, '911 (997) alternate coding'),
+    '997-alt':        (0x0031, '911 (997) alternate coding'),
 }
 
 def features_for(featlvl_subid):
