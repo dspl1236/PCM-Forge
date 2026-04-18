@@ -139,7 +139,7 @@ h1 span{color:var(--accent)}
           <span class="diag-title">🔍 Diagnostic Mode (run this first!)</span>
         </label>
         <div class="diag-desc">
-          Before activating features, run a diagnostic pass first. This replaces <code>copie_scr.sh</code> with a probe that writes <code>pcm_debug.log</code> back to the USB — QNX version, PCM firmware build, HDD layout, SMART data, existing activation files, and whether the copy into <code>/HBpersistence/</code> actually worked. Insert USB, wait 60 sec, remove, and check the log.
+          Read-only system probe — no changes are made to the car. Writes <code>pcm_debug.log</code> to USB with QNX version, PCM firmware, HDD layout, existing activation files. Also <strong>backs up your current <code>PagSWAct.002</code></strong> to the USB stick as <code>PagSWAct_backup.002</code>. No features needed — just check this box and write to USB.
         </div>
       </div>
       <div id="fg"></div>
@@ -282,9 +282,9 @@ function gen(){
 function sf(){const ids=new Set();document.querySelectorAll('.ft input:checked').forEach(c=>ids.add(c.dataset.f));return CC.filter(f=>ids.has(f.id))}
 const BOOTSTRAP="#!/bin/ksh\n# PCM-Forge USB bootstrap for PCM 3.1\nexport SDPATH=$1\nexport PATH=${PATH}:${SDPATH}/bin\nmount -u $SDPATH\ncd $SDPATH\nexec ksh ./run.sh $SDPATH\n";
 
-const RUN_ACTIVATE='#!/bin/ksh\n# PCM-Forge activation — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nif [ -f /HBpersistence/PagSWAct.002 ]; then\n    cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>/dev/null\nfi\nif [ -f "${USBROOT}/PagSWAct.002" ]; then\n    cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n    touch /HBpersistence/DBGModeActive 2>&1\nfi\necho "PCM-Forge done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
+const RUN_ACTIVATE='#!/bin/ksh\n# PCM-Forge activation — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nif [ -f /HBpersistence/PagSWAct.002 ]; then\n    cp /HBpersistence/PagSWAct.002 /HBpersistence/PagSWAct.002.bak 2>/dev/null\n    cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>/dev/null\nfi\nif [ -f "${USBROOT}/PagSWAct.002" ]; then\n    cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n    touch /HBpersistence/DBGModeActive 2>&1\nfi\necho "PCM-Forge done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
 
-const RUN_DIAG='#!/bin/ksh\n# PCM-Forge Diagnostic — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nLOG="${USBROOT}/pcm_debug.log"\n{\n    echo "=== PCM-Forge diagnostic ==="\n    echo "PID: $$"\n    echo "USBROOT: $USBROOT"\n    echo ""\n    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n    echo ""\n    echo "=== IFS Build Timestamps ==="\n    ls -la /proc/boot/.script 2>&1\n    ls -la /mnt/ifs1/HBbin/proc_scriptlauncher 2>&1\n    echo ""\n    echo "=== Existing Activation Files ==="\n    ls -la /HBpersistence/PagSWAct* 2>&1\n    ls -la /HBpersistence/DBGModeActive 2>&1\n    ls -la /HBpersistence/incar 2>&1\n    ls -la /HBpersistence/CustomBootscreen* 2>&1\n    echo ""\n    echo "=== Backup PagSWAct.002 ==="\n    if [ -f /HBpersistence/PagSWAct.002 ]; then\n        cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>&1\n        echo "Backed up to USB"\n        echo "--- hex dump ---"\n        od -A x -t x1z -v /HBpersistence/PagSWAct.002 2>&1\n    else\n        echo "not present"\n    fi\n    echo ""\n    echo "=== mount ==="\n    mount 2>&1\n    echo ""\n    echo "=== Disk Usage ==="\n    df 2>&1\n    echo ""\n    echo "=== HDD Partition Table ==="\n    fdisk /dev/hd0 show 2>&1\n    echo ""\n    echo "=== / ==="\n    ls -la / 2>&1\n    echo ""\n    echo "=== /fs ==="\n    ls -la /fs 2>&1\n    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n    echo ""\n    echo "=== /HBpersistence/QNXTools ==="\n    ls -la /HBpersistence/QNXTools/ 2>&1\n    echo ""\n    echo "=== /mnt/data ==="\n    ls -la /mnt/data/ 2>&1\n    echo ""\n    echo "=== /mnt/data/tools ==="\n    ls -la /mnt/data/tools/ 2>&1\n    echo ""\n    echo "=== /mnt/share ==="\n    ls -la /mnt/share/ 2>&1\n    echo ""\n    echo "=== ps ==="\n    pidin 2>&1\n    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n    echo ""\n    echo "=== USBROOT contents ==="\n    ls -la "$USBROOT" 2>&1\n    echo ""\n    echo "=== Activation attempt ==="\n    if [ -f "${USBROOT}/PagSWAct.002" ]; then\n        echo "Source: $(ls -l ${USBROOT}/PagSWAct.002)"\n        cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n        echo "cp rc: $?"\n        touch /HBpersistence/DBGModeActive 2>&1\n        echo "touch rc: $?"\n        echo "--- /HBpersistence after ---"\n        ls -la /HBpersistence/PagSWAct* 2>&1\n        ls -la /HBpersistence/DBGModeActive 2>&1\n    else\n        echo "PagSWAct.002 not on USB - diagnostic only"\n    fi\n    echo ""\n    echo "=== Done ==="\n} > "$LOG" 2>&1\necho "PCM-Forge diag done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
+const RUN_DIAG='#!/bin/ksh\n# PCM-Forge Diagnostic — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nLOG="${USBROOT}/pcm_debug.log"\n{\n    echo "=== PCM-Forge diagnostic ==="\n    echo "PID: $$"\n    echo "USBROOT: $USBROOT"\n    echo ""\n    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n    echo ""\n    echo "=== IFS Build Timestamps ==="\n    ls -la /proc/boot/.script 2>&1\n    ls -la /mnt/ifs1/HBbin/proc_scriptlauncher 2>&1\n    echo ""\n    echo "=== Existing Activation Files ==="\n    ls -la /HBpersistence/PagSWAct* 2>&1\n    ls -la /HBpersistence/DBGModeActive 2>&1\n    ls -la /HBpersistence/incar 2>&1\n    ls -la /HBpersistence/CustomBootscreen* 2>&1\n    echo ""\n    echo "=== Backup PagSWAct.002 ==="\n    if [ -f /HBpersistence/PagSWAct.002 ]; then\n        cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>&1\n        echo "Backed up to USB"\n        echo "--- hex dump ---"\n        od -A x -t x1z -v /HBpersistence/PagSWAct.002 2>&1\n    else\n        echo "not present"\n    fi\n    echo ""\n    echo "=== mount ==="\n    mount 2>&1\n    echo ""\n    echo "=== Disk Usage ==="\n    df 2>&1\n    echo ""\n    echo "=== HDD Partition Table ==="\n    fdisk /dev/hd0 show 2>&1\n    echo ""\n    echo "=== / ==="\n    ls -la / 2>&1\n    echo ""\n    echo "=== /fs ==="\n    ls -la /fs 2>&1\n    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n    echo ""\n    echo "=== /HBpersistence/QNXTools ==="\n    ls -la /HBpersistence/QNXTools/ 2>&1\n    echo ""\n    echo "=== /mnt/data ==="\n    ls -la /mnt/data/ 2>&1\n    echo ""\n    echo "=== /mnt/data/tools ==="\n    ls -la /mnt/data/tools/ 2>&1\n    echo ""\n    echo "=== /mnt/share ==="\n    ls -la /mnt/share/ 2>&1\n    echo ""\n    echo "=== ps ==="\n    pidin 2>&1\n    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n    echo ""\n    echo "=== USBROOT contents ==="\n    ls -la "$USBROOT" 2>&1\n    echo ""\n    echo "=== Done ==="\n} > "$LOG" 2>&1\necho "PCM-Forge diag done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
 
 // XOR PRNG cipher — matches proc_scriptlauncher in MMI3G/PCM3.1 firmware
 // Ported from MMI3G-Toolkit builder/encoder.py (Harman Becker L. Koslowski 2008)
@@ -316,19 +316,23 @@ function toggleDiag(){
   if (isDiag()) box.classList.add('diag-active'); else box.classList.remove('diag-active');
 }
 async function writeUsb(){
-  const s=document.getElementById('sm');if(!CV)return;const fs=sf();
-  if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}
+  const s=document.getElementById('sm');if(!CV){s.className='sm bad';s.textContent='\u26a0 Enter a VIN first';return}
+  const fs=sf();const diag=isDiag();
+  if(!diag && !fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature, or enable Diagnostic Mode';return}
   if(!('showDirectoryPicker' in window)){s.className='sm bad';s.textContent='\u26a0 Use Chrome/Edge for direct write, or download files instead.';return}
   try{
     const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
-    const d=bp(CV,fs);
-    let fh=await dh.getFileHandle('PagSWAct.002',{create:true}),w=await fh.createWritable();await w.write(d);await w.close();
     const enc=encodeBootstrap();
-    fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(enc);await w.close();
+    let fh=await dh.getFileHandle('copie_scr.sh',{create:true}),w=await fh.createWritable();await w.write(enc);await w.close();
     const run=currentRunSh();
     fh=await dh.getFileHandle('run.sh',{create:true});w=await fh.createWritable();await w.write(run);await w.close();
-    const mode = isDiag() ? ' (DIAGNOSTIC mode)' : '';
-    s.className='sm ok';s.textContent=`\u2713 Written 3 files \u2192 ${dh.name}/ (${fs.length} features)${mode}`;
+    if(!diag && fs.length){
+      const d=bp(CV,fs);
+      fh=await dh.getFileHandle('PagSWAct.002',{create:true});w=await fh.createWritable();await w.write(d);await w.close();
+      s.className='sm ok';s.textContent=`\u2713 Written 3 files \u2192 ${dh.name}/ (${fs.length} features) \u2014 existing PagSWAct.002 will be backed up as .bak`;
+    } else {
+      s.className='sm ok';s.textContent=`\u2713 Written copie_scr.sh + run.sh \u2192 ${dh.name}/ (DIAGNOSTIC ONLY \u2014 no changes to car, backs up PagSWAct.002 to USB)`;
+    }
   }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='\u26a0 '+e.message}
 }
 function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
