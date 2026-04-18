@@ -126,12 +126,12 @@ h1 span{color:var(--accent)}
       <div class="dl-row"><button class="btn btn-accent" onclick="dlTxt()">↓ Export all codes as .txt</button></div>
     </div>
     <div class="view" id="view-usb">
-      <p class="usb-intro">Build a USB activation stick. Select features, download both files, copy to <strong>FAT32 USB</strong>.</p>
+      <p class="usb-intro">Build a USB activation stick. Select features, download all three files, copy to <strong>FAT32 USB</strong>.</p>
       <div class="usb-steps">
         <span class="num">1</span><span class="step">Pick your model above (for FeatureLevel / boot logo)</span>
         <span class="num">2</span><span class="step">Check features you want to activate</span>
-        <span class="num">3</span><span class="step">Download <code>PagSWAct.002</code> and <code>copie_scr.sh</code></span>
-        <span class="num">4</span><span class="step">Copy both to USB root — insert → ignition on → wait 60 sec → cycle</span>
+        <span class="num">3</span><span class="step">Download <code>copie_scr.sh</code> + <code>run.sh</code> + <code>PagSWAct.002</code></span>
+        <span class="num">4</span><span class="step">Copy all three to USB root — insert → ignition on → wait 60 sec → cycle ignition</span>
       </div>
       <div class="diag-box" id="diag-box">
         <label class="diag-head" for="diag-chk">
@@ -144,9 +144,10 @@ h1 span{color:var(--accent)}
       </div>
       <div id="fg"></div>
       <div class="ua">
-        <button class="btn btn-usb" onclick="writeUsb()">📁 Write Both to USB</button>
+        <button class="btn btn-usb" onclick="writeUsb()">📁 Write All to USB</button>
         <button class="btn btn-accent" onclick="dlBin()">↓ PagSWAct.002</button>
         <button class="btn btn-accent" onclick="dlScr()">↓ copie_scr.sh</button>
+        <button class="btn btn-accent" onclick="dlRun()">↓ run.sh</button>
       </div>
       <div class="diag-callout">
         <strong>After you run the diagnostic USB</strong>
@@ -279,178 +280,11 @@ function gen(){
   document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function sf(){const ids=new Set();document.querySelectorAll('.ft input:checked').forEach(c=>ids.add(c.dataset.f));return CC.filter(f=>ids.has(f.id))}
-const COPIE="#!/bin/ksh\n# PCM-Forge \u2014 https://github.com/dspl1236/PCM-Forge\nfor USBPATH in /fs/usb0 /fs/usb1 /fs/usb /media/usb0; do\n    [ -f \"${USBPATH}/PagSWAct.002\" ] && break\ndone\n[ -f \"${USBPATH}/PagSWAct.002\" ] && cp \"${USBPATH}/PagSWAct.002\" /HBpersistence/PagSWAct.002\ntouch /HBpersistence/DBGModeActive\nsync\n";
+const BOOTSTRAP="#!/bin/ksh\n# PCM-Forge USB bootstrap for PCM 3.1\nexport SDPATH=$1\nexport PATH=${PATH}:${SDPATH}/bin\nmount -u $SDPATH\ncd $SDPATH\nexec ksh ./run.sh $SDPATH\n";
 
-// Diagnostic-mode copie_scr.sh — writes pcm_debug.log back to USB so we can
-// see what the PCM actually does. Still attempts the activation copy at the
-// end so you can test both in one run.
-const COPIE_DIAG = "#!/bin/ksh\n\
-# PCM-Forge DIAGNOSTIC MODE - writes log back to USB\n\
-# https://github.com/dspl1236/PCM-Forge\n\
-USBROOT=\"\"\n\
-for p in /fs/usb0 /fs/usb1 /fs/usb /media/usb0 /mnt/usb0 /fs/hd0/usb0; do\n\
-    [ -d \"$p\" ] && USBROOT=\"$p\" && break\n\
-done\n\
-if [ -z \"$USBROOT\" ]; then\n\
-    for p in /fs/*; do\n\
-        if [ -d \"$p\" ] && [ -f \"$p/copie_scr.sh\" ]; then\n\
-            USBROOT=\"$p\"\n\
-            break\n\
-        fi\n\
-    done\n\
-fi\n\
-[ -z \"$USBROOT\" ] && USBROOT=\"/fs/usb0\"\n\
-LOG=\"${USBROOT}/pcm_debug.log\"\n\
-{\n\
-    echo \"=== PCM-Forge diagnostic ===\"\n\
-    echo \"Started: $(date 2>/dev/null || echo unknown)\"\n\
-    echo \"PID: $$\"\n\
-    echo \"PWD: $(pwd 2>/dev/null)\"\n\
-    echo \"USBROOT: $USBROOT\"\n\
-    echo \"\"\n\
-    echo \"=== System ID ===\"\n\
-    uname -a 2>&1\n\
-    cat /proc/version 2>&1\n\
-    cat /etc/qnx-version 2>&1\n\
-    cat /etc/qnx_version 2>&1\n\
-    hostname 2>&1\n\
-    echo \"\"\n\
-    echo \"=== PCM Version ===\"\n\
-    cat /mnt/ifs1/HBproject/version.txt 2>&1\n\
-    cat /HBproject/version.txt 2>&1\n\
-    cat /dev/shmem/sw_trainname.txt 2>&1\n\
-    cat /dev/shmem/hw_version.txt 2>&1\n\
-    echo \"\"\n\
-    echo \"=== IFS Build Timestamps ===\"\n\
-    ls -la /proc/boot/.script 2>&1\n\
-    ls -la /mnt/ifs1/HBproject/PCM3Root 2>&1\n\
-    ls -la /HBproject/PCM3Root 2>&1\n\
-    ls -la /mnt/ifs1/HBbin/proc_scriptlauncher 2>&1\n\
-    ls -la /HBbin/proc_scriptlauncher 2>&1\n\
-    echo \"\"\n\
-    echo \"=== Existing Activation Files ===\"\n\
-    ls -la /HBpersistence/PagSWAct* 2>&1\n\
-    ls -la /HBpersistence/CustomBootscreen* 2>&1\n\
-    ls -la /HBpersistence/DBGModeActive 2>&1\n\
-    ls -la /HBpersistence/incar 2>&1\n\
-    echo \"\"\n\
-    echo \"=== CPU ===\"\n\
-    cat /proc/cpuinfo 2>&1 | head -20\n\
-    echo \"\"\n\
-    echo \"=== Env ===\"\n\
-    set 2>&1 | head -30\n\
-    echo \"\"\n\
-    echo \"=== / ===\"\n\
-    ls -la / 2>&1\n\
-    echo \"\"\n\
-    echo \"=== /fs ===\"\n\
-    ls -la /fs 2>&1\n\
-    echo \"\"\n\
-    echo \"=== USBROOT contents ===\"\n\
-    ls -la \"$USBROOT\" 2>&1\n\
-    echo \"\"\n\
-    echo \"=== /HBpersistence ===\"\n\
-    ls -la /HBpersistence/ 2>&1\n\
-    echo \"\"\n\
-    echo \"=== Existing PagSWAct.002 ===\"\n\
-    if [ -f /HBpersistence/PagSWAct.002 ]; then\n\
-        ls -l /HBpersistence/PagSWAct.002 2>&1\n\
-        od -A x -t x1z -v /HBpersistence/PagSWAct.002 2>&1 | head -40\n\
-    else\n\
-        echo \"not present\"\n\
-    fi\n\
-    echo \"\"\n\
-    echo \"=== DBGModeActive ===\"\n\
-    ls -la /HBpersistence/DBGModeActive 2>&1\n\
-    echo \"\"\n\
-    echo \"=== mount ===\"\n\
-    mount 2>&1\n\
-    echo \"\"\n\
-    echo \"=== Disk Usage ===\"\n\
-    df -h 2>&1 || df 2>&1\n\
-    echo \"\"\n\
-    echo \"=== HDD Partition Table ===\"\n\
-    fdisk /dev/hd0 show 2>&1\n\
-    echo \"\"\n\
-    echo \"=== HDD SMART Data ===\"\n\
-    /HBbin/readsmart 2>&1 | head -30\n\
-    /mnt/data/tools/readsmart 2>&1 | head -30\n\
-    echo \"\"\n\
-    echo \"=== HDD Top-Level Layout ===\"\n\
-    for part in /dev/hd0t77 /dev/hd0t78 /dev/hd0t79 /dev/hd0t80 /dev/hd0t81; do\n\
-        mnt=$(mount 2>/dev/null | grep \"$part\" | awk '{print $1}')\n\
-        if [ -n \"$mnt\" ]; then\n\
-            echo \"--- $part mounted at $mnt ---\"\n\
-            ls -la \"$mnt\" 2>&1 | head -25\n\
-            du -sh \"$mnt\"/* 2>&1 | head -20\n\
-        else\n\
-            echo \"--- $part not mounted ---\"\n\
-        fi\n\
-    done\n\
-    echo \"\"\n\
-    echo \"=== HDD Data Directories ===\"\n\
-    for d in /mnt/data /mnt/share /HBdata /HBproject /mnt/data/tools; do\n\
-        if [ -d \"$d\" ]; then\n\
-            echo \"--- $d ---\"\n\
-            ls -la \"$d\" 2>&1 | head -20\n\
-        fi\n\
-    done\n\
-    echo \"\"\n\
-    echo \"=== Nav Database ===\"\n\
-    ls -la /mnt/data/nav* 2>&1 | head -10\n\
-    ls -la /mnt/share/nav* 2>&1 | head -10\n\
-    ls -la /HBdata/nav* 2>&1 | head -10\n\
-    echo \"\"\n\
-    echo \"=== Browser + Tools on HDD ===\"\n\
-    ls -la /mnt/share/Browser/ 2>&1 | head -10\n\
-    ls -la /mnt/data/tools/ 2>&1 | head -15\n\
-    echo \"\"\n\
-    echo \"=== ps ===\"\n\
-    ps -ef 2>&1 | head -80\n\
-    ps 2>&1 | head -40\n\
-    echo \"\"\n\
-    echo \"=== Key dirs ===\"\n\
-    for d in /etc /opt /var /scripts /bin /sbin /usr/bin /HBpersistence; do\n\
-        echo \"--- $d ---\"\n\
-        ls -la \"$d\" 2>&1 | head -15\n\
-    done\n\
-    echo \"\"\n\
-    echo \"=== /mnt /media /fs/hd0 /fs/sd0 ===\"\n\
-    for d in /mnt /media /fs/hd0 /fs/hd1 /fs/sd0 /fs/disk; do\n\
-        [ -d \"$d\" ] && { echo \"--- $d ---\"; ls -la \"$d\" 2>&1 | head -10; }\n\
-    done\n\
-    echo \"\"\n\
-    echo \"=== Log destinations ===\"\n\
-    for f in /var/log/messages /var/log/syslog /tmp/messages /dev/shmem/sw_trainname.txt /dev/shmem/hw_version.txt; do\n\
-        [ -f \"$f\" ] && { echo \"--- $f ---\"; tail -20 \"$f\" 2>&1; }\n\
-    done\n\
-    echo \"\"\n\
-    echo \"=== Network ===\"\n\
-    ifconfig -a 2>&1 | head -30\n\
-    echo \"\"\n\
-    echo \"=== medialauncher ===\"\n\
-    ls -la /dev/medialauncher 2>&1\n\
-    ps -ef 2>&1 | grep -i 'script\\|media\\|launcher\\|usb' | grep -v grep\n\
-    echo \"\"\n\
-    echo \"=== Activation attempt ===\"\n\
-    if [ -f \"${USBROOT}/PagSWAct.002\" ]; then\n\
-        echo \"Source size: $(ls -l ${USBROOT}/PagSWAct.002 | awk '{print $5}')\"\n\
-        cp -v \"${USBROOT}/PagSWAct.002\" /HBpersistence/PagSWAct.002 2>&1\n\
-        echo \"cp rc: $?\"\n\
-        touch /HBpersistence/DBGModeActive 2>&1\n\
-        echo \"touch rc: $?\"\n\
-        sync\n\
-        echo \"--- /HBpersistence after ---\"\n\
-        ls -la /HBpersistence/ 2>&1\n\
-    else\n\
-        echo \"source not on USB\"\n\
-    fi\n\
-    echo \"\"\n\
-    echo \"=== Done: $(date 2>/dev/null || echo now) ===\"\n\
-} > \"$LOG\" 2>&1\n\
-sync\n\
-echo \"PCM-Forge diag ran at: $(date 2>/dev/null)\" > \"${USBROOT}/pcm_ran.txt\" 2>/dev/null\n\
-sync\n";
+const RUN_ACTIVATE='#!/bin/ksh\n# PCM-Forge activation — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nif [ -f /HBpersistence/PagSWAct.002 ]; then\n    cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>/dev/null\nfi\nif [ -f "${USBROOT}/PagSWAct.002" ]; then\n    cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n    touch /HBpersistence/DBGModeActive 2>&1\nfi\necho "PCM-Forge done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
+
+const RUN_DIAG='#!/bin/ksh\n# PCM-Forge Diagnostic — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nLOG="${USBROOT}/pcm_debug.log"\n{\n    echo "=== PCM-Forge diagnostic ==="\n    echo "PID: $$"\n    echo "USBROOT: $USBROOT"\n    echo ""\n    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n    echo ""\n    echo "=== IFS Build Timestamps ==="\n    ls -la /proc/boot/.script 2>&1\n    ls -la /mnt/ifs1/HBbin/proc_scriptlauncher 2>&1\n    echo ""\n    echo "=== Existing Activation Files ==="\n    ls -la /HBpersistence/PagSWAct* 2>&1\n    ls -la /HBpersistence/DBGModeActive 2>&1\n    ls -la /HBpersistence/incar 2>&1\n    ls -la /HBpersistence/CustomBootscreen* 2>&1\n    echo ""\n    echo "=== Backup PagSWAct.002 ==="\n    if [ -f /HBpersistence/PagSWAct.002 ]; then\n        cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>&1\n        echo "Backed up to USB"\n        echo "--- hex dump ---"\n        od -A x -t x1z -v /HBpersistence/PagSWAct.002 2>&1\n    else\n        echo "not present"\n    fi\n    echo ""\n    echo "=== mount ==="\n    mount 2>&1\n    echo ""\n    echo "=== Disk Usage ==="\n    df 2>&1\n    echo ""\n    echo "=== HDD Partition Table ==="\n    fdisk /dev/hd0 show 2>&1\n    echo ""\n    echo "=== / ==="\n    ls -la / 2>&1\n    echo ""\n    echo "=== /fs ==="\n    ls -la /fs 2>&1\n    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n    echo ""\n    echo "=== /HBpersistence/QNXTools ==="\n    ls -la /HBpersistence/QNXTools/ 2>&1\n    echo ""\n    echo "=== /mnt/data ==="\n    ls -la /mnt/data/ 2>&1\n    echo ""\n    echo "=== /mnt/data/tools ==="\n    ls -la /mnt/data/tools/ 2>&1\n    echo ""\n    echo "=== /mnt/share ==="\n    ls -la /mnt/share/ 2>&1\n    echo ""\n    echo "=== ps ==="\n    pidin 2>&1\n    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n    echo ""\n    echo "=== USBROOT contents ==="\n    ls -la "$USBROOT" 2>&1\n    echo ""\n    echo "=== Activation attempt ==="\n    if [ -f "${USBROOT}/PagSWAct.002" ]; then\n        echo "Source: $(ls -l ${USBROOT}/PagSWAct.002)"\n        cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n        echo "cp rc: $?"\n        touch /HBpersistence/DBGModeActive 2>&1\n        echo "touch rc: $?"\n        echo "--- /HBpersistence after ---"\n        ls -la /HBpersistence/PagSWAct* 2>&1\n        ls -la /HBpersistence/DBGModeActive 2>&1\n    else\n        echo "PagSWAct.002 not on USB - diagnostic only"\n    fi\n    echo ""\n    echo "=== Done ==="\n} > "$LOG" 2>&1\necho "PCM-Forge diag done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
 
 // XOR PRNG cipher — matches proc_scriptlauncher in MMI3G/PCM3.1 firmware
 // Ported from MMI3G-Toolkit builder/encoder.py (Harman Becker L. Koslowski 2008)
@@ -470,14 +304,13 @@ function xorEncode(plainBytes){
   for(let i=0;i<plainBytes.length;i++) out[i]=plainBytes[i]^(prng()&0xFF);
   return out;
 }
-function encodeScript(){
-  const plain=currentScript();
-  const bytes=new TextEncoder().encode(plain.replace(/\r\n/g,'\n'));
+function encodeBootstrap(){
+  const bytes=new TextEncoder().encode(BOOTSTRAP.replace(/\r\n/g,'\n'));
   return xorEncode(bytes);
 }
+function currentRunSh(){return isDiag() ? RUN_DIAG : RUN_ACTIVATE}
 
 function isDiag(){return document.getElementById('diag-chk') && document.getElementById('diag-chk').checked}
-function currentScript(){return isDiag() ? COPIE_DIAG : COPIE}
 function toggleDiag(){
   const box = document.getElementById('diag-box');
   if (isDiag()) box.classList.add('diag-active'); else box.classList.remove('diag-active');
@@ -490,14 +323,17 @@ async function writeUsb(){
     const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
     const d=bp(CV,fs);
     let fh=await dh.getFileHandle('PagSWAct.002',{create:true}),w=await fh.createWritable();await w.write(d);await w.close();
-    const enc=encodeScript();
+    const enc=encodeBootstrap();
     fh=await dh.getFileHandle('copie_scr.sh',{create:true});w=await fh.createWritable();await w.write(enc);await w.close();
-    const mode = isDiag() ? ' (DIAGNOSTIC mode \u2014 log will write to pcm_debug.log on USB)' : '';
-    s.className='sm ok';s.textContent=`\u2713 Written PagSWAct.002 + copie_scr.sh (XOR encoded) \u2192 ${dh.name}/ (${fs.length} feature${fs.length>1?'s':''})${mode}`;
+    const run=currentRunSh();
+    fh=await dh.getFileHandle('run.sh',{create:true});w=await fh.createWritable();await w.write(run);await w.close();
+    const mode = isDiag() ? ' (DIAGNOSTIC mode)' : '';
+    s.className='sm ok';s.textContent=`\u2713 Written 3 files \u2192 ${dh.name}/ (${fs.length} features)${mode}`;
   }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='\u26a0 '+e.message}
 }
 function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
-function dlScr(){const enc=encodeScript();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();const mode = isDiag() ? ' \u2014 DIAGNOSTIC version (writes pcm_debug.log to USB)' : ' \u2014 place in USB root alongside PagSWAct.002';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh (XOR encoded, '+enc.length+' bytes)'+mode}
+function dlScr(){const enc=encodeBootstrap();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh (XOR encoded bootstrap, '+enc.length+' bytes)'}
+function dlRun(){const run=currentRunSh();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([run],{type:'application/octet-stream'}));a.download='run.sh';a.click();const mode=isDiag()?'DIAGNOSTIC':'activation';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded run.sh ('+mode+', '+run.length+' bytes)'}
 function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPTIONAL FEATURES',nav:'NAVIGATION DATABASES'};let t=`PCM-Forge \u2014 Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(55)}\n`;let lc='';for(const c of CC){if(c.cat!==lc){t+=`\n  ${cats[c.cat]}\n`;lc=c.cat}t+=`  ${c.nm.padEnd(22)} ${c.code}\n`}t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
 function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
 document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
