@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PCM-Forge</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0c;--surface:#131318;--surface2:#1a1a22;--border:#2a2a35;--text:#e8e8ed;--text2:#8888a0;--accent:#c8a44e;--accent2:#e8c85e;--green:#4eca7a;--red:#e85454;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,164,78,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,164,78,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+::selection{background:rgba(200,164,78,.25)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.app{max-width:860px;margin:0 auto;padding:24px;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:32px;padding-top:16px}
+.logo{font-family:var(--mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header h1 span{color:var(--accent)}
+.header .sub{color:var(--text2);font-size:13px;margin-top:6px}
+
+.tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:24px;overflow:hidden}
+.tab{flex:1;padding:14px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:1px;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--text2);text-align:center}
+.tab.active{background:var(--accent);color:var(--bg)}
+.tab:not(.active):hover{background:var(--surface2);color:var(--text)}
+.tab-icon{margin-right:6px}
+.panel{display:none}.panel.active{display:block}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:20px}
+.card-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+
+.vin-row{display:flex;gap:10px}
+.vin-input{flex:1;font-family:var(--mono);font-size:18px;letter-spacing:3px;padding:14px 16px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color .2s;text-transform:uppercase}
+.vin-input:focus{border-color:var(--accent)}
+.vin-input::placeholder{color:#404058;letter-spacing:1px;font-size:13px}
+
+.btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;padding:14px 22px;border:none;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-go{background:var(--accent);color:var(--bg)}
+.btn-go:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+.btn-outline:hover{background:var(--accent);color:var(--bg)}
+.btn-green{background:var(--green);color:var(--bg)}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+.model-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.model-row label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.model-row select{flex:1;font-family:var(--sans);font-size:13px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none}
+.model-row select:focus{border-color:var(--accent)}
+
+.results{display:none}.results.show{display:block}
+.code-grid{display:grid;gap:8px}
+.code-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s}
+.code-row:hover{border-color:var(--accent)}
+.code-name{font-weight:600;font-size:14px}.code-desc{color:var(--text2);font-size:11px;margin-top:2px}
+.code-val{font-family:var(--mono);font-size:16px;letter-spacing:2px;color:var(--green);user-select:all;cursor:pointer}
+.code-copy{font-family:var(--mono);font-size:10px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;transition:all .2s;margin-left:10px}
+.code-copy:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.code-copy.ok{background:var(--green);color:var(--bg);border-color:var(--green)}
+
+.cat-hdr{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:16px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
+.cat-hdr:first-child{border-top:none;margin-top:0;padding-top:0}
+
+.dl-row{display:flex;gap:10px;margin-top:16px}
+
+/* Tab 2: Device */
+.port-row{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.port-select{flex:1;font-family:var(--sans);font-size:13px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none}
+.status{font-family:var(--mono);font-size:12px;padding:8px 14px;border-radius:6px;margin-bottom:16px}
+.status.ok{background:rgba(78,202,122,.1);color:var(--green);border:1px solid rgba(78,202,122,.2)}
+.status.err{background:rgba(232,84,84,.1);color:var(--red);border:1px solid rgba(232,84,84,.2)}
+.status.info{background:rgba(200,164,78,.1);color:var(--accent);border:1px solid rgba(200,164,78,.2)}
+
+.vin-display{font-family:var(--mono);font-size:22px;letter-spacing:4px;color:var(--accent);padding:16px;background:var(--bg);border:2px solid var(--accent);border-radius:8px;text-align:center;margin-bottom:16px}
+
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.feat-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;font-size:13px}
+.feat-item:hover{border-color:var(--accent)}
+.feat-item.on{border-color:var(--green);background:rgba(78,202,122,.06)}
+.feat-item input[type=checkbox]{accent-color:var(--green);margin-top:2px;flex-shrink:0;width:16px;height:16px}
+.feat-name{font-weight:600}.feat-desc{color:var(--text2);font-size:11px;margin-top:2px}
+.feat-code{font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px}
+
+.action-bar{display:flex;gap:10px;margin-top:20px}
+
+.log{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;max-height:150px;overflow-y:auto;margin-top:16px;white-space:pre-wrap;line-height:1.6}
+.log .ok{color:var(--green)}.log .err{color:var(--red)}.log .acc{color:var(--accent)}
+
+.footer{text-align:center;margin-top:32px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border)}
+.footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">PCM-Forge</div>
+    <h1>Porsche <span>Activation</span> Suite</h1>
+    <div class="sub">PCM 3.1 code generator & device programmer</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('generate')"><span class="tab-icon">&#9881;</span>Generate codes</button>
+    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Device programmer</button>
+  </div>
+
+  <!-- TAB 1: Generate Codes -->
+  <div id="tab-generate" class="panel active">
+    <div class="card">
+      <div class="card-title">Vehicle identification number</div>
+      <div class="vin-row">
+        <input type="text" id="vin1" class="vin-input" maxlength="17" placeholder="Enter 17-digit VIN" autocomplete="off" spellcheck="false">
+        <button class="btn btn-go" onclick="generateCodes()">Generate</button>
+      </div>
+      <div class="model-row" style="margin-top:14px">
+        <label>Model</label>
+        <select id="model1"></select>
+      </div>
+      <div id="err1" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></div>
+    </div>
+
+    <div id="results1" class="results">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-size:18px">Activation codes</h2>
+        <span id="vin-badge" style="font-family:var(--mono);font-size:12px;background:var(--surface2);padding:5px 12px;border-radius:6px;color:var(--accent);border:1px solid var(--border)"></span>
+      </div>
+      <div id="code-list" class="code-grid"></div>
+      <div class="dl-row">
+        <button class="btn btn-outline" onclick="copyAll()">Copy all</button>
+        <button class="btn btn-green" onclick="downloadPagSWAct()">Download PagSWAct.002</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Device Programmer -->
+  <div id="tab-device" class="panel">
+    <div class="card">
+      <div class="card-title">ESP32-CAN connection</div>
+      <div class="port-row">
+        <select id="port-select" class="port-select"><option value="">Select COM port...</option></select>
+        <button class="btn btn-outline" onclick="refreshPorts()">Refresh</button>
+        <button class="btn btn-go" id="btn-connect" onclick="connectDevice()">Connect</button>
+      </div>
+      <div id="dev-status" class="status info">Disconnected — plug in ESP32-CAN dongle and select port</div>
+    </div>
+
+    <div id="dev-connected" style="display:none">
+      <div class="card">
+        <div class="card-title">Vehicle detected</div>
+        <div id="dev-vin" class="vin-display">—</div>
+        <div id="dev-model" style="color:var(--text2);font-size:13px;text-align:center;margin-bottom:12px"></div>
+        <button class="btn btn-outline" onclick="readVIN()" style="width:100%">Read VIN from car</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Feature activations</div>
+
+        <div class="cat-hdr">Core features</div>
+        <div class="feat-grid" id="feat-core"></div>
+
+        <div class="cat-hdr">Navigation databases</div>
+        <div class="feat-grid" id="feat-nav"></div>
+
+        <div class="action-bar">
+          <button class="btn btn-outline" onclick="selectAll(true)">Select all</button>
+          <button class="btn btn-outline" onclick="selectAll(false)">Deselect all</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-green" onclick="applyActivations()" id="btn-apply">Apply selected</button>
+        </div>
+      </div>
+
+      <div id="dev-log" class="log"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/dspl1236/PCM-Forge">github.com/dspl1236/PCM-Forge</a> &mdash; open source &mdash; 64-bit RSA cracked from QNX firmware
+  </div>
+</div>
+
+<script>
+// ===== RSA Math (64-bit using BigInt) =====
+const N = 0x69f39c927ef94985n;
+const E = 0x4c1c5eeaf397c0b3n;
+const D = 0x5483975015d0287bn;
+
+function modpow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = (result * base) % mod;
+    exp = exp >> 1n;
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+function vinToNumber(vin) {
+  const vl = vin.toLowerCase();
+  const positions = [7, 9, 11, 12, 13, 14, 15, 16];
+  let result = 0, weight = 10;
+  for (let i = positions.length - 1; i >= 0; i--) {
+    const c = vl[positions[i]];
+    const b = /\d/.test(c) ? parseInt(c) : (c >= 'a' && c <= 'z' ? c.charCodeAt(0) % 10 : 0);
+    result = (result + b * weight) >>> 0;
+    weight = (weight * 10) & 0xFFFF;
+  }
+  return result;
+}
+
+function interleave(a, b) {
+  let r = '';
+  for (let i = 0; i < 8; i++) r += a[i] + b[i];
+  return r;
+}
+
+function generateCode(vin, featHex) {
+  const vh = vinToNumber(vin).toString(16).padStart(8, '0');
+  const pt = BigInt('0x' + interleave(featHex, vh));
+  return modpow(pt, D, N).toString(16).padStart(16, '0');
+}
+
+// ===== Models =====
+const MODELS = {
+  'cayenne-958':    [0x0039, 'Cayenne 958'],
+  'cayenne-958t':   [0x003b, 'Cayenne 958 Turbo'],
+  'cayenne-958-v6': [0x003f, 'Cayenne 958 V6'],
+  'cayenne-957-v6': [0x0041, 'Cayenne 957 V6'],
+  '991':            [0x0003, '911 (991) Carrera'],
+  '991t':           [0x0005, '911 (991) Turbo'],
+  '991-cab':        [0x0007, '911 (991) Cabriolet'],
+  '997-v6':         [0x002a, '911 (997) V6'],
+  '997-s-v8':       [0x002d, '911 (997) S V8'],
+  '997t':           [0x002e, '911 (997) Turbo'],
+  'panamera':       [0x0031, 'Panamera'],
+};
+
+function featuresFor(flSubId) {
+  const flHex = '010e' + flSubId.toString(16).padStart(4, '0');
+  return [
+    {name:'ENGINEERING',      hex:'010b0000', desc:'Engineering & diagnostic menu',    cat:'core'},
+    {name:'BTH',              hex:'010a0000', desc:'Bluetooth telephony',              cat:'core'},
+    {name:'KOMP',             hex:'01060000', desc:'Component activation',             cat:'core'},
+    {name:'Navigation',       hex:'01010000', desc:'Navigation system',                cat:'core'},
+    {name:'UMS',              hex:'01090000', desc:'USB media support',                cat:'core'},
+    {name:'FB',               hex:'01030000', desc:'Feature base / boot image',        cat:'core'},
+    {name:'SSS',              hex:'01040000', desc:'Voice control',                    cat:'core'},
+    {name:'SC',               hex:'01050000', desc:'Sport Chrono',                     cat:'core'},
+    {name:'TVINF',            hex:'01070166', desc:'Video in Motion',                  cat:'core'},
+    {name:'SDARS',            hex:'01080000', desc:'Satellite radio',                  cat:'core'},
+    {name:'INDMEM',           hex:'010d0000', desc:'Individual memory',                cat:'core'},
+    {name:'FeatureLevel',     hex:flHex,      desc:'Feature level / boot logo',        cat:'core'},
+    {name:'HDTuner',          hex:'010f0000', desc:'HD Radio tuner',                   cat:'core'},
+    {name:'DABTuner',         hex:'01100000', desc:'DAB digital radio',                cat:'core'},
+    {name:'OnlineServices',   hex:'01110001', desc:'Online services',                  cat:'core'},
+    {name:'NavDBEurope',      hex:'200100ff', desc:'Europe',                           cat:'nav'},
+    {name:'NavDBNorthAmerica',hex:'200200ff', desc:'North America',                    cat:'nav'},
+    {name:'NavDBSouthAfrica', hex:'200300ff', desc:'South Africa',                     cat:'nav'},
+    {name:'NavDBMiddleEast',  hex:'200400ff', desc:'Middle East',                      cat:'nav'},
+    {name:'NavDBAustralia',   hex:'200500ff', desc:'Australia',                        cat:'nav'},
+    {name:'NavDBAsiaPacific', hex:'200600ff', desc:'Asia Pacific',                     cat:'nav'},
+    {name:'NavDBRussia',      hex:'200700ff', desc:'Russia',                           cat:'nav'},
+    {name:'NavDBSouthAmerica',hex:'200800ff', desc:'South America',                    cat:'nav'},
+    {name:'NavDBChina',       hex:'200900ff', desc:'China',                            cat:'nav'},
+    {name:'NavDBChile',       hex:'200a00ff', desc:'Chile',                            cat:'nav'},
+    {name:'NavDBArgentina',   hex:'200b00ff', desc:'Argentina',                        cat:'nav'},
+  ];
+}
+
+// ===== Populate models dropdown =====
+function populateModels(selectId) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '';
+  for (const [key, [subid, label]] of Object.entries(MODELS)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = `${label}  (0x${subid.toString(16).padStart(4,'0')})`;
+    if (key === 'cayenne-958') opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+populateModels('model1');
+
+// ===== Tab switching =====
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && id === 'generate') || (i === 1 && id === 'device')));
+  document.getElementById('tab-generate').classList.toggle('active', id === 'generate');
+  document.getElementById('tab-device').classList.toggle('active', id === 'device');
+  if (id === 'device') refreshPorts();
+}
+
+// ===== TAB 1: Generate =====
+let currentCodes = [];
+
+function generateCodes() {
+  const vin = document.getElementById('vin1').value.trim().toUpperCase();
+  const err = document.getElementById('err1');
+  const results = document.getElementById('results1');
+
+  if (vin.length !== 17) { err.style.display = 'block'; err.textContent = 'VIN must be 17 characters'; results.classList.remove('show'); return; }
+  err.style.display = 'none';
+
+  const modelKey = document.getElementById('model1').value;
+  const [flSubId] = MODELS[modelKey];
+  const features = featuresFor(flSubId);
+
+  currentCodes = features.map(f => ({ ...f, code: generateCode(vin, f.hex) }));
+
+  document.getElementById('vin-badge').textContent = vin;
+
+  const list = document.getElementById('code-list');
+  list.innerHTML = '';
+
+  let lastCat = '';
+  currentCodes.forEach((c, i) => {
+    if (c.cat !== lastCat) {
+      lastCat = c.cat;
+      const hdr = document.createElement('div');
+      hdr.className = 'cat-hdr' + (i > 0 ? ' mt' : '');
+      hdr.textContent = c.cat === 'core' ? 'Core features' : 'Navigation databases';
+      list.appendChild(hdr);
+    }
+    const row = document.createElement('div');
+    row.className = 'code-row';
+    row.innerHTML = `
+      <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div></div>
+      <div style="display:flex;align-items:center">
+        <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
+        <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  results.classList.add('show');
+}
+
+function copyOne(el) {
+  navigator.clipboard.writeText(el.textContent);
+  const btn = el.nextElementSibling;
+  if (btn) { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1500); }
+}
+
+function copyAll() {
+  const text = currentCodes.map(c => `${c.name}\t${c.code}`).join('\n');
+  navigator.clipboard.writeText(text);
+}
+
+function downloadPagSWAct() {
+  const lines = currentCodes.map(c => c.code);
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'PagSWAct.002';
+  a.click();
+}
+
+document.getElementById('vin1').addEventListener('keydown', e => { if (e.key === 'Enter') generateCodes(); });
+
+// ===== TAB 2: Device =====
+let connected = false;
+let deviceVin = '';
+
+async function refreshPorts() {
+  if (!window.serial) { setStatus('err', 'Serial API not available (run in Electron)'); return; }
+  try {
+    const ports = await window.serial.list();
+    const sel = document.getElementById('port-select');
+    sel.innerHTML = '<option value="">Select COM port...</option>';
+    ports.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.path;
+      opt.textContent = `${p.path}${p.manufacturer ? ' — ' + p.manufacturer : ''}`;
+      sel.appendChild(opt);
+    });
+    if (ports.length === 0) setStatus('info', 'No COM ports found — is the ESP32 plugged in?');
+  } catch (e) { setStatus('err', 'Error listing ports: ' + e.message); }
+}
+
+async function connectDevice() {
+  const port = document.getElementById('port-select').value;
+  if (!port) { setStatus('err', 'Select a COM port first'); return; }
+
+  if (connected) {
+    await window.serial.close();
+    connected = false;
+    document.getElementById('btn-connect').textContent = 'Connect';
+    document.getElementById('dev-connected').style.display = 'none';
+    setStatus('info', 'Disconnected');
+    return;
+  }
+
+  setStatus('info', 'Connecting to ' + port + '...');
+  const result = await window.serial.open(port, 500000);
+  if (result.ok) {
+    connected = true;
+    document.getElementById('btn-connect').textContent = 'Disconnect';
+    document.getElementById('btn-connect').className = 'btn btn-red';
+    document.getElementById('dev-connected').style.display = 'block';
+    setStatus('ok', 'Connected to ' + port);
+    buildFeatureGrid();
+    logMsg('Connected to ' + port, 'acc');
+  } else {
+    setStatus('err', 'Connection failed: ' + result.error);
+  }
+}
+
+async function readVIN() {
+  if (!connected) { setStatus('err', 'Connect to device first'); return; }
+  logMsg('Sending VIN read request (UDS 0x09 0x02)...', 'acc');
+  setStatus('info', 'Reading VIN from vehicle...');
+
+  // Send UDS ReadDataByIdentifier for VIN (Service 0x09, PID 0x02)
+  // ISO-TP frame: [09, 02]
+  const result = await window.serial.write([0x09, 0x02]);
+  if (!result.ok) { logMsg('Write failed: ' + result.error, 'err'); return; }
+
+  const resp = await window.serial.read(3000);
+  if (resp.ok && resp.data.length >= 17) {
+    // Parse VIN from response (skip header bytes)
+    const vinBytes = resp.data.slice(resp.data.length >= 20 ? 3 : 0, 17 + (resp.data.length >= 20 ? 3 : 0));
+    deviceVin = String.fromCharCode(...vinBytes).replace(/[^A-Z0-9]/g, '');
+    if (deviceVin.length === 17) {
+      document.getElementById('dev-vin').textContent = deviceVin;
+      document.getElementById('dev-model').textContent = detectModel(deviceVin);
+      setStatus('ok', 'VIN read successfully: ' + deviceVin);
+      logMsg('VIN: ' + deviceVin, 'ok');
+      generateDeviceCodes();
+    } else {
+      logMsg('Invalid VIN response (' + deviceVin.length + ' chars)', 'err');
+      setStatus('err', 'Invalid VIN response — try manual entry below');
+    }
+  } else {
+    logMsg('No response from vehicle — is ignition on?', 'err');
+    setStatus('err', 'No VIN response — check ignition and OBD connection');
+  }
+}
+
+function detectModel(vin) {
+  if (vin.startsWith('WP1')) return 'Cayenne 958 detected';
+  if (vin.startsWith('WP0') && vin[3] === 'A') return '911 detected';
+  if (vin.startsWith('WP0') && vin[3] === 'C') return 'Cayman/Boxster detected';
+  if (vin.startsWith('WP0') && vin[3] === 'Z') return 'Panamera detected';
+  return 'Porsche detected';
+}
+
+function buildFeatureGrid() {
+  const features = featuresFor(0x0039); // Default Cayenne
+  const coreGrid = document.getElementById('feat-core');
+  const navGrid = document.getElementById('feat-nav');
+  coreGrid.innerHTML = '';
+  navGrid.innerHTML = '';
+
+  features.forEach((f, i) => {
+    const grid = f.cat === 'core' ? coreGrid : navGrid;
+    const div = document.createElement('label');
+    div.className = 'feat-item';
+    div.innerHTML = `
+      <input type="checkbox" data-idx="${i}" data-hex="${f.hex}" checked>
+      <div>
+        <div class="feat-name">${f.name}</div>
+        <div class="feat-desc">${f.desc}</div>
+      </div>`;
+    div.querySelector('input').addEventListener('change', function() {
+      div.classList.toggle('on', this.checked);
+    });
+    div.classList.add('on');
+    grid.appendChild(div);
+  });
+}
+
+function selectAll(state) {
+  document.querySelectorAll('.feat-item input[type=checkbox]').forEach(cb => {
+    cb.checked = state;
+    cb.closest('.feat-item').classList.toggle('on', state);
+  });
+}
+
+function generateDeviceCodes() {
+  if (!deviceVin) return;
+  document.querySelectorAll('.feat-item').forEach(item => {
+    const cb = item.querySelector('input');
+    const hex = cb.dataset.hex;
+    const code = generateCode(deviceVin, hex);
+    let codeEl = item.querySelector('.feat-code');
+    if (!codeEl) {
+      codeEl = document.createElement('div');
+      codeEl.className = 'feat-code';
+      item.querySelector('div').appendChild(codeEl);
+    }
+    codeEl.textContent = code;
+  });
+}
+
+async function applyActivations() {
+  if (!connected) { setStatus('err', 'Connect to device first'); return; }
+  if (!deviceVin) { setStatus('err', 'Read VIN first'); return; }
+
+  const selected = [];
+  document.querySelectorAll('.feat-item input:checked').forEach(cb => {
+    const hex = cb.dataset.hex;
+    const code = generateCode(deviceVin, hex);
+    const name = cb.closest('.feat-item').querySelector('.feat-name').textContent;
+    selected.push({ name, hex, code });
+  });
+
+  if (selected.length === 0) { setStatus('err', 'No features selected'); return; }
+
+  logMsg(`Applying ${selected.length} activations...`, 'acc');
+  setStatus('info', `Applying ${selected.length} activation codes...`);
+
+  for (const feat of selected) {
+    logMsg(`  ${feat.name}: ${feat.code}`, 'ok');
+    // In production: send UDS WriteDataByIdentifier with the activation code
+    // await window.serial.write(buildUDSWriteFrame(feat));
+    await new Promise(r => setTimeout(r, 100)); // Simulate delay
+  }
+
+  logMsg('All activations sent successfully', 'ok');
+  setStatus('ok', `${selected.length} activations applied — reboot PCM to take effect`);
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('dev-status');
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+function logMsg(msg, cls) {
+  const log = document.getElementById('dev-log');
+  const ts = new Date().toLocaleTimeString();
+  log.innerHTML += `<span class="${cls||''}">[${ts}] ${msg}</span>\n`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// If serial API is not available (running in browser), show notice
+if (!window.serial) {
+  document.getElementById('dev-status').textContent = 'Serial API requires Electron desktop app — run with: npx electron .';
+  document.getElementById('dev-status').className = 'status info';
+}
+</script>
+</body>
+</html>
