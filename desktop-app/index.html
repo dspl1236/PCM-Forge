@@ -97,12 +97,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div class="header">
     <div class="logo">PCM-Forge</div>
     <h1>Porsche <span>Activation</span> Suite</h1>
-    <div class="sub">PCM 3.1 code generator & device programmer</div>
+    <div class="sub">PCM 3.1 activation code generator & vehicle programmer</div>
   </div>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('generate')"><span class="tab-icon">&#9881;</span>Generate codes</button>
-    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Device programmer</button>
+    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Vehicle connect</button>
   </div>
 
   <!-- TAB 1: Generate Codes -->
@@ -133,16 +133,21 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
   </div>
 
-  <!-- TAB 2: Device Programmer -->
+  <!-- TAB 2: Vehicle Connect -->
   <div id="tab-device" class="panel">
     <div class="card">
-      <div class="card-title">ESP32-CAN connection</div>
+      <div class="card-title">OBD-II connection</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <span style="color:var(--accent);font-family:var(--mono);font-weight:700">Requires hardware:</span> ESP32-CAN dongle
+        (<a href="https://github.com/Switchleg1/esp32-isotp-ble-bridge" style="color:var(--accent)">Switchleg1 ISO-TP bridge</a>)
+        connected to the vehicle's OBD-II port via USB or Bluetooth serial.
+      </div>
       <div class="port-row">
         <select id="port-select" class="port-select"><option value="">Select COM port...</option></select>
         <button class="btn btn-outline" onclick="refreshPorts()">Refresh</button>
         <button class="btn btn-go" id="btn-connect" onclick="connectDevice()">Connect</button>
       </div>
-      <div id="dev-status" class="status info">Disconnected — plug in ESP32-CAN dongle and select port</div>
+      <div id="dev-status" class="status info">Disconnected — select USB or Bluetooth COM port</div>
     </div>
 
     <div id="dev-connected" style="display:none">
