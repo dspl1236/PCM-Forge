@@ -315,6 +315,25 @@ LOG=\"${USBROOT}/pcm_debug.log\"\n\
     cat /etc/qnx_version 2>&1\n\
     hostname 2>&1\n\
     echo \"\"\n\
+    echo \"=== PCM Version ===\"\n\
+    cat /mnt/ifs1/HBproject/version.txt 2>&1\n\
+    cat /HBproject/version.txt 2>&1\n\
+    cat /dev/shmem/sw_trainname.txt 2>&1\n\
+    cat /dev/shmem/hw_version.txt 2>&1\n\
+    echo \"\"\n\
+    echo \"=== IFS Build Timestamps ===\"\n\
+    ls -la /proc/boot/.script 2>&1\n\
+    ls -la /mnt/ifs1/HBproject/PCM3Root 2>&1\n\
+    ls -la /HBproject/PCM3Root 2>&1\n\
+    ls -la /mnt/ifs1/HBbin/proc_scriptlauncher 2>&1\n\
+    ls -la /HBbin/proc_scriptlauncher 2>&1\n\
+    echo \"\"\n\
+    echo \"=== Existing Activation Files ===\"\n\
+    ls -la /HBpersistence/PagSWAct* 2>&1\n\
+    ls -la /HBpersistence/CustomBootscreen* 2>&1\n\
+    ls -la /HBpersistence/DBGModeActive 2>&1\n\
+    ls -la /HBpersistence/incar 2>&1\n\
+    echo \"\"\n\
     echo \"=== CPU ===\"\n\
     cat /proc/cpuinfo 2>&1 | head -20\n\
     echo \"\"\n\
