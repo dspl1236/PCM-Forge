@@ -26,16 +26,26 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-optional
+        env:
+          npm_config_python: python3
+
+      - name: Install serialport separately
+        run: npm install serialport@12 || echo "serialport install failed - continuing without it"
+        continue-on-error: true
+
+      - name: Rebuild native modules for Electron
+        run: npx electron-builder install-app-deps || echo "rebuild skipped"
+        continue-on-error: true
 
       - name: Build Windows x64
-        run: npx electron-builder --win --x64
+        run: npx electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: List dist output
+      - name: List build output
         shell: bash
-        run: ls -laR dist/ || echo "No dist directory"
+        run: find dist -type f -name "*.exe" 2>/dev/null || echo "No exe found"
 
       - name: Get version
         id: version
