@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'desktop-app/**'
-      - '.github/workflows/build-desktop.yml'
 
 permissions:
   contents: write
@@ -25,8 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: desktop-app/package-lock.json
 
       - name: Install dependencies
         run: npm install
@@ -35,6 +32,10 @@ jobs:
         run: npx electron-builder --win --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List dist output
+        shell: bash
+        run: ls -laR dist/ || echo "No dist directory"
 
       - name: Get version
         id: version
@@ -61,15 +62,13 @@ jobs:
             - **Tab 2:** ESP32-CAN device programmer (COM port + auto VIN read)
 
             ### Install
-            Download and run `PCM-Forge-Setup-${{ steps.version.outputs.version }}.exe`
+            Download and run the `.exe` installer below.
 
             Built from commit `${{ github.sha }}`
-          files: |
-            desktop-app/dist/PCM-Forge Setup *.exe
-            desktop-app/dist/PCM-Forge-Setup-*.exe
-            desktop-app/dist/*.exe
+          files: desktop-app/dist/*.exe
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
 
   cleanup-old-releases:
     needs: build-windows
