@@ -39,28 +39,100 @@ N = 0x69f39c927ef94985
 E = 0x4c1c5eeaf397c0b3
 D = 0x5483975015d0287b
 
-# Model → FeatureLevel SubID mapping (brute-forced from PagSWAct.csv + VIN decode)
-# Cayenne SubIDs confirmed from bootscreen map (CustomBootscreen_056-067)
+# Complete Model → FeatureLevel SubID mapping
+# All 78 models visually confirmed from PCM 3.1 bootscreen images
+# SubID = FeatureLevel value = boot logo selector (they're the same!)
 MODELS = {
-    'cayenne-958':    (0x0039, 'Cayenne 958 base (E2)'),
-    'cayenne-958s':   (0x003a, 'Cayenne 958 S'),
-    'cayenne-958t':   (0x003b, 'Cayenne 958 Turbo'),
-    'cayenne-958ts':  (0x003c, 'Cayenne 958 Turbo S'),
-    'cayenne-958gts': (0x003d, 'Cayenne 958 GTS'),
-    'cayenne-958sh':  (0x003e, 'Cayenne 958 S Hybrid'),
-    'cayenne-958-v6': (0x003f, 'Cayenne 958 V6 (E2V6)'),
-    'cayenne-958s2':  (0x0040, 'Cayenne 958 S (alt)'),
-    'cayenne-958ds':  (0x0041, 'Cayenne 958 Diesel S'),
-    'cayenne-958sh2': (0x0042, 'Cayenne 958 S Hybrid (alt)'),
-    'cayenne-958se':  (0x0043, 'Cayenne 958 S E-Hybrid'),
-    '991':            (0x0003, '911 (991) Carrera'),
-    '991-base':       (0x0000, '911 (991) base variant'),
-    '991t':           (0x0005, '911 (991) Turbo'),
-    'boxster-cayman': (0x0007, 'Boxster / Cayman (981)'),
-    '997':            (0x002a, '911 (997) Carrera'),
-    'panamera':       (0x002d, 'Panamera (970) V8'),
-    '997t':           (0x002e, '911 (997) Turbo (G1T)'),
-    '997-alt':        (0x0031, '911 (997) alternate coding'),
+    # ── 911 (997) Coupe ──
+    '911':                   (0x0001, '911 (997) base'),
+    '911-carrera':           (0x0002, '911 (997) Carrera'),
+    '911-carrera-s':         (0x0003, '911 (997) Carrera S'),
+    '911-carrera-4':         (0x0004, '911 (997) Carrera 4'),
+    '911-carrera-4s':        (0x0005, '911 (997) Carrera 4S'),
+    # ── 911 (997) Cabriolet ──
+    '911-cab':               (0x0006, '911 (997) Carrera Cabriolet'),
+    '911-cab-s':             (0x0007, '911 (997) Carrera S Cabriolet'),
+    '911-cab-4':             (0x0008, '911 (997) Carrera 4 Cabriolet'),
+    '911-cab-4s':            (0x0009, '911 (997) Carrera 4S Cabriolet'),
+    # ── 911 (997) Targa ──
+    '911-targa-4':           (0x000a, '911 (997) targa 4'),
+    '911-targa-4s':          (0x000b, '911 (997) targa 4S'),
+    # ── 911 (997) Turbo / GT ──
+    '911-turbo':             (0x000c, '911 (997) Turbo'),
+    '911-turbo-cab':         (0x000d, '911 (997) Turbo Cabriolet'),
+    '911-turbo-s':           (0x000e, '911 (997) Turbo S'),
+    '911-turbo-s-cab':       (0x000f, '911 (997) Turbo S Cabriolet'),
+    '911-gt3':               (0x0010, '911 (997) GT3'),
+    '911-gt3rs':             (0x0012, '911 (997) GT3 RS'),
+    # ── 911 (991) ──
+    '911-991':               (0x0014, '911 (991)'),
+    '911-991-alt':           (0x0015, '911 (991) alt'),
+    '911-991-gts':           (0x0016, '911 (991) Carrera GTS'),
+    '911-991-4gts':          (0x0017, '911 (991) Carrera 4 GTS'),
+    '911-991-gts-cab':       (0x0018, '911 (991) Carrera GTS Cabriolet'),
+    '911-991-4gts-cab':      (0x0019, '911 (991) Carrera 4 GTS Cabriolet'),
+    # ── Boxster (987 / 981) ──
+    'boxster':               (0x001a, 'Boxster'),
+    'boxster-alt':           (0x001b, 'Boxster (alt)'),
+    'boxster-s':             (0x001c, 'Boxster S'),
+    'boxster-rs':            (0x001d, 'Boxster RS'),
+    'boxster-gts':           (0x001e, 'Boxster GTS'),
+    'boxster-spyder':        (0x001f, 'Boxster Spyder'),
+    # ── Cayman (987 / 981) ──
+    'cayman':                (0x0022, 'Cayman'),
+    'cayman-alt':            (0x0023, 'Cayman (alt)'),
+    'cayman-s':              (0x0024, 'Cayman S'),
+    'cayman-r':              (0x0025, 'Cayman R'),
+    'cayman-gts':            (0x0026, 'Cayman GTS'),
+    'cayman-gt4':            (0x0027, 'Cayman GT4'),
+    # ── Panamera (970) ──
+    'panamera':              (0x0029, 'Panamera'),
+    'panamera-alt':          (0x002a, 'Panamera (alt)'),
+    'panamera-4':            (0x002b, 'Panamera 4'),
+    'panamera-s':            (0x002c, 'Panamera S'),
+    'panamera-4s':           (0x002d, 'Panamera 4S'),
+    'panamera-turbo':        (0x002e, 'Panamera Turbo'),
+    'panamera-turbo-s':      (0x002f, 'Panamera Turbo S'),
+    'panamera-gts':          (0x0030, 'Panamera GTS'),
+    'panamera-sh':           (0x0031, 'Panamera S Hybrid'),
+    'panamera-2':            (0x0032, 'Panamera (gen2)'),
+    'panamera-s2':           (0x0033, 'Panamera S (gen2)'),
+    'panamera-4sd':          (0x0034, 'Panamera 4S Diesel'),
+    'panamera-sh2':          (0x0035, 'Panamera S Hybrid (gen2)'),
+    'panamera-se':           (0x0036, 'Panamera S E-Hybrid'),
+    # ── Cayenne (958) ──
+    'cayenne':               (0x0038, 'Cayenne'),
+    'cayenne-alt':           (0x0039, 'Cayenne (alt)'),
+    'cayenne-s':             (0x003a, 'Cayenne S'),
+    'cayenne-turbo':         (0x003b, 'Cayenne Turbo'),
+    'cayenne-turbo-s':       (0x003c, 'Cayenne Turbo S'),
+    'cayenne-gts':           (0x003d, 'Cayenne GTS'),
+    'cayenne-sh':            (0x003e, 'Cayenne S Hybrid'),
+    'cayenne-v6':            (0x003f, 'Cayenne V6'),
+    'cayenne-s-alt':         (0x0040, 'Cayenne S (alt)'),
+    'cayenne-ds':            (0x0041, 'Cayenne Diesel S'),
+    'cayenne-sh2':           (0x0042, 'Cayenne S Hybrid (alt)'),
+    'cayenne-se':            (0x0043, 'Cayenne S E-Hybrid'),
+    # ── Macan (95B) ──
+    'macan':                 (0x0047, 'Macan'),
+    'macan-s':               (0x0048, 'Macan S'),
+    'macan-hybrid':          (0x0049, 'Macan Hybrid'),
+    'macan-se':              (0x004a, 'Macan S E-Hybrid'),
+    'macan-turbo':           (0x004b, 'Macan Turbo'),
+    'macan-turbo-s':         (0x004c, 'Macan Turbo S'),
+    'macan-gts':             (0x004d, 'Macan GTS'),
+    'macan-diesel':          (0x004e, 'Macan Diesel'),
+    'macan-sd':              (0x004f, 'Macan S Diesel'),
+    # ── 911 Special Editions ──
+    '911-50th':              (0x0056, '911 50th Anniversary'),
+    '911-clubsport':         (0x0057, '911 Club Sport'),
+    '911-r':                 (0x0058, '911 R'),
+    # ── 911 (991.2) / Targa ──
+    '911-targa-4gts':        (0x005e, '911 targa 4 GTS'),
+    '911-targa':             (0x005f, '911 targa'),
+    '911-targa-s':           (0x0060, '911 targa S'),
+    '911-991-2':             (0x0061, '911 (991.2)'),
+    '911-991-2-cab':         (0x0062, '911 (991.2) Cabriolet'),
 }
 
 def features_for(featlvl_subid):
