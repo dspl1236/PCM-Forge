@@ -309,3 +309,65 @@ PCM3_IFS2.ifs              — Shared resources (all platforms)
 | 071-079 | **Macan 95B** | fw400 | ✅ CONFIRMED by image! |
 | 086-088 | Special editions | fw400 | 086=911 50th Anniversary |
 | 094-099 | Unknown/regional | fw400 | 099=62KB (largest) |
+
+## Section 9: Complete Bootscreen SubID Map (fw400)
+
+All 79 bootscreens visually confirmed from firmware RDW400.
+Format: PNG (except SubID 099 which is JPEG).
+
+### Cayenne (958) — SubIDs 060-067
+| SubID | Model | Market |
+|-------|-------|--------|
+| 060 | Cayenne EU | Europe |
+| 061 | Cayenne S EU | Europe |
+| 062 | Cayenne diesel EU | Europe |
+| 063 | Cayenne S diesel EU | Europe |
+| 064 | Cayenne S hybrid EU | Europe |
+| 065 | Cayenne Turbo EU | Europe |
+| 066 | Cayenne Turbo S EU | Europe |
+| 067 | Cayenne NA | North America (Andrew's car!) |
+
+### Macan (95B) — SubIDs 071-079 (ALL new in fw400)
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 071 | Macan | Base model |
+| 072 | Macan S | ✅ Confirmed |
+| 073 | Macan hybrid | ⚠️ Never released! |
+| 074 | Macan S e-hybrid | ⚠️ Never released! |
+| 075 | Macan Turbo | ✅ Confirmed |
+| 076 | Macan turbo S | ✅ Confirmed |
+| 077 | Macan GTS | ✅ Confirmed |
+| 078 | Macan diesel | ✅ Confirmed |
+| 079 | Macan S diesel | ✅ Confirmed |
+
+### 911 Special Editions — SubIDs 086-088
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 086 | 911 50th Anniversary | ✅ Confirmed earlier |
+| 087 | 911 Club Sport | ✅ Rare track variant |
+| 088 | 911 R | ✅ Ultra-rare (991 units!) |
+
+### Targa (991) — SubIDs 094-096
+| SubID | Model |
+|-------|-------|
+| 094 | targa 4 GTS | ✅ Confirmed |
+| 095 | targa | Base |
+| 096 | targa S | |
+
+### 911 Facelift (991.2) — SubIDs 097-098
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 097 | 911 | 991.2 silhouette (facelift) |
+| 098 | 911 | Cabriolet/convertible variant |
+
+### Universal Fallback — SubID 099
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 099 | Porsche Crest | JPEG format, golden badge, generic fallback |
+
+### Key Insights
+- 9 Macan variants prepared, including 2 never-released hybrids
+- 911 R bootscreen exists despite only 991 units produced
+- SubID 099 (Porsche crest) = fallback when no model matches
+- fw400 uses PNG format (not raw RGB565 like earlier firmware)
+- SubID numbering: 0xx where x follows model family groupings
