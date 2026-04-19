@@ -13,10 +13,15 @@ Usage:
   python generate_codes.py --list-models             # show available models
 
 Model keys (for correct FeatureLevel / boot logo):
-  cayenne-958      Cayenne 958 base / 957 V6             (SubID 0x0039)  [default Cayenne]
-  cayenne-958t     Cayenne 958 Turbo                      (SubID 0x003b)
-  cayenne-958-v6   Cayenne 958 V6                         (SubID 0x003f)
-  991              911 (991) Carrera                      (SubID 0x0003)  [default]
+  cayenne-958      Cayenne 958 base                        (SubID 0x0039)
+  cayenne-958s     Cayenne 958 S                           (SubID 0x003a)
+  cayenne-958t     Cayenne 958 Turbo                       (SubID 0x003b)
+  cayenne-958ts    Cayenne 958 Turbo S                     (SubID 0x003c)
+  cayenne-958gts   Cayenne 958 GTS                         (SubID 0x003d)
+  cayenne-958sh    Cayenne 958 S Hybrid                    (SubID 0x003e)
+  cayenne-958-v6   Cayenne 958 V6                          (SubID 0x003f)
+  cayenne-958se    Cayenne 958 S E-Hybrid                  (SubID 0x0043)  [Andrew's car!]
+  991              911 (991) Carrera                        (SubID 0x0003)  [default]
   991-base         911 (991) base variant                 (SubID 0x0000)
   991t             911 (991) Turbo                        (SubID 0x0005)
   boxster-cayman   Boxster / Cayman (981)                 (SubID 0x0007)
@@ -35,10 +40,19 @@ E = 0x4c1c5eeaf397c0b3
 D = 0x5483975015d0287b
 
 # Model → FeatureLevel SubID mapping (brute-forced from PagSWAct.csv + VIN decode)
+# Cayenne SubIDs confirmed from bootscreen map (CustomBootscreen_056-067)
 MODELS = {
-    'cayenne-958':    (0x0039, 'Cayenne 958 base / 957 V6 (E2 / E1V6)'),
-    'cayenne-958t':   (0x003b, 'Cayenne 958 Turbo (E2T)'),
+    'cayenne-958':    (0x0039, 'Cayenne 958 base (E2)'),
+    'cayenne-958s':   (0x003a, 'Cayenne 958 S'),
+    'cayenne-958t':   (0x003b, 'Cayenne 958 Turbo'),
+    'cayenne-958ts':  (0x003c, 'Cayenne 958 Turbo S'),
+    'cayenne-958gts': (0x003d, 'Cayenne 958 GTS'),
+    'cayenne-958sh':  (0x003e, 'Cayenne 958 S Hybrid'),
     'cayenne-958-v6': (0x003f, 'Cayenne 958 V6 (E2V6)'),
+    'cayenne-958s2':  (0x0040, 'Cayenne 958 S (alt)'),
+    'cayenne-958ds':  (0x0041, 'Cayenne 958 Diesel S'),
+    'cayenne-958sh2': (0x0042, 'Cayenne 958 S Hybrid (alt)'),
+    'cayenne-958se':  (0x0043, 'Cayenne 958 S E-Hybrid'),
     '991':            (0x0003, '911 (991) Carrera'),
     '991-base':       (0x0000, '911 (991) base variant'),
     '991t':           (0x0005, '911 (991) Turbo'),
