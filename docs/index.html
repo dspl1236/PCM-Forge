@@ -206,17 +206,52 @@ h1 span{color:var(--accent)}
 const N=0x69f39c927ef94985n,D=0x5483975015d0287bn,E=0x4c1c5eeaf397c0b3n;
 // Boot logo / model variant SubIDs decoded from PagSWAct.csv test VINs
 const MODELS=[
-  {sub:0x0039,nm:'Cayenne 958 / 957 V6'},
-  {sub:0x003b,nm:'Cayenne 958 Turbo'},
-  {sub:0x003f,nm:'Cayenne 958 V6'},
-  {sub:0x0003,nm:'911 (991) Carrera'},
-  {sub:0x0000,nm:'911 (991) base'},
-  {sub:0x0005,nm:'911 (991) Turbo'},
-  {sub:0x0007,nm:'Boxster / Cayman (981)'},
-  {sub:0x002a,nm:'911 (997) Carrera'},
-  {sub:0x002d,nm:'Panamera (970) V8'},
-  {sub:0x002e,nm:'911 (997) Turbo'},
-  {sub:0x0031,nm:'911 (997) alt'},
+  // 911 (997)
+  {sub:0x0001,nm:'911 (997)'},{sub:0x0002,nm:'911 (997) Carrera'},{sub:0x0003,nm:'911 (997) Carrera S'},
+  {sub:0x0004,nm:'911 (997) Carrera 4'},{sub:0x0005,nm:'911 (997) Carrera 4S'},
+  {sub:0x0006,nm:'911 (997) Carrera Cab'},{sub:0x0007,nm:'911 (997) Carrera S Cab'},
+  {sub:0x0008,nm:'911 (997) Carrera 4 Cab'},{sub:0x0009,nm:'911 (997) Carrera 4S Cab'},
+  {sub:0x000a,nm:'911 (997) targa 4'},{sub:0x000b,nm:'911 (997) targa 4S'},
+  {sub:0x000c,nm:'911 (997) Turbo'},{sub:0x000d,nm:'911 (997) Turbo Cab'},
+  {sub:0x000e,nm:'911 (997) Turbo S'},{sub:0x000f,nm:'911 (997) Turbo S Cab'},
+  {sub:0x0010,nm:'911 (997) GT3'},{sub:0x0012,nm:'911 (997) GT3 RS'},
+  // 911 (991)
+  {sub:0x0014,nm:'911 (991)'},{sub:0x0015,nm:'911 (991) alt'},
+  {sub:0x0016,nm:'911 (991) Carrera GTS'},{sub:0x0017,nm:'911 (991) Carrera 4 GTS'},
+  {sub:0x0018,nm:'911 (991) GTS Cab'},{sub:0x0019,nm:'911 (991) 4 GTS Cab'},
+  // Boxster
+  {sub:0x001a,nm:'Boxster'},{sub:0x001b,nm:'Boxster (alt)'},
+  {sub:0x001c,nm:'Boxster S'},{sub:0x001d,nm:'Boxster RS'},
+  {sub:0x001e,nm:'Boxster GTS'},{sub:0x001f,nm:'Boxster Spyder'},
+  // Cayman
+  {sub:0x0022,nm:'Cayman'},{sub:0x0023,nm:'Cayman (alt)'},
+  {sub:0x0024,nm:'Cayman S'},{sub:0x0025,nm:'Cayman R'},
+  {sub:0x0026,nm:'Cayman GTS'},{sub:0x0027,nm:'Cayman GT4'},
+  // Panamera (970)
+  {sub:0x0029,nm:'Panamera'},{sub:0x002a,nm:'Panamera (alt)'},
+  {sub:0x002b,nm:'Panamera 4'},{sub:0x002c,nm:'Panamera S'},
+  {sub:0x002d,nm:'Panamera 4S'},{sub:0x002e,nm:'Panamera Turbo'},
+  {sub:0x002f,nm:'Panamera Turbo S'},{sub:0x0030,nm:'Panamera GTS'},
+  {sub:0x0031,nm:'Panamera S Hybrid'},{sub:0x0032,nm:'Panamera (gen2)'},
+  {sub:0x0033,nm:'Panamera S (gen2)'},{sub:0x0034,nm:'Panamera 4S Diesel'},
+  {sub:0x0035,nm:'Panamera S Hybrid (gen2)'},{sub:0x0036,nm:'Panamera S E-Hybrid'},
+  // Cayenne (958)
+  {sub:0x0038,nm:'Cayenne'},{sub:0x0039,nm:'Cayenne (alt)'},
+  {sub:0x003a,nm:'Cayenne S'},{sub:0x003b,nm:'Cayenne Turbo'},
+  {sub:0x003c,nm:'Cayenne Turbo S'},{sub:0x003d,nm:'Cayenne GTS'},
+  {sub:0x003e,nm:'Cayenne S Hybrid'},{sub:0x003f,nm:'Cayenne V6'},
+  {sub:0x0040,nm:'Cayenne S (alt)'},{sub:0x0041,nm:'Cayenne Diesel S'},
+  {sub:0x0042,nm:'Cayenne S Hybrid (alt)'},{sub:0x0043,nm:'Cayenne S E-Hybrid'},
+  // Macan (95B)
+  {sub:0x0047,nm:'Macan'},{sub:0x0048,nm:'Macan S'},
+  {sub:0x0049,nm:'Macan Hybrid'},{sub:0x004a,nm:'Macan S E-Hybrid'},
+  {sub:0x004b,nm:'Macan Turbo'},{sub:0x004c,nm:'Macan Turbo S'},
+  {sub:0x004d,nm:'Macan GTS'},{sub:0x004e,nm:'Macan Diesel'},{sub:0x004f,nm:'Macan S Diesel'},
+  // 911 Special
+  {sub:0x0056,nm:'911 50th Anniversary'},{sub:0x0057,nm:'911 Club Sport'},{sub:0x0058,nm:'911 R'},
+  // 911 (991.2) / Targa
+  {sub:0x005e,nm:'911 targa 4 GTS'},{sub:0x005f,nm:'911 targa'},
+  {sub:0x0060,nm:'911 targa S'},{sub:0x0061,nm:'911 (991.2)'},{sub:0x0062,nm:'911 (991.2) Cab'},
 ];
 const FEATS=[
   {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Hidden service menu — diagnostics, CAN data, audio calibration, component status',cat:'core'},
@@ -233,7 +268,7 @@ const FEATS=[
   {id:'hdtuner',fh:'010f0000',sw:0x010f,su:0,nm:'HDTuner',ds:'HD Radio — higher quality digital FM/AM broadcasts (North America)',cat:'feat'},
   {id:'dabtuner',fh:'01100000',sw:0x0110,su:0,nm:'DABTuner',ds:'DAB/DAB+ digital radio reception (Europe, Australia, Asia)',cat:'feat'},
   {id:'online',fh:'01110001',sw:0x0111,su:0x0001,nm:'OnlineServices',ds:'Aha Radio app — web radio, podcasts, POI search, weather via phone tethering',cat:'feat'},
-  {id:'featlvl',fh:'010e0039',sw:0x010e,su:0x0039,nm:'FeatureLevel',ds:'Boot logo / model variant — use model selector above',cat:'feat',isModel:true},
+  {id:'featlvl',fh:'010e0038',sw:0x010e,su:0x0038,nm:'FeatureLevel',ds:'Boot logo / model variant — use model selector above',cat:'feat',isModel:true},
   {id:'naveu',fh:'200100ff',sw:0x2001,su:0x00ff,nm:'NavDB Europe',ds:'Europe',cat:'nav'},
   {id:'navna',fh:'200200ff',sw:0x2002,su:0x00ff,nm:'NavDB N.America',ds:'North America',cat:'nav'},
   {id:'navza',fh:'200300ff',sw:0x2003,su:0x00ff,nm:'NavDB S.Africa',ds:'South Africa',cat:'nav'},
@@ -288,12 +323,12 @@ function gen(){
     const opt=document.createElement('option');
     opt.value=m.sub.toString(16).padStart(4,'0');
     opt.textContent=m.nm;
-    if(m.sub===0x0039)opt.selected=true;
+    if(m.sub===0x0038)opt.selected=true;
     dd.appendChild(opt);
   }
-  document.getElementById('sub-hex').textContent='SubID 0x0039';
+  document.getElementById('sub-hex').textContent='SubID 0x0038';
   // Set FeatureLevel to dropdown default
-  const fLvl=FEATS.find(f=>f.id==='featlvl');fLvl.fh='010e0039';fLvl.su=0x0039;
+  const fLvl=FEATS.find(f=>f.id==='featlvl');fLvl.fh='010e0038';fLvl.su=0x0038;
   const cd=document.getElementById('cc'),fg=document.getElementById('fg');cd.innerHTML='';fg.innerHTML='';
   let lastCat='';
   for(const f of FEATS){
@@ -312,7 +347,7 @@ function gen(){
   // Populate USB checkboxes (all unchecked)
   for(const f of CC){
     const el=document.getElementById('fg-'+f.cat);if(!el)continue;
-    const info=f.isModel?`<div class="ft-info" id="ft-featlvl-info">→ ${MODELS.find(m=>m.sub===0x0039).nm}</div>`:'';
+    const info=f.isModel?`<div class="ft-info" id="ft-featlvl-info">→ ${MODELS.find(m=>m.sub===0x0038).nm}</div>`:'';
     el.innerHTML+=`<label class="ft"><input type="checkbox" data-f="${f.id}"> <div><div class="ft-name">${f.nm}</div><div class="ft-desc">${f.ds}</div>${info}</div></label>`;
   }
   fg.querySelectorAll('.ft').forEach(el=>el.addEventListener('click',e=>{if(e.target.tagName==='INPUT')el.classList.toggle('on',e.target.checked)}));
