@@ -371,3 +371,57 @@ Format: PNG (except SubID 099 which is JPEG).
 - SubID 099 (Porsche crest) = fallback when no model matches
 - fw400 uses PNG format (not raw RGB565 like earlier firmware)
 - SubID numbering: 0xx where x follows model family groupings
+
+## Complete Bootscreen SubID Map (fw400 — 79 screens)
+
+All 79 bootscreens in PCM 3.1 fw400 have been visually confirmed:
+
+### 911 Range (SubID 001-016, 018, 086-088, 094-098)
+| SubID | Model | Body | Notes |
+|-------|-------|------|-------|
+| 001-016 | 911 variants | Coupe/Cab | Original fw300 screens |
+| 018 | 911 variant | | fw300 |
+| 086 | 911 50th Anniversary | Coupe | NEW in fw400 |
+| 087 | 911 Club Sport | Coupe | NEW in fw400 |
+| 088 | **911 R** | Coupe | NEW in fw400 (991 units made!) |
+| 094 | targa 4 GTS | Targa | NEW in fw400 |
+| 095 | targa | Targa | NEW in fw400 |
+| 096 | targa S | Targa | NEW in fw400 |
+| 097 | 911 (991.2) | Coupe | NEW in fw400 (facelift silhouette) |
+| 098 | 911 (991.2) | Cabriolet | NEW in fw400 (facelift silhouette) |
+| 099 | Porsche Crest | Generic | Fallback (JPEG, only non-PNG) |
+
+### Boxster/Cayman Range (SubID 020-031)
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 020-031 | Boxster/Cayman variants | fw300 screens |
+
+### Panamera Range (SubID 034-054)
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 034-054 | Panamera variants | fw300 screens (gaps at 032-033, 055) |
+
+### Cayenne Range (SubID 056-067)
+| SubID | Model | Notes |
+|-------|-------|-------|
+| 056-067 | Cayenne variants | fw300 screens |
+| 067 | Cayenne (958 NA) | Andrew's car! |
+
+### Macan Range (SubID 071-079) — ALL NEW in fw400
+| SubID | Model | Confirmed |
+|-------|-------|-----------|
+| 071 | **Macan** (base) | ✅ |
+| 072 | **Macan S** | ✅ |
+| 073 | **Macan hybrid** | ✅ (never released!) |
+| 074 | **Macan S e-hybrid** | ✅ (never released!) |
+| 075 | **Macan Turbo** | ✅ |
+| 076 | **Macan turbo S** | ✅ |
+| 077 | **Macan GTS** | ✅ |
+| 078 | **Macan diesel** | ✅ |
+| 079 | **Macan S diesel** | ✅ |
+
+### Format Notes
+- fw400 screens: PNG format with `.bin` extension
+- SubID 099: JPEG format (only exception)
+- fw300 screens: Raw RGB565 (768,000 bytes = 800×480×2)
+- Gap SubIDs (017, 019, 032-033, 055, 068-070, 080-085, 089-093): unused
