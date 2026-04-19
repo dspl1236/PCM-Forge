@@ -261,3 +261,51 @@ diagnostic protocols. These are the same DIDs that PIWIS reads/writes.
 - [ ] What DID values map to which vehicle parameters?
 - [ ] Is SecurityAccess needed for certain Engineering operations?
 - [ ] How does the FSC profile system work with key fobs (driver profiles)?
+
+## 8. Firmware Variant Architecture (NEW — from ISO Extract analysis)
+
+### Platform Codes
+| Code | Platform | Model(s) |
+|------|----------|----------|
+| PCMG | G1 | 911/997 |
+| PCME | E2 | Cayenne 958 |
+| PCMC | C | Panamera 970 |
+| PCMS | S | Boxster/Cayman 981 |
+
+### Market Variants
+| Prefix | Market | Key Differences |
+|--------|--------|-----------------|
+| RDW | Rest of World (EU) | Full feature set, EU nav, SDS/TTS |
+| CHN | China | Asian speller (pinyin), CJK fonts, no SDS, no Browser |
+| ARB | Arabic/Middle East | Arabic SSS config, full nav/map traces, PCM3Browser |
+| LOW | Low-cost | Reduced feature set |
+
+### IFS Binary Variants (fw400)
+```
+PCM3_IFS1.ifs              — Cayenne/Panamera (standard)
+PCM3_IFS1_MOPF.ifs         — Cayenne/Panamera facelift
+PCM3_IFS1_9x1.ifs          — 991 Carrera/Turbo
+PCM3_IFS1_MOPF_9x1.ifs    — 991 facelift
+PCM3_IFS1_Macan.ifs        — Macan 95B (NEW in fw400!)
+PCM3_IFS1_MOPF_Macan.ifs  — Macan facelift
+PCM3_IFS1_Navis.ifs        — Navigation-focused (CHN only)
+PCM3_IFS2.ifs              — Shared resources (all platforms)
+```
+
+### Firmware Evolution (CHN200 → CHN400)
+- fw200: 6 IFS files, no Macan, no MOPF, 4 IFS1 variants
+- fw400: 10 IFS files, Macan added, MOPF variants, Emergency_LOW added
+- Bootscreens: 0 in fw200/300, 79 in fw400
+- IFS1 grew from 8.5MB to 10.2MB (+20%)
+- IFS2 grew from 28MB to 32MB (+14%)
+
+### Boot Screen Ranges (confirmed from fw300→fw400 diff)
+| Range | Model | Added In | Status |
+|-------|-------|----------|--------|
+| 001-016 | 911/997 variants | fw300 (partial) | Known |
+| 020-031 | Panamera variants | fw400 | New |
+| 034-054 | 997/Panamera mixed | fw300 (partial) | Known |
+| 056-067 | Cayenne 958 | fw300 (partial), 064-067 in fw400 | 067=NA confirmed |
+| 071-079 | **Macan 95B** | fw400 | ✅ CONFIRMED by image! |
+| 086-088 | Special editions | fw400 | 086=911 50th Anniversary |
+| 094-099 | Unknown/regional | fw400 | 099=62KB (largest) |
