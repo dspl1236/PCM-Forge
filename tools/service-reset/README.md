@@ -3,7 +3,10 @@
 Reset oil service and inspection intervals from the PCM touchscreen.
 No PIWIS. No Durametric. No dealer.
 
-## Status: READY — DIDs Confirmed
+## Status: EXPERIMENTAL — DIDs Confirmed
+
+DIDs and devctl codes derived from RE — needs validation on a live Cayenne 958.
+The tool logs everything to USB so the first run will confirm or reveal what to adjust.
 
 DID values derived from VCDS IDE channel numbers (decimal → hex conversion).
 Confirmed via Ross-Tech wiki and Club Touareg forum documentation.
