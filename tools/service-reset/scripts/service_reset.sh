@@ -41,25 +41,40 @@ fi
 if [ -x "$BINDIR/uds_send" ]; then
     echo "Using native UDS sender" >> "$LOG"
     
+    # Split DIDs into high/low bytes for uds_send
+    OIL_HI="0x$(echo $DID_OIL_RESET | cut -c1-2)"
+    OIL_LO="0x$(echo $DID_OIL_RESET | cut -c3-4)"
+    DST_HI="0x$(echo $DID_INSP_DIST | cut -c1-2)"
+    DST_LO="0x$(echo $DID_INSP_DIST | cut -c3-4)"
+    TIM_HI="0x$(echo $DID_INSP_TIME | cut -c1-2)"
+    TIM_LO="0x$(echo $DID_INSP_TIME | cut -c3-4)"
+
     # Step 1: Extended diagnostic session
+    echo ">> DiagnosticSessionControl Extended" >> "$LOG"
     "$BINDIR/uds_send" 0x17 0x10 0x03 >> "$LOG" 2>&1
     sleep 1
 
     case "$MODE" in
         oil)
-            "$BINDIR/uds_send" 0x17 0x2E $DID_OIL_RESET >> "$LOG" 2>&1
+            echo ">> Reset oil service (IDE00342 = 0x$DID_OIL_RESET)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $OIL_HI $OIL_LO 0x00 >> "$LOG" 2>&1
             ;;
         inspection)
-            "$BINDIR/uds_send" 0x17 0x2E $DID_INSP_DIST 0x00 0x00 >> "$LOG" 2>&1
+            echo ">> Reset distance (IDE03351 = 0x$DID_INSP_DIST)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $DST_HI $DST_LO 0x00 0x00 0x00 0x00 >> "$LOG" 2>&1
             sleep 1
-            "$BINDIR/uds_send" 0x17 0x2E $DID_INSP_TIME 0x00 0x00 >> "$LOG" 2>&1
+            echo ">> Reset time (IDE03352 = 0x$DID_INSP_TIME)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $TIM_HI $TIM_LO 0x00 0x00 0x00 0x00 >> "$LOG" 2>&1
             ;;
         all)
-            "$BINDIR/uds_send" 0x17 0x2E $DID_OIL_RESET >> "$LOG" 2>&1
+            echo ">> Reset oil service (IDE00342 = 0x$DID_OIL_RESET)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $OIL_HI $OIL_LO 0x00 >> "$LOG" 2>&1
             sleep 1
-            "$BINDIR/uds_send" 0x17 0x2E $DID_INSP_DIST 0x00 0x00 >> "$LOG" 2>&1
+            echo ">> Reset distance (IDE03351 = 0x$DID_INSP_DIST)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $DST_HI $DST_LO 0x00 0x00 0x00 0x00 >> "$LOG" 2>&1
             sleep 1
-            "$BINDIR/uds_send" 0x17 0x2E $DID_INSP_TIME 0x00 0x00 >> "$LOG" 2>&1
+            echo ">> Reset time (IDE03352 = 0x$DID_INSP_TIME)" >> "$LOG"
+            "$BINDIR/uds_send" 0x17 0x2E $TIM_HI $TIM_LO 0x00 0x00 0x00 0x00 >> "$LOG" 2>&1
             ;;
     esac
     echo "Reset sent. Check cluster." >> "$LOG"

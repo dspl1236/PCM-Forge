@@ -39,27 +39,55 @@ USB stick with copie_scr.sh
 
 ```
 tools/service-reset/
-├── module.json              Config
+├── module.json              Config + DID mapping
 ├── README.md                This file
+├── bin/
+│   └── uds_send.o           Cross-compiled SH4 object (link on target)
 ├── engdefs/
 │   ├── ServiceStatus.esd    GEM: read service data
 │   └── ServiceReset.esd     GEM: reset buttons
 ├── scripts/
 │   ├── service_install.sh   Deploy via copie_scr.sh
 │   ├── service_status.sh    Log IOC/NDR/CAN state
-│   └── service_reset.sh     Execute reset (needs DIDs)
+│   └── service_reset.sh     Execute reset via uds_send
 └── src/
-    └── uds_send.c           Native SH4 UDS sender
+    └── uds_send.c           Native UDS sender (SH4 cross-compile source)
 ```
 
-## Once you have the DIDs
+## Building the Native Binary
 
-Edit `scripts/service_reset.sh`:
-```sh
-DID_OIL_RESET="ABCD"   # real value for IDE00342
-DID_INSP_DIST="EFGH"   # real value for IDE03351
-DID_INSP_TIME="IJKL"   # real value for IDE03352
+Cross-compile on Linux:
+```bash
+sudo apt install gcc-14-sh4-linux-gnu
+sh4-linux-gnu-gcc-14 -c -O2 -fPIC -ffreestanding -nostdlib \
+    -o bin/uds_send.o src/uds_send.c
 ```
+
+Link on QNX target (via telnet to the PCM):
+```bash
+/usr/bin/ld -o /scripts/ServiceReset/uds_send uds_send.o \
+    -lc -dynamic-linker /usr/lib/ldqnx.so.2
+```
+
+## NDR devctl Interface (from Ghidra RE)
+
+The native binary communicates via the NDR resource manager:
+```
+devctl(/dev/ndr/cmd, DIOT(0x20, 8, size), &msg, size, NULL)
+                      ^^^^  ^^  ^
+                      class cmd  direction (write to device)
+```
+
+Command encoding (QNX `__DIOT` macro):
+```
+DIOT(0x20, 8, N)  = 0x80002008 | (N << 16)   — write N bytes
+DIOF(0x20, 8, N)  = 0x40002008 | (N << 16)   — read N bytes
+DIOTF(0x20, 8, N) = 0xC0002008 | (N << 16)   — bidirectional
+```
+
+The `ndr_msg` struct wraps the UDS payload for CAN transport.
+Field layout needs validation on live system — the binary tries
+DIOT → DIOTF → DION as fallback and logs the result.
 
 ## Background
 

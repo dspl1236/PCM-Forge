@@ -40,11 +40,25 @@ for script in service_status.sh service_reset.sh; do
     fi
 done
 
-# Install native binary
+# Install native binary (pre-linked or build from .o)
 if [ -f "$USB/service-reset/bin/uds_send" ]; then
     cp "$USB/service-reset/bin/uds_send" "$SCRIPTDIR/" 2>/dev/null
     chmod 755 "$SCRIPTDIR/uds_send" 2>/dev/null
-    echo "Installed: uds_send" >> "$LOGFILE"
+    echo "Installed: uds_send (pre-built)" >> "$LOGFILE"
+elif [ -f "$USB/service-reset/bin/uds_send.o" ]; then
+    echo "Found uds_send.o — building on target..." >> "$LOGFILE"
+    cp "$USB/service-reset/bin/uds_send.o" "$SCRIPTDIR/" 2>/dev/null
+    # Try to link
+    if [ -x "/usr/bin/ld" ]; then
+        /usr/bin/ld -o "$SCRIPTDIR/uds_send" "$SCRIPTDIR/uds_send.o" \
+            -lc -dynamic-linker /usr/lib/ldqnx.so.2 >> "$LOGFILE" 2>&1
+        if [ $? -eq 0 ]; then
+            chmod 755 "$SCRIPTDIR/uds_send" 2>/dev/null
+            echo "Built: uds_send (linked on target)" >> "$LOGFILE"
+        else
+            echo "Link failed — try manual: /usr/bin/ld -o uds_send uds_send.o -lc" >> "$LOGFILE"
+        fi
+    fi
 fi
 
 echo "" >> "$LOGFILE"
