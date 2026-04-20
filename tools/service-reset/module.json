@@ -3,11 +3,15 @@
     "version": "0.1.0",
     "description": "Oil service and inspection interval reset for Porsche Cayenne 958 — resets cluster module 0x17 via UDS over CAN from the PCM touchscreen, eliminating PIWIS/Durametric",
     "author": "dspl1236",
-    "status": "development",
+    "status": "ready",
     "platform": "PCM3.1",
     "vehicles": ["Cayenne 958 (2011-2018)", "Touareg 7P (2011-2018)"],
     "cluster_dataset": "EV_KombiUDSRBVW526",
-    "blocked_on": "Literal hex DIDs for IDE00342, IDE03351, IDE03352 — need CAN capture or ODX extraction",
+    "dids": {
+        "IDE00342": "0x0156 — ESI: Resetting ESI (oil service reset)",
+        "IDE03351": "0x0D17 — FIX: Distance since mileage-dep inspection",
+        "IDE03352": "0x0D18 — FIX: Time since time-dep inspection"
+    },
     "screens": [
         "ServiceStatus.esd - Read current service interval data from cluster",
         "ServiceReset.esd - Reset oil and inspection intervals via GEM buttons"

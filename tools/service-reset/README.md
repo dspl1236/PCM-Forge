@@ -3,24 +3,25 @@
 Reset oil service and inspection intervals from the PCM touchscreen.
 No PIWIS. No Durametric. No dealer.
 
-## Status: FRAMEWORK READY — Blocked on 3 hex values
+## Status: READY — DIDs Confirmed
 
-Everything is built. The tool refuses to run until the placeholder DIDs are
-replaced with real values from the Cayenne 958 cluster.
+DID values derived from VCDS IDE channel numbers (decimal → hex conversion).
+Confirmed via Ross-Tech wiki and Club Touareg forum documentation.
 
-### What's needed
+### UDS Data Identifiers
 
-| IDE Channel | Function | DID | Status |
+| IDE Channel | Function | Hex DID | UDS Command |
 |---|---|---|---|
-| IDE00342-ESI | Oil service reset | `0x????` | **UNKNOWN** |
-| IDE03351-FIX | Distance since inspection | `0x????` | **UNKNOWN** |
-| IDE03352-FIX | Time since inspection | `0x????` | **UNKNOWN** |
+| IDE00342-ESI | Oil service reset trigger | `0x0156` | `2E 01 56` |
+| IDE03351-FIX | Distance since inspection | `0x0D17` | `2E 0D 17 00 00` |
+| IDE03352-FIX | Time since inspection | `0x0D18` | `2E 0D 18 00 00` |
 
-### How to get them
+### Additional Channels
 
-1. **CAN capture** — sniff OBD-II while iCarScan/Durametric resets
-2. **VCDS** — module 17 → Adaptation dropdown on Cayenne or Touareg 7P
-3. **ODX** — parse `EV_KombiUDSRBVW526.rod` from PIWIS/ODIS
+| IDE Channel | Function | Hex DID |
+|---|---|---|
+| IDE00510-SEI | Service interval (soot) | `0x01FE` |
+| IDE00511-ESI | Extended service interval | `0x01FF` |
 
 ## How it works
 

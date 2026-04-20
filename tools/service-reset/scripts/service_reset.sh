@@ -2,7 +2,8 @@
 # service_reset.sh — Execute oil/inspection reset via UDS to cluster
 # Usage: service_reset.sh [oil|inspection|all]
 #
-# !! DIDs are PLACEHOLDERS — must be confirmed via CAN capture !!
+# DIDs derived from VCDS IDE channel numbers (decimal → hex)
+# Confirmed via Ross-Tech wiki + Club Touareg forum posts
 #
 # Part of PCM-Forge: github.com/dspl1236/PCM-Forge
 
@@ -10,12 +11,12 @@ MODE="${1:-all}"
 LOG="/fs/usb0/service_reset.log"
 BINDIR="/scripts/ServiceReset"
 
-# === PLACEHOLDER DIDs — REPLACE WITH REAL VALUES ===
-# Get these by CAN-capturing a Durametric/iCarScan reset
-# or extracting from EV_KombiUDSRBVW526.rod ODX file
-DID_OIL_RESET="0000"   # IDE00342-ESI: oil service reset
-DID_INSP_DIST="0000"   # IDE03351-FIX: distance since inspection → write 0
-DID_INSP_TIME="0000"   # IDE03352-FIX: time since inspection → write 0
+# === UDS Data Identifiers for Cayenne 958 / Touareg 7P Cluster ===
+# IDE00342 = 342 dec = 0x0156 | IDE03351 = 3351 dec = 0x0D17
+# IDE03352 = 3352 dec = 0x0D18
+DID_OIL_RESET="0156"   # IDE00342-ESI: oil service reset
+DID_INSP_DIST="0D17"   # IDE03351-FIX: distance since inspection → write 0
+DID_INSP_TIME="0D18"   # IDE03352-FIX: time since inspection → write 0
 
 echo "=== PCM-Forge Service Reset ===" > "$LOG"
 echo "Mode: $MODE" >> "$LOG"
