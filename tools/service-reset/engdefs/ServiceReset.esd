@@ -1,0 +1,36 @@
+#############################################
+#  Service Interval Reset — PCM-Forge
+#  Resets oil/inspection on Cayenne 958
+#  cluster (module 0x17) via UDS 0x2E
+#
+#  !! DIDs are placeholders until confirmed !!
+#############################################
+
+screen ServiceReset Car
+
+# === Enable Service Feature ===
+button
+   value    per 3 0x0010001F "1"
+   label    "Enable Service Interval"
+
+button
+   value    per 3 0x0014004E "1"
+   label    "Enable Service Protocol"
+
+# === Reset Buttons ===
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/service_reset.sh oil"
+   label    ">> RESET OIL SERVICE <<"
+
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/service_reset.sh inspection"
+   label    ">> RESET INSPECTION <<"
+
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/service_reset.sh all"
+   label    ">> RESET ALL SERVICES <<"
+
+# === Status ===
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/service_status.sh"
+   label    ">> Read Status <<"
