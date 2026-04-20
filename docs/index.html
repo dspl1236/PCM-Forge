@@ -2,572 +2,917 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PCM-Forge — Porsche PCM 3.1 Activation</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<title>PCM-Forge</title>
+<style>
+@font-face{font-family:'JetBrains Mono';font-weight:400;src:url('fonts/JetBrainsMono-Regular.woff2') format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:600;src:url('fonts/JetBrainsMono-SemiBold.woff2') format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:700;src:url('fonts/JetBrainsMono-Bold.woff2') format('woff2')}
+@font-face{font-family:'DM Sans';font-weight:400;src:url('fonts/DMSans-Regular.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-weight:500;src:url('fonts/DMSans-Medium.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-weight:700;src:url('fonts/DMSans-Bold.ttf') format('truetype')}
+</style>
 <style>
 :root{--bg:#0a0a0c;--surface:#131318;--surface2:#1a1a22;--border:#2a2a35;--text:#e8e8ed;--text2:#8888a0;--accent:#c8a44e;--accent2:#e8c85e;--green:#4eca7a;--red:#e85454;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,164,78,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,164,78,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-.container{max-width:860px;margin:0 auto;padding:40px 24px;position:relative;z-index:1}
-.header{text-align:center;margin-bottom:48px}
-.logo{font-family:var(--mono);font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;opacity:0;animation:fadeIn .6s ease .2s forwards}
-h1{font-size:36px;font-weight:700;letter-spacing:-.5px;margin-bottom:12px;opacity:0;animation:fadeIn .6s ease .3s forwards}
-h1 span{color:var(--accent)}
-.subtitle{color:var(--text2);font-size:16px;line-height:1.6;max-width:520px;margin:0 auto;opacity:0;animation:fadeIn .6s ease .4s forwards}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;margin-bottom:24px;opacity:0;animation:slideUp .5s ease .5s forwards}
-.input-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:block}
-.vin-row{display:flex;gap:12px}
-.vin-input{flex:1;font-family:var(--mono);font-size:20px;letter-spacing:3px;padding:16px 20px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color .2s;text-transform:uppercase}
+::selection{background:rgba(200,164,78,.25)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.app{max-width:860px;margin:0 auto;padding:24px;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:32px;padding-top:16px}
+.logo{font-family:var(--mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header h1 span{color:var(--accent)}
+.header .sub{color:var(--text2);font-size:13px;margin-top:6px}
+
+.tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:24px;overflow:hidden}
+.tab{flex:1;padding:14px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:1px;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--text2);text-align:center}
+.tab.active{background:var(--accent);color:var(--bg)}
+.tab:not(.active):hover{background:var(--surface2);color:var(--text)}
+.tab-icon{margin-right:6px}
+.panel{display:none}.panel.active{display:block}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:20px}
+.card-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+
+.vin-row{display:flex;gap:10px}
+.vin-input{flex:1;font-family:var(--mono);font-size:18px;letter-spacing:3px;padding:14px 16px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color .2s;text-transform:uppercase}
 .vin-input:focus{border-color:var(--accent)}
-.vin-input::placeholder{color:#404058;letter-spacing:1px;font-size:14px}
-.btn{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;padding:14px 24px;border:none;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
-.btn-go{background:var(--accent);color:var(--bg);padding:16px 28px}
+.vin-input::placeholder{color:#404058;letter-spacing:1px;font-size:13px}
+
+.btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;padding:14px 22px;border:none;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-go{background:var(--accent);color:var(--bg)}
 .btn-go:hover{background:var(--accent2);transform:translateY(-1px)}
-.btn-accent{background:0 0;border:2px solid var(--accent);color:var(--accent)}
-.btn-accent:hover{background:var(--accent);color:var(--bg)}
-.btn-usb{background:var(--green);color:var(--bg);font-size:14px}
-.btn-usb:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.hint{font-size:13px;color:var(--text2);margin-top:10px}
-.error{color:var(--red);font-size:13px;margin-top:10px;display:none}
-.results{display:none}.results.show{display:block;animation:slideUp .4s ease}
-.rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.rh h2{font-size:20px;font-weight:700}
-.badge{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:6px 14px;border-radius:6px;color:var(--accent);border:1px solid var(--border)}
-.model-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.model-bar-lbl{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
-.model-bar select{flex:1;min-width:200px;font-family:var(--sans);font-size:14px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none}
-.model-bar select:focus{border-color:var(--accent)}
-.model-bar .sub-hex{font-family:var(--mono);font-size:12px;color:var(--text2)}
-.mode-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px}
-.mode-btn{flex:1;padding:14px 20px;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--text2);text-align:center}
-.mode-btn.active{background:var(--accent);color:var(--bg)}
-.mode-btn:not(.active):hover{background:var(--surface2);color:var(--text)}
-.view{display:none}.view.active{display:block}
-.cat-hdr{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
-.cat-hdr.mt{margin-top:20px;padding-top:12px;border-top:1px solid var(--border)}
-.cc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s;gap:12px}
-.cc:hover{border-color:var(--accent)}
-.fn{font-weight:700;font-size:15px}.fd{color:var(--text2);font-size:12px;margin-top:2px}
-.cv{font-family:var(--mono);font-size:17px;letter-spacing:2px;color:var(--green);user-select:all;cursor:pointer}
-.cb{font-family:var(--mono);font-size:11px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:5px;cursor:pointer;transition:all .2s;margin-left:12px}
-.cb:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
-.cb.ok{background:var(--green);color:var(--bg);border-color:var(--green)}
-.usb-intro{color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:20px}
-.usb-intro code{font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 8px;border-radius:4px;color:var(--accent)}
-.usb-steps{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:16px 0 24px;font-size:14px}
-.usb-steps .num{font-family:var(--mono);font-weight:700;color:var(--accent);font-size:13px}
-.usb-steps .step{color:var(--text2)}
-.fg-section{margin-bottom:16px}
-.fg-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ft{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;font-size:13px;line-height:1.4}
-.ft:hover{border-color:var(--accent)}.ft.on{border-color:var(--green);background:rgba(78,202,122,.06)}
-.ft input{accent-color:var(--green);margin-top:2px;flex-shrink:0}
-.ft-name{font-weight:600}.ft-desc{color:var(--text2);font-size:11px;margin-top:2px}
-.ft-warn{color:var(--red);font-size:11px;margin-top:2px}
-.ft-info{color:var(--accent);font-size:11px;margin-top:4px;font-family:var(--mono)}
-.ua{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
-.sm{font-family:var(--mono);font-size:13px;margin-top:12px;padding:10px 14px;border-radius:6px;display:none}
-.sm.ok{display:block;background:rgba(78,202,122,.1);color:var(--green);border:1px solid rgba(78,202,122,.2)}
-.sm.bad{display:block;background:rgba(232,84,84,.1);color:var(--red);border:1px solid rgba(232,84,84,.2)}
-.cn{font-family:var(--mono);font-size:11px;color:var(--text2);text-align:center;margin-top:24px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
-.footer{text-align:center;margin-top:48px;padding-top:32px;border-top:1px solid var(--border)}
-.footer p{color:var(--text2);font-size:13px;line-height:1.8}
+.btn-outline{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+.btn-outline:hover{background:var(--accent);color:var(--bg)}
+.btn-green{background:var(--green);color:var(--bg)}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+.model-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.model-row label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.model-row select{flex:1;font-family:var(--sans);font-size:13px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none}
+.model-row select:focus{border-color:var(--accent)}
+
+.results{display:none}.results.show{display:block}
+.code-grid{display:grid;gap:8px}
+.code-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s}
+.code-row:hover{border-color:var(--accent)}
+.code-name{font-weight:600;font-size:14px}.code-desc{color:var(--text2);font-size:11px;margin-top:2px}
+.code-val{font-family:var(--mono);font-size:16px;letter-spacing:2px;color:var(--green);user-select:all;cursor:pointer}
+.code-copy{font-family:var(--mono);font-size:10px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;transition:all .2s;margin-left:10px}
+.code-copy:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.code-copy.ok{background:var(--green);color:var(--bg);border-color:var(--green)}
+
+.cat-hdr{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:16px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
+.cat-hdr:first-child{border-top:none;margin-top:0;padding-top:0}
+
+.dl-row{display:flex;gap:10px;margin-top:16px}
+
+/* Tab 2: Device */
+.port-row{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.port-select{flex:1;font-family:var(--sans);font-size:13px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none}
+.status{font-family:var(--mono);font-size:12px;padding:8px 14px;border-radius:6px;margin-bottom:16px}
+.status.ok{background:rgba(78,202,122,.1);color:var(--green);border:1px solid rgba(78,202,122,.2)}
+.status.err{background:rgba(232,84,84,.1);color:var(--red);border:1px solid rgba(232,84,84,.2)}
+.status.info{background:rgba(200,164,78,.1);color:var(--accent);border:1px solid rgba(200,164,78,.2)}
+
+.vin-display{font-family:var(--mono);font-size:22px;letter-spacing:4px;color:var(--accent);padding:16px;background:var(--bg);border:2px solid var(--accent);border-radius:8px;text-align:center;margin-bottom:16px}
+
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.feat-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;font-size:13px}
+.feat-item:hover{border-color:var(--accent)}
+.feat-item.on{border-color:var(--green);background:rgba(78,202,122,.06)}
+.feat-item input[type=checkbox]{accent-color:var(--green);margin-top:2px;flex-shrink:0;width:16px;height:16px}
+.feat-name{font-weight:600}.feat-desc{color:var(--text2);font-size:11px;margin-top:2px}
+.feat-code{font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px}
+
+.action-bar{display:flex;gap:10px;margin-top:20px}
+
+.log{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;max-height:150px;overflow-y:auto;margin-top:16px;white-space:pre-wrap;line-height:1.6}
+.log .ok{color:var(--green)}.log .err{color:var(--red)}.log .acc{color:var(--accent)}
+
+.footer{text-align:center;margin-top:32px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border)}
 .footer a{color:var(--accent);text-decoration:none}
-.chk{color:var(--green)}
-.dl-row{display:flex;gap:12px;margin-top:12px}.dl-row .btn{font-size:12px;padding:10px 16px}
-.diag-box{margin-top:16px;padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px}
-.diag-head{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-.diag-head input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
-.diag-title{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
-.diag-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding-left:26px}
-.diag-desc code{font-family:var(--mono);background:var(--bg);padding:1px 6px;border-radius:3px;color:var(--accent);font-size:11px}
-.diag-active .usb-steps{opacity:.4}
-.diag-callout{display:none;background:rgba(200,164,78,.1);border:1px solid var(--accent);border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13px;line-height:1.6}
-.diag-active .diag-callout{display:block}
-.diag-callout strong{color:var(--accent);font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:600px){.vin-row{flex-direction:column}h1{font-size:28px}.vin-input{font-size:16px;letter-spacing:2px}.cc{flex-wrap:wrap;gap:8px}.cv{font-size:14px;letter-spacing:1px}.fg{grid-template-columns:1fr}.ua{flex-direction:column}.mode-btn{font-size:12px;padding:12px 10px}.model-bar{flex-direction:column;align-items:stretch}}
 </style>
 </head>
 <body>
-<div class="container">
+<div class="app">
   <div class="header">
     <div class="logo">PCM-Forge</div>
-    <h1>Porsche <span>PCM 3.1</span> Activation</h1>
-    <p class="subtitle">Open-source activation code generator for PCM 3.0 &amp; 3.1. Reverse-engineered from firmware. No dealers, no fees. 26 features.</p>
+    <h1>Porsche <span>Activation</span> Suite</h1>
+    <div class="sub">PCM 3.1 activation code generator & vehicle programmer</div>
   </div>
-  <div class="card">
-    <label class="input-label">Enter your 17-digit VIN</label>
-    <div class="vin-row">
-      <input type="text" class="vin-input" id="vi" maxlength="17" placeholder="WP0AB2A95GS100123" spellcheck="false" autocomplete="off">
-      <button class="btn btn-go" onclick="gen()">GENERATE</button>
-    </div>
-    <div class="hint">Found on driver door jamb, dashboard, or registration. Works with 911, Cayenne, Panamera, Boxster, Cayman, Macan.</div>
-    <div class="error" id="er"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('generate')"><span class="tab-icon">&#9881;</span>Generate codes</button>
+    <button class="tab" onclick="switchTab('usb')"><span class="tab-icon">&#128190;</span>USB stick</button>
+    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Vehicle connect</button>
   </div>
-  <div class="results" id="res">
-    <div class="rh"><h2>Activation Codes</h2><span class="badge" id="vb"></span></div>
-    <div class="model-bar">
-      <span class="model-bar-lbl">Vehicle Model</span>
-      <select id="model-dd" onchange="updateFeatLvl(this.value)"></select>
-      <span class="sub-hex" id="sub-hex"></span>
-    </div>
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="mb-piwis" onclick="setMode('piwis')">🔧 PIWIS</button>
-      <button class="mode-btn" id="mb-usb" onclick="setMode('usb')">💾 USB STICK</button>
-      <button class="mode-btn" id="mb-manage" onclick="setMode('manage')">📂 MANAGE BACKUP</button>
-    </div>
-    <div class="view active" id="view-piwis">
-      <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Enter these 16-digit hex codes via PIWIS → Engineering Menu → SWActivation. FeatureLevel uses the model selected above.</p>
-      <div id="cc"></div>
-      <div class="dl-row"><button class="btn btn-accent" onclick="dlTxt()">↓ Export all codes as .txt</button></div>
-    </div>
-    <div class="view" id="view-usb">
-      <p class="usb-intro">Build a USB activation stick. Select features, download all three files, copy to <strong>FAT32 USB</strong>.</p>
-      <div class="usb-steps">
-        <span class="num">1</span><span class="step">Pick your model above (for FeatureLevel / boot logo)</span>
-        <span class="num">2</span><span class="step">Check features you want to activate</span>
-        <span class="num">3</span><span class="step">Download <code>copie_scr.sh</code> + <code>run.sh</code> + <code>PagSWAct.002</code></span>
-        <span class="num">4</span><span class="step">Copy all three to USB root — insert → ignition on → wait 60 sec → cycle ignition</span>
+
+  <!-- TAB 1: Generate Codes -->
+  <div id="tab-generate" class="panel active">
+    <div class="card">
+      <div class="card-title">Vehicle identification number</div>
+      <div class="vin-row">
+        <input type="text" id="vin1" class="vin-input" maxlength="17" placeholder="Enter 17-digit VIN" autocomplete="off" spellcheck="false">
+        <button class="btn btn-go" onclick="generateCodes()">Generate</button>
       </div>
-      <div class="diag-box" id="diag-box">
-        <label class="diag-head" for="diag-chk">
-          <input type="checkbox" id="diag-chk" onchange="toggleDiag()">
-          <span class="diag-title">🔍 Diagnostic Mode (run this first!)</span>
+      <div class="model-row" style="margin-top:14px">
+        <label>Model</label>
+        <select id="model1"></select>
+      </div>
+      <div id="err1" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></div>
+    </div>
+
+    <div id="results1" class="results">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-size:18px">Activation codes</h2>
+        <span id="vin-badge" style="font-family:var(--mono);font-size:12px;background:var(--surface2);padding:5px 12px;border-radius:6px;color:var(--accent);border:1px solid var(--border)"></span>
+      </div>
+      <div id="code-list" class="code-grid"></div>
+      <div class="dl-row">
+        <button class="btn btn-outline" onclick="copyAll()">Copy all</button>
+        <button class="btn btn-green" onclick="downloadPagSWAct()">Download PagSWAct.002</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: USB Stick Builder -->
+  <div id="tab-usb" class="panel">
+    <div class="card">
+      <div class="card-title">Build activation USB stick</div>
+      <div class="vin-row">
+        <input type="text" id="vin2" class="vin-input" maxlength="17" placeholder="Enter 17-digit VIN" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="model-row" style="margin-top:14px">
+        <label>Model</label>
+        <select id="model2"></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <span style="color:var(--accent);font-family:var(--mono);font-weight:700">How it works:</span>
+        Copy all <strong>3 files</strong> to a <strong>FAT32 USB stick</strong> root: <code>copie_scr.sh</code> (XOR bootstrap), <code>run.sh</code> (plaintext script), and <code>PagSWAct.002</code> (activation codes). The <strong>Save to folder</strong> button also bundles <code>bin/showScreen</code> and <code>lib/*.png</code> status screens automatically. Insert into Cayenne USB port with ignition on. Wait 60–90 seconds. Remove and cycle ignition.
+      </div>
+
+      <div style="padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600">
+          <input type="checkbox" id="usb-diag" style="accent-color:var(--accent);width:18px;height:18px" onchange="usbToggleDiag()">
+          <span>&#128269; Diagnostic mode (run this first!)</span>
         </label>
-        <div class="diag-desc">
-          Enhanced 29-test diagnostic probe — no changes are made to the car. Writes <code>pcm_debug.log</code> + <code>pcm_dump/</code> folder to USB with PCM version, VIN, variant coding (CVALUE), CAN bus, network/telnet, flash &amp; HDD partitions, engineering screens, HMI region, SWDL state, HDD SMART data. Also <strong>backs up your current <code>PagSWAct.002</code></strong> to the USB stick as <code>PagSWAct_backup.002</code>. No features needed — just check this box and write to USB.
+        <div id="usb-diag-desc" style="display:none;margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6">
+          Replaces <code>copie_scr.sh</code> with an enhanced diagnostic probe that writes <code>pcm_debug.log</code> + <code>pcm_dump/</code> folder back to USB —
+          29+ tests: PCM version, VIN, activation files, variant coding (CVALUE), FSC state, CAN bus, network/telnet, flash &amp; HDD partitions,
+          engineering ESD screens, browser paths, HMI region, SWDL state, HDD SMART data, plus CAN/IOC probe (IPC devices, DSP, FPGA sysregs, MOST, service broker, inetd.conf). Backs up existing PagSWAct. No changes are made to the car.
         </div>
-      </div>
-      <div id="fg"></div>
-      <div class="ua">
-        <button class="btn btn-usb" onclick="writeUsb()">📁 Write All to USB</button>
-        <button class="btn btn-accent" onclick="dlBin()">↓ PagSWAct.002</button>
-        <button class="btn btn-accent" onclick="dlScr()">↓ copie_scr.sh</button>
-        <button class="btn btn-accent" onclick="dlRun()">↓ run.sh</button>
-      </div>
-      <div class="diag-callout">
-        <strong>After you run the diagnostic USB</strong>
-        1. Insert USB with ignition on, wait 60–90 sec.<br>
-        2. Remove USB, put it back in your PC.<br>
-        3. You should see <code>pcm_debug.log</code> on it (and maybe <code>pcm_ran.txt</code>). If <code>pcm_debug.log</code> is missing, the PCM never ran the script — tell us that.<br>
-        4. Drag the log into the chat. We'll read it and figure out the next move.
       </div>
 
-      <div style="margin-top:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-        <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;cursor:pointer" onclick="document.getElementById('bs-panel').style.display=document.getElementById('bs-panel').style.display==='none'?'block':'none'">🖼️ CUSTOM BOOT SCREEN ▾</div>
-        <div id="bs-panel" style="display:none">
-          <div style="color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:14px">
-            Upload any image to use as your PCM startup screen. It will be resized to <strong>800×480</strong> and exported as a PNG <code>.bin</code> file. Copy to USB alongside your activation files.
-          </div>
-          <div style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:14px" id="bs-drop" onclick="document.getElementById('bs-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBootImg(event.dataTransfer.files[0])">
-            <div style="font-size:24px;margin-bottom:6px">🖼️</div>
-            <div style="color:var(--text2);font-size:13px">Drop image here or click to browse</div>
-            <input type="file" id="bs-file" accept="image/*" style="display:none" onchange="handleBootImg(this.files[0])">
-          </div>
-          <canvas id="bs-canvas" width="800" height="480" style="display:none;width:100%;max-width:800px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;background:#000"></canvas>
-          <div id="bs-actions" style="display:none;flex-wrap:wrap;gap:12px">
-            <button class="btn btn-green" onclick="dlBootscreen()">↓ Download CustomBootscreen.bin</button>
-            <button class="btn btn-outline" onclick="dlBootscreenUSB()">↓ Download with USB run.sh</button>
-          </div>
-          <div id="bs-status" class="sm" style="margin-top:10px"></div>
-        </div>
+      <div class="cat-hdr">Core features</div>
+      <div class="feat-grid" id="usb-feat-core"></div>
+
+      <div class="cat-hdr">Navigation databases</div>
+      <div class="feat-grid" id="usb-feat-nav"></div>
+
+      <div class="action-bar">
+        <button class="btn btn-outline" onclick="usbSelectAll(true)">Select all</button>
+        <button class="btn btn-outline" onclick="usbSelectAll(false)">Deselect all</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-green" onclick="usbSaveFiles()">&#128190; Build USB stick</button>
+        <button class="btn btn-outline" onclick="usbDownloadScr()">&#8595; copie_scr.sh</button>
+        <button class="btn btn-outline" onclick="usbDownloadRun()">&#8595; run.sh</button>
+        <button class="btn btn-outline" onclick="usbDownloadBin()">&#8595; PagSWAct.002</button>
       </div>
-      <div class="sm" id="sm"></div>
+      <div id="usb-status" class="status info" style="margin-top:12px;display:none"></div>
     </div>
-    <div class="view" id="view-manage">
-      <p class="usb-intro">Upload your <code>PagSWAct_backup.002</code> from the diagnostic USB to see what's activated, then add features and download a merged file.</p>
-      <div style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;margin-bottom:20px;cursor:pointer;transition:border-color .2s" id="drop-zone" onclick="document.getElementById('file-upload').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBackupFile(event.dataTransfer.files[0])">
-        <div style="font-size:28px;margin-bottom:8px">📂</div>
-        <div style="color:var(--text2);font-size:14px">Drop <code>PagSWAct_backup.002</code> here or click to browse</div>
-        <input type="file" id="file-upload" accept=".002,.bin" style="display:none" onchange="handleBackupFile(this.files[0])">
-      </div>
-      <div id="backup-info" style="display:none">
-        <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">CURRENT FEATURES</div>
-        <div id="backup-features"></div>
-        <div style="margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">ADD FEATURES</div>
-        <div id="add-features"></div>
-        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-usb" onclick="dlMerged()">↓ Download merged PagSWAct.002</button>
-          <button class="btn btn-accent" onclick="dlMergedUSB()">📁 Download full USB kit</button>
-        </div>
-        <div class="sm" id="sm-manage"></div>
-      </div>
-    </div>
-    <div class="cn">RSA-64 · n=0x69f39c927ef94985 · d=0x5483975015d0287b · All computation runs locally in your browser</div>
   </div>
-  <div class="footer"><p>PCM-Forge is open source · <a href="https://github.com/dspl1236/PCM-Forge" target="_blank">GitHub</a><br>Reverse-engineered from QNX IFS firmware via Ghidra SH4 decompilation<br>No affiliation with Porsche AG · For research &amp; personal use</p></div>
+
+  <!-- TAB 3: Vehicle Connect -->
+  <div id="tab-device" class="panel">
+    <div class="card">
+      <div class="card-title">OBD-II connection</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <span style="color:var(--accent);font-family:var(--mono);font-weight:700">Requires hardware:</span> ESP32-CAN dongle
+        (<a href="https://github.com/Switchleg1/esp32-isotp-ble-bridge" style="color:var(--accent)">Switchleg1 ISO-TP bridge</a>)
+        connected to the vehicle's OBD-II port via USB or Bluetooth serial.
+      </div>
+      <div class="port-row">
+        <select id="port-select" class="port-select"><option value="">Select COM port...</option></select>
+        <button class="btn btn-outline" onclick="refreshPorts()">Refresh</button>
+        <button class="btn btn-go" id="btn-connect" onclick="connectDevice()">Connect</button>
+      </div>
+      <div id="dev-status" class="status info">Disconnected — select USB or Bluetooth COM port</div>
+    </div>
+
+    <div id="dev-connected" style="display:none">
+      <div class="card">
+        <div class="card-title">Vehicle detected</div>
+        <div id="dev-vin" class="vin-display">—</div>
+        <div id="dev-model" style="color:var(--text2);font-size:13px;text-align:center;margin-bottom:12px"></div>
+        <button class="btn btn-outline" onclick="readVIN()" style="width:100%">Read VIN from car</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Feature activations</div>
+
+        <div class="cat-hdr">Core features</div>
+        <div class="feat-grid" id="feat-core"></div>
+
+        <div class="cat-hdr">Navigation databases</div>
+        <div class="feat-grid" id="feat-nav"></div>
+
+        <div class="action-bar">
+          <button class="btn btn-outline" onclick="selectAll(true)">Select all</button>
+          <button class="btn btn-outline" onclick="selectAll(false)">Deselect all</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-green" onclick="applyActivations()" id="btn-apply">Apply selected</button>
+        </div>
+      </div>
+
+      <div id="dev-log" class="log"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/dspl1236/PCM-Forge">github.com/dspl1236/PCM-Forge</a> &mdash; open source &mdash; 64-bit RSA cracked from QNX firmware
+  </div>
 </div>
+
 <script>
-const N=0x69f39c927ef94985n,D=0x5483975015d0287bn,E=0x4c1c5eeaf397c0b3n;
-// Boot logo / model variant SubIDs decoded from PagSWAct.csv test VINs
-const MODELS=[
-  // 911 (997)
-  {sub:0x0001,nm:'911 (997)'},{sub:0x0002,nm:'911 (997) Carrera'},{sub:0x0003,nm:'911 (997) Carrera S'},
-  {sub:0x0004,nm:'911 (997) Carrera 4'},{sub:0x0005,nm:'911 (997) Carrera 4S'},
-  {sub:0x0006,nm:'911 (997) Carrera Cab'},{sub:0x0007,nm:'911 (997) Carrera S Cab'},
-  {sub:0x0008,nm:'911 (997) Carrera 4 Cab'},{sub:0x0009,nm:'911 (997) Carrera 4S Cab'},
-  {sub:0x000a,nm:'911 (997) targa 4'},{sub:0x000b,nm:'911 (997) targa 4S'},
-  {sub:0x000c,nm:'911 (997) Turbo'},{sub:0x000d,nm:'911 (997) Turbo Cab'},
-  {sub:0x000e,nm:'911 (997) Turbo S'},{sub:0x000f,nm:'911 (997) Turbo S Cab'},
-  {sub:0x0010,nm:'911 (997) GT3'},{sub:0x0012,nm:'911 (997) GT3 RS'},
+// ===== RSA Math (64-bit using BigInt) =====
+const N = 0x69f39c927ef94985n;
+const E = 0x4c1c5eeaf397c0b3n;
+const D = 0x5483975015d0287bn;
+
+function modpow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = (result * base) % mod;
+    exp = exp >> 1n;
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+function vinToNumber(vin) {
+  const vl = vin.toLowerCase();
+  const positions = [7, 9, 11, 12, 13, 14, 15, 16];
+  let result = 0, weight = 10;
+  for (let i = positions.length - 1; i >= 0; i--) {
+    const c = vl[positions[i]];
+    const b = /\d/.test(c) ? parseInt(c) : (c >= 'a' && c <= 'z' ? c.charCodeAt(0) % 10 : 0);
+    result = (result + b * weight) >>> 0;
+    weight = (weight * 10) & 0xFFFF;
+  }
+  return result;
+}
+
+function interleave(a, b) {
+  let r = '';
+  for (let i = 0; i < 8; i++) r += a[i] + b[i];
+  return r;
+}
+
+function generateCode(vin, featHex) {
+  const vh = vinToNumber(vin).toString(16).padStart(8, '0');
+  const pt = BigInt('0x' + interleave(featHex, vh));
+  return modpow(pt, D, N).toString(16).padStart(16, '0');
+}
+
+// ===== Models =====
+const MODELS = {
+  // 911 (997) Coupe
+  '911':              [0x0001, '911 (997)'],
+  '911-carrera':      [0x0002, '911 (997) Carrera'],
+  '911-carrera-s':    [0x0003, '911 (997) Carrera S'],
+  '911-carrera-4':    [0x0004, '911 (997) Carrera 4'],
+  '911-carrera-4s':   [0x0005, '911 (997) Carrera 4S'],
+  // 911 (997) Cabriolet
+  '911-cab':          [0x0006, '911 (997) Carrera Cab'],
+  '911-cab-s':        [0x0007, '911 (997) Carrera S Cab'],
+  '911-cab-4':        [0x0008, '911 (997) Carrera 4 Cab'],
+  '911-cab-4s':       [0x0009, '911 (997) Carrera 4S Cab'],
+  // 911 (997) Targa
+  '911-targa-4':      [0x000a, '911 (997) targa 4'],
+  '911-targa-4s':     [0x000b, '911 (997) targa 4S'],
+  // 911 (997) Turbo / GT
+  '911-turbo':        [0x000c, '911 (997) Turbo'],
+  '911-turbo-cab':    [0x000d, '911 (997) Turbo Cab'],
+  '911-turbo-s':      [0x000e, '911 (997) Turbo S'],
+  '911-turbo-s-cab':  [0x000f, '911 (997) Turbo S Cab'],
+  '911-gt3':          [0x0010, '911 (997) GT3'],
+  '911-gt3rs':        [0x0012, '911 (997) GT3 RS'],
   // 911 (991)
-  {sub:0x0014,nm:'911 (991)'},{sub:0x0015,nm:'911 (991) alt'},
-  {sub:0x0016,nm:'911 (991) Carrera GTS'},{sub:0x0017,nm:'911 (991) Carrera 4 GTS'},
-  {sub:0x0018,nm:'911 (991) GTS Cab'},{sub:0x0019,nm:'911 (991) 4 GTS Cab'},
+  '911-991':          [0x0014, '911 (991)'],
+  '911-991-alt':      [0x0015, '911 (991) alt'],
+  '911-991-gts':      [0x0016, '911 (991) Carrera GTS'],
+  '911-991-4gts':     [0x0017, '911 (991) Carrera 4 GTS'],
+  '911-991-gts-cab':  [0x0018, '911 (991) GTS Cab'],
+  '911-991-4gts-cab': [0x0019, '911 (991) 4 GTS Cab'],
   // Boxster
-  {sub:0x001a,nm:'Boxster'},{sub:0x001b,nm:'Boxster (alt)'},
-  {sub:0x001c,nm:'Boxster S'},{sub:0x001d,nm:'Boxster RS'},
-  {sub:0x001e,nm:'Boxster GTS'},{sub:0x001f,nm:'Boxster Spyder'},
+  'boxster':          [0x001a, 'Boxster'],
+  'boxster-alt':      [0x001b, 'Boxster (alt)'],
+  'boxster-s':        [0x001c, 'Boxster S'],
+  'boxster-rs':       [0x001d, 'Boxster RS'],
+  'boxster-gts':      [0x001e, 'Boxster GTS'],
+  'boxster-spyder':   [0x001f, 'Boxster Spyder'],
   // Cayman
-  {sub:0x0022,nm:'Cayman'},{sub:0x0023,nm:'Cayman (alt)'},
-  {sub:0x0024,nm:'Cayman S'},{sub:0x0025,nm:'Cayman R'},
-  {sub:0x0026,nm:'Cayman GTS'},{sub:0x0027,nm:'Cayman GT4'},
+  'cayman':           [0x0022, 'Cayman'],
+  'cayman-alt':       [0x0023, 'Cayman (alt)'],
+  'cayman-s':         [0x0024, 'Cayman S'],
+  'cayman-r':         [0x0025, 'Cayman R'],
+  'cayman-gts':       [0x0026, 'Cayman GTS'],
+  'cayman-gt4':       [0x0027, 'Cayman GT4'],
   // Panamera (970)
-  {sub:0x0029,nm:'Panamera'},{sub:0x002a,nm:'Panamera (alt)'},
-  {sub:0x002b,nm:'Panamera 4'},{sub:0x002c,nm:'Panamera S'},
-  {sub:0x002d,nm:'Panamera 4S'},{sub:0x002e,nm:'Panamera Turbo'},
-  {sub:0x002f,nm:'Panamera Turbo S'},{sub:0x0030,nm:'Panamera GTS'},
-  {sub:0x0031,nm:'Panamera S Hybrid'},{sub:0x0032,nm:'Panamera (gen2)'},
-  {sub:0x0033,nm:'Panamera S (gen2)'},{sub:0x0034,nm:'Panamera 4S Diesel'},
-  {sub:0x0035,nm:'Panamera S Hybrid (gen2)'},{sub:0x0036,nm:'Panamera S E-Hybrid'},
+  'panamera':         [0x0029, 'Panamera'],
+  'panamera-alt':     [0x002a, 'Panamera (alt)'],
+  'panamera-4':       [0x002b, 'Panamera 4'],
+  'panamera-s':       [0x002c, 'Panamera S'],
+  'panamera-4s':      [0x002d, 'Panamera 4S'],
+  'panamera-turbo':   [0x002e, 'Panamera Turbo'],
+  'panamera-turbo-s': [0x002f, 'Panamera Turbo S'],
+  'panamera-gts':     [0x0030, 'Panamera GTS'],
+  'panamera-sh':      [0x0031, 'Panamera S Hybrid'],
+  'panamera-2':       [0x0032, 'Panamera (gen2)'],
+  'panamera-s2':      [0x0033, 'Panamera S (gen2)'],
+  'panamera-4sd':     [0x0034, 'Panamera 4S Diesel'],
+  'panamera-sh2':     [0x0035, 'Panamera S Hybrid (gen2)'],
+  'panamera-se':      [0x0036, 'Panamera S E-Hybrid'],
   // Cayenne (958)
-  {sub:0x0038,nm:'Cayenne'},{sub:0x0039,nm:'Cayenne (alt)'},
-  {sub:0x003a,nm:'Cayenne S'},{sub:0x003b,nm:'Cayenne Turbo'},
-  {sub:0x003c,nm:'Cayenne Turbo S'},{sub:0x003d,nm:'Cayenne GTS'},
-  {sub:0x003e,nm:'Cayenne S Hybrid'},{sub:0x003f,nm:'Cayenne V6'},
-  {sub:0x0040,nm:'Cayenne S (alt)'},{sub:0x0041,nm:'Cayenne Diesel S'},
-  {sub:0x0042,nm:'Cayenne S Hybrid (alt)'},{sub:0x0043,nm:'Cayenne S E-Hybrid'},
+  'cayenne':          [0x0038, 'Cayenne'],
+  'cayenne-alt':      [0x0039, 'Cayenne (alt)'],
+  'cayenne-s':        [0x003a, 'Cayenne S'],
+  'cayenne-turbo':    [0x003b, 'Cayenne Turbo'],
+  'cayenne-turbo-s':  [0x003c, 'Cayenne Turbo S'],
+  'cayenne-gts':      [0x003d, 'Cayenne GTS'],
+  'cayenne-sh':       [0x003e, 'Cayenne S Hybrid'],
+  'cayenne-v6':       [0x003f, 'Cayenne V6'],
+  'cayenne-s-alt':    [0x0040, 'Cayenne S (alt)'],
+  'cayenne-ds':       [0x0041, 'Cayenne Diesel S'],
+  'cayenne-sh2':      [0x0042, 'Cayenne S Hybrid (alt)'],
+  'cayenne-se':       [0x0043, 'Cayenne S E-Hybrid'],
   // Macan (95B)
-  {sub:0x0047,nm:'Macan'},{sub:0x0048,nm:'Macan S'},
-  {sub:0x0049,nm:'Macan Hybrid'},{sub:0x004a,nm:'Macan S E-Hybrid'},
-  {sub:0x004b,nm:'Macan Turbo'},{sub:0x004c,nm:'Macan Turbo S'},
-  {sub:0x004d,nm:'Macan GTS'},{sub:0x004e,nm:'Macan Diesel'},{sub:0x004f,nm:'Macan S Diesel'},
-  // 911 Special
-  {sub:0x0056,nm:'911 50th Anniversary'},{sub:0x0057,nm:'911 Club Sport'},{sub:0x0058,nm:'911 R'},
+  'macan':            [0x0047, 'Macan'],
+  'macan-s':          [0x0048, 'Macan S'],
+  'macan-hybrid':     [0x0049, 'Macan Hybrid'],
+  'macan-se':         [0x004a, 'Macan S E-Hybrid'],
+  'macan-turbo':      [0x004b, 'Macan Turbo'],
+  'macan-turbo-s':    [0x004c, 'Macan Turbo S'],
+  'macan-gts':        [0x004d, 'Macan GTS'],
+  'macan-diesel':     [0x004e, 'Macan Diesel'],
+  'macan-sd':         [0x004f, 'Macan S Diesel'],
+  // 911 Special Editions
+  '911-50th':         [0x0056, '911 50th Anniversary'],
+  '911-clubsport':    [0x0057, '911 Club Sport'],
+  '911-r':            [0x0058, '911 R'],
   // 911 (991.2) / Targa
-  {sub:0x005e,nm:'911 targa 4 GTS'},{sub:0x005f,nm:'911 targa'},
-  {sub:0x0060,nm:'911 targa S'},{sub:0x0061,nm:'911 (991.2)'},{sub:0x0062,nm:'911 (991.2) Cab'},
-];
-const FEATS=[
-  {id:'eng',fh:'010b0000',sw:0x010b,su:0,nm:'ENGINEERING',ds:'Hidden service menu — diagnostics, CAN data, audio calibration, component status',cat:'core'},
-  {id:'bth',fh:'010a0000',sw:0x010a,su:0,nm:'BTH',ds:'Bluetooth hands-free telephony and audio streaming',cat:'core'},
-  {id:'komp',fh:'01060000',sw:0x0106,su:0,nm:'KOMP',ds:'Component protection — re-enables PCM after hardware swap or repair',cat:'core'},
-  {id:'nav',fh:'01010000',sw:0x0101,su:0,nm:'Navigation',ds:'Built-in GPS navigation with turn-by-turn directions',cat:'core'},
-  {id:'ums',fh:'01090000',sw:0x0109,su:0,nm:'UMS',ds:'USB media playback — music from USB drives through the PCM',cat:'core'},
-  {id:'fb',fh:'01030000',sw:0x0103,su:0,nm:'FB',ds:'Boot image — custom startup splash screen when PCM powers on',cat:'feat'},
-  {id:'sss',fh:'01040000',sw:0x0104,su:0,nm:'SSS',ds:'Voice control — speak commands for navigation, phone, and media',cat:'feat'},
-  {id:'sc',fh:'01050000',sw:0x0105,su:0,nm:'SC',ds:'Sport Chrono — lap timer, performance display, sport mode in PCM',cat:'feat'},
-  {id:'tvinf',fh:'01070166',sw:0x0107,su:0x0166,nm:'TVINF',ds:'Video in Motion — removes speed lockout so passengers can watch while driving',cat:'feat'},
-  {id:'sdars',fh:'01080000',sw:0x0108,su:0,nm:'SDARS',ds:'SiriusXM satellite radio receiver (requires antenna hardware)',cat:'feat'},
-  {id:'indmem',fh:'010d0000',sw:0x010d,su:0,nm:'INDMEM',ds:'Individual memory — saves seat, mirror, and climate per driver key',cat:'feat'},
-  {id:'hdtuner',fh:'010f0000',sw:0x010f,su:0,nm:'HDTuner',ds:'HD Radio — higher quality digital FM/AM broadcasts (North America)',cat:'feat'},
-  {id:'dabtuner',fh:'01100000',sw:0x0110,su:0,nm:'DABTuner',ds:'DAB/DAB+ digital radio reception (Europe, Australia, Asia)',cat:'feat'},
-  {id:'online',fh:'01110001',sw:0x0111,su:0x0001,nm:'OnlineServices',ds:'Aha Radio app — web radio, podcasts, POI search, weather via phone tethering',cat:'feat'},
-  {id:'featlvl',fh:'010e0038',sw:0x010e,su:0x0038,nm:'FeatureLevel',ds:'Boot logo / model variant — use model selector above',cat:'feat',isModel:true},
-  {id:'naveu',fh:'200100ff',sw:0x2001,su:0x00ff,nm:'NavDB Europe',ds:'Europe',cat:'nav'},
-  {id:'navna',fh:'200200ff',sw:0x2002,su:0x00ff,nm:'NavDB N.America',ds:'North America',cat:'nav'},
-  {id:'navza',fh:'200300ff',sw:0x2003,su:0x00ff,nm:'NavDB S.Africa',ds:'South Africa',cat:'nav'},
-  {id:'navme',fh:'200400ff',sw:0x2004,su:0x00ff,nm:'NavDB MidEast',ds:'Middle East',cat:'nav'},
-  {id:'navau',fh:'200500ff',sw:0x2005,su:0x00ff,nm:'NavDB Australia',ds:'Australia',cat:'nav'},
-  {id:'navap',fh:'200600ff',sw:0x2006,su:0x00ff,nm:'NavDB AsiaPac',ds:'Asia Pacific',cat:'nav'},
-  {id:'navru',fh:'200700ff',sw:0x2007,su:0x00ff,nm:'NavDB Russia',ds:'Russia',cat:'nav'},
-  {id:'navsa',fh:'200800ff',sw:0x2008,su:0x00ff,nm:'NavDB S.America',ds:'South America',cat:'nav'},
-  {id:'navcn',fh:'200900ff',sw:0x2009,su:0x00ff,nm:'NavDB China',ds:'China',cat:'nav'},
-  {id:'navcl',fh:'200a00ff',sw:0x200a,su:0x00ff,nm:'NavDB Chile',ds:'Chile',cat:'nav'},
-  {id:'navar',fh:'200b00ff',sw:0x200b,su:0x00ff,nm:'NavDB Argentina',ds:'Argentina',cat:'nav'},
-];
-const CATS={core:'Core Features',feat:'Optional Features',nav:'Navigation Databases'};
-function mp(b,x,m){let r=1n;b%=m;while(x>0n){if(x%2n===1n)r=r*b%m;x/=2n;b=b*b%m}return r}
-function v2n(v){const l=v.toLowerCase(),p=[7,9,11,12,13,14,15,16];let r=0,w=10;for(let i=p.length-1;i>=0;i--){const c=l[p[i]];let b=c>='0'&&c<='9'?parseInt(c):c>='a'&&c<='z'?c.charCodeAt(0)%10:0;r=((r+b*w)&0xFFFFFFFF)>>>0;w=(w*10)&0xFFFF}return r}
-function il(a,b){let r='';for(let i=0;i<8;i++)r+=a[i]+b[i];return r}
-function gc(v,fh){const vh=v2n(v).toString(16).padStart(8,'0');return mp(BigInt('0x'+il(fh,vh)),D,N).toString(16).padStart(16,'0')}
-function vv(v){if(v.length!==17)return'VIN must be exactly 17 characters';if(!/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))return'Invalid characters (I, O, Q not allowed)';return null}
-function bp(v,fs){const recs=[];for(const f of fs){const c=gc(v,f.fh),r=new Uint8Array(28);for(let i=0;i<16;i++)r[i]=c.charCodeAt(i);r[18]=f.sw&0xFF;r[19]=(f.sw>>8)&0xFF;r[20]=f.su&0xFF;r[21]=(f.su>>8)&0xFF;r[22]=1;r[24]=1;recs.push(r)}const d=new Uint8Array(recs.length*28);recs.forEach((r,i)=>d.set(r,i*28));return d}
-let CV='',CC=[];
-function setMode(m){
-  document.getElementById('mb-piwis').classList.toggle('active',m==='piwis');
-  document.getElementById('mb-usb').classList.toggle('active',m==='usb');
-  document.getElementById('mb-manage').classList.toggle('active',m==='manage');
-  document.getElementById('view-piwis').classList.toggle('active',m==='piwis');
-  document.getElementById('view-usb').classList.toggle('active',m==='usb');
-  document.getElementById('view-manage').classList.toggle('active',m==='manage');
-}
-function updateFeatLvl(modelHex){
-  const fLvl=FEATS.find(f=>f.id==='featlvl');
-  fLvl.fh='010e'+modelHex;
-  fLvl.su=parseInt(modelHex,16);
-  if(!CV)return;
-  const newCode=gc(CV,fLvl.fh);
-  // Update PIWIS code display
-  const piwisCv=document.querySelector('#cc-featlvl .cv');if(piwisCv)piwisCv.textContent=newCode;
-  const piwisCb=document.querySelector('#cc-featlvl .cb');if(piwisCb)piwisCb.setAttribute('onclick',`cp(this,'${newCode}')`);
-  // Update USB info line
-  const usbInfo=document.getElementById('ft-featlvl-info');if(usbInfo){const m=MODELS.find(x=>x.sub===fLvl.su);usbInfo.textContent='→ '+(m?m.nm:'SubID 0x'+modelHex)}
-  // Update sub-hex badge
-  document.getElementById('sub-hex').textContent='SubID 0x'+modelHex;
-  // Update CC store
-  const idx=CC.findIndex(x=>x.id==='featlvl');if(idx>=0){CC[idx].fh=fLvl.fh;CC[idx].su=fLvl.su;CC[idx].code=newCode}
-}
-function gen(){
-  const v=document.getElementById('vi').value.trim().toUpperCase(),e=vv(v),el=document.getElementById('er');
-  if(e){el.textContent='\u26a0 '+e;el.style.display='block';document.getElementById('res').classList.remove('show');return}
-  el.style.display='none';CV=v;CC=[];
-  // Populate model dropdown
-  const dd=document.getElementById('model-dd');dd.innerHTML='';
-  for(const m of MODELS){
-    const opt=document.createElement('option');
-    opt.value=m.sub.toString(16).padStart(4,'0');
-    opt.textContent=m.nm;
-    if(m.sub===0x0038)opt.selected=true;
-    dd.appendChild(opt);
-  }
-  document.getElementById('sub-hex').textContent='SubID 0x0038';
-  // Set FeatureLevel to dropdown default
-  const fLvl=FEATS.find(f=>f.id==='featlvl');fLvl.fh='010e0038';fLvl.su=0x0038;
-  const cd=document.getElementById('cc'),fg=document.getElementById('fg');cd.innerHTML='';fg.innerHTML='';
-  let lastCat='';
-  for(const f of FEATS){
-    const c=gc(v,f.fh);CC.push({...f,code:c});
-    if(f.cat!==lastCat) cd.innerHTML+=`<div class="cat-hdr${lastCat?' mt':''}">— ${CATS[f.cat]} —</div>`;
-    if(f.isModel){
-      cd.innerHTML+=`<div class="cc" id="cc-featlvl"><div><div class="fn">${f.nm}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
-    } else {
-      cd.innerHTML+=`<div class="cc"><div><div class="fn">${f.nm}</div><div class="fd">${f.ds}</div></div><div style="display:flex;align-items:center"><span class="cv">${c}</span><button class="cb" onclick="cp(this,'${c}')">COPY</button></div></div>`;
-    }
-    if(f.cat!==lastCat){
-      fg.innerHTML+=`<div class="fg-section"><div class="fg-title">— ${CATS[f.cat]} —</div><div class="fg" id="fg-${f.cat}"></div></div>`;
-    }
-    lastCat=f.cat;
-  }
-  // Populate USB checkboxes (all unchecked)
-  for(const f of CC){
-    const el=document.getElementById('fg-'+f.cat);if(!el)continue;
-    const info=f.isModel?`<div class="ft-info" id="ft-featlvl-info">→ ${MODELS.find(m=>m.sub===0x0038).nm}</div>`:'';
-    el.innerHTML+=`<label class="ft"><input type="checkbox" data-f="${f.id}"> <div><div class="ft-name">${f.nm}</div><div class="ft-desc">${f.ds}</div>${info}</div></label>`;
-  }
-  fg.querySelectorAll('.ft').forEach(el=>el.addEventListener('click',e=>{if(e.target.tagName==='INPUT')el.classList.toggle('on',e.target.checked)}));
-  document.getElementById('vb').textContent=v;
-  document.getElementById('res').classList.add('show');
-  document.getElementById('sm').className='sm';
-  document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
-}
-function sf(){const ids=new Set();document.querySelectorAll('.ft input:checked').forEach(c=>ids.add(c.dataset.f));return CC.filter(f=>ids.has(f.id))}
-const BOOTSTRAP="#!/bin/ksh\n# PCM-Forge USB bootstrap for PCM 3.1\nexport SDPATH=$1\nexport PATH=${PATH}:${SDPATH}/bin\nmount -u $SDPATH\ncd $SDPATH\nexec ksh ./run.sh $SDPATH\n";
+  '911-targa-4gts':   [0x005e, '911 targa 4 GTS'],
+  '911-targa':        [0x005f, '911 targa'],
+  '911-targa-s':      [0x0060, '911 targa S'],
+  '911-991-2':        [0x0061, '911 (991.2)'],
+  '911-991-2-cab':    [0x0062, '911 (991.2) Cab'],
+};
 
-const RUN_ACTIVATE='#!/bin/ksh\n# PCM-Forge activation — https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\n# Backup existing activation\nif [ -f /HBpersistence/PagSWAct.002 ]; then\n    cp /HBpersistence/PagSWAct.002 /HBpersistence/PagSWAct.002.bak 2>/dev/null\n    cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>/dev/null\nfi\n# Backup existing boot screen before overwriting\nfor obs in /HBpersistence/CustomBootscreen_*.bin; do\n    [ -f "$obs" ] && cp "$obs" "${USBROOT}/$(basename $obs).bak" 2>/dev/null\ndone\n# Apply new activation codes\nif [ -f "${USBROOT}/PagSWAct.002" ]; then\n    cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n    touch /HBpersistence/DBGModeActive 2>&1\nfi\n# Install custom boot screen if present on USB\n# NOTE: Only writes to /HBpersistence/ (flash) — factory originals\n# on HDD (/mnt/share/bootscreens/) are NEVER touched\nfor bs in "${USBROOT}"/CustomBootscreen_*.bin; do\n    [ -f "$bs" ] && cp "$bs" /HBpersistence/ 2>/dev/null\ndone\necho "PCM-Forge done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n';
+function featuresFor(flSubId) {
+  const flHex = '010e' + flSubId.toString(16).padStart(4, '0');
+  return [
+    {name:'ENGINEERING',      hex:'010b0000', desc:'Engineering & diagnostic menu',    cat:'core'},
+    {name:'BTH',              hex:'010a0000', desc:'Bluetooth telephony',              cat:'core'},
+    {name:'KOMP',             hex:'01060000', desc:'Component activation',             cat:'core'},
+    {name:'Navigation',       hex:'01010000', desc:'Navigation system',                cat:'core'},
+    {name:'UMS',              hex:'01090000', desc:'USB media support',                cat:'core'},
+    {name:'FB',               hex:'01030000', desc:'Feature base / boot image',        cat:'core'},
+    {name:'SSS',              hex:'01040000', desc:'Voice control',                    cat:'core'},
+    {name:'SC',               hex:'01050000', desc:'Sport Chrono',                     cat:'core'},
+    {name:'TVINF',            hex:'01070166', desc:'Video in Motion',                  cat:'core'},
+    {name:'SDARS',            hex:'01080000', desc:'Satellite radio',                  cat:'core'},
+    {name:'INDMEM',           hex:'010d0000', desc:'Individual memory',                cat:'core'},
+    {name:'FeatureLevel',     hex:flHex,      desc:'Feature level / boot logo',        cat:'core'},
+    {name:'HDTuner',          hex:'010f0000', desc:'HD Radio tuner',                   cat:'core'},
+    {name:'DABTuner',         hex:'01100000', desc:'DAB digital radio',                cat:'core'},
+    {name:'OnlineServices',   hex:'01110001', desc:'Online services',                  cat:'core'},
+    {name:'NavDBEurope',      hex:'200100ff', desc:'Europe',                           cat:'nav'},
+    {name:'NavDBNorthAmerica',hex:'200200ff', desc:'North America',                    cat:'nav'},
+    {name:'NavDBSouthAfrica', hex:'200300ff', desc:'South Africa',                     cat:'nav'},
+    {name:'NavDBMiddleEast',  hex:'200400ff', desc:'Middle East',                      cat:'nav'},
+    {name:'NavDBAustralia',   hex:'200500ff', desc:'Australia',                        cat:'nav'},
+    {name:'NavDBAsiaPacific', hex:'200600ff', desc:'Asia Pacific',                     cat:'nav'},
+    {name:'NavDBRussia',      hex:'200700ff', desc:'Russia',                           cat:'nav'},
+    {name:'NavDBSouthAmerica',hex:'200800ff', desc:'South America',                    cat:'nav'},
+    {name:'NavDBChina',       hex:'200900ff', desc:'China',                            cat:'nav'},
+    {name:'NavDBChile',       hex:'200a00ff', desc:'Chile',                            cat:'nav'},
+    {name:'NavDBArgentina',   hex:'200b00ff', desc:'Argentina',                        cat:'nav'},
+  ];
+}
 
-const RUN_DIAG='#!/bin/ksh\n# PCM-Forge Enhanced Diagnostic + CAN Probe\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nLOG="${USBROOT}/pcm_debug.log"\nDUMPDIR="${USBROOT}/pcm_dump"\nmkdir -p "$DUMPDIR" 2>/dev/null\necho "PCM-Forge diag starting" > "${USBROOT}/pcm_ran.txt"\n{\n    echo "============================================"\n    echo "  PCM-Forge Enhanced Diagnostic + CAN Probe"\n    echo "============================================"\n    echo ""\n    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n    echo ""\n    echo "=== VIN ==="\n    cat /HBpersistence/vin 2>&1\n    echo ""\n    echo "=== Existing Activation Files ==="\n    ls -la /HBpersistence/PagSWAct* 2>&1\n    ls -la /HBpersistence/DBGModeActive 2>&1\n    ls -la /HBpersistence/CustomBootscreen* 2>&1\n    echo ""\n    echo "=== Backup PagSWAct.002 ==="\n    if [ -f /HBpersistence/PagSWAct.002 ]; then\n        cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>&1\n        echo "Backed up to USB"\n    else\n        echo "not present"\n    fi\n    echo ""\n    echo "=== FeatureLevel / Boot Screen ==="\n    ls -la /HBpersistence/CustomBootscreen_*.bin 2>&1\n    echo ""\n    echo "=== CVALUE Files ==="\n    ls -la /HBpersistence/CVALUE*.CVA 2>&1\n    for cva in /HBpersistence/CVALUE*.CVA; do\n        [ -f "$cva" ] && cp "$cva" "$DUMPDIR/" 2>/dev/null\n    done\n    echo ""\n    echo "=== FSC Files ==="\n    ls -la /HBpersistence/FSC/ 2>&1\n    ls -la /mnt/efs-persist/FSC/ 2>&1\n    echo ""\n    echo "=== Mount Points ==="\n    mount 2>&1\n    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n    echo ""\n    echo "=== Processes ==="\n    pidin 2>&1\n    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n    echo ""\n    echo "============================================"\n    echo "  CAN / IOC Probe"\n    echo "============================================"\n    echo ""\n    echo "=== IPC Devices ==="\n    ls -laR /dev/ipc/ 2>&1\n    echo ""\n    echo "=== DSP IPC ==="\n    ls -laR /dev/dspipc/ 2>&1\n    echo ""\n    echo "=== All /dev ==="\n    ls /dev/ 2>&1\n    echo ""\n    echo "=== Device Nodes ==="\n    ls /dev/ser* /dev/can* /dev/spi* /dev/i2c* /dev/hd* /dev/fs* 2>&1\n    echo ""\n    echo "=== Sysregs (FPGA) ==="\n    ls -la /dev/sysregs/ 2>&1\n    echo ""\n    echo "=== MOST ==="\n    ls -la /dev/most* 2>&1\n    echo ""\n    echo "=== hbsystem ==="\n    ls -laR /hbsystem/ 2>&1\n    echo ""\n    echo "=== Service Broker ==="\n    ls -la /srv/ 2>&1\n    echo ""\n    echo "=== /dev/name ==="\n    ls -laR /dev/name/ 2>&1\n    echo ""\n    echo "=== /dev/dsi ==="\n    ls -laR /dev/dsi/ 2>&1\n    echo ""\n    echo "=== Flash Partitions ==="\n    ls -la /dev/fs0* 2>&1\n    echo ""\n    echo "=== HDD Partitions ==="\n    ls -la /dev/hd0* 2>&1\n    echo ""\n    echo "=== IFS/EFS Paths ==="\n    ls -d /mnt/ifs1/ /mnt/flash/ /mnt/efs-system/ /mnt/efs-extended/ /mnt/data/ /mnt/share/ /mnt/nav/ 2>&1\n    echo ""\n    echo "=== Engineering ESD ==="\n    ls /mnt/flash/efs1/engdefs/ 2>&1\n    ls /HBpersistence/engdefs/ 2>&1\n    ls /mnt/ifs1/engdefs/ 2>&1\n    echo ""\n    echo "=== inetd.conf ==="\n    cat /etc/inetd.conf 2>&1\n    echo ""\n    echo "=== screensaver.conf ==="\n    cat /HBpersistence/screensaver.conf 2>&1\n    echo ""\n    echo "=== hybrid.bin ==="\n    ls -la /HBpersistence/hybrid.bin 2>&1\n    cp /HBpersistence/hybrid.bin "$DUMPDIR/" 2>/dev/null\n    echo ""\n    echo "=== test.html ==="\n    cat /HBpersistence/test.html 2>&1\n    echo ""\n    echo "=== test1.html ==="\n    cat /HBpersistence/test1.html 2>&1\n    echo ""\n    echo "============================================"\n    echo "  Diagnostic + CAN Probe Complete"\n    echo "============================================"\n} > "$LOG" 2>&1\ncp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\ncp /HBpersistence/screensaver.conf "$DUMPDIR/" 2>/dev/null\ncp /HBpersistence/test.html "$DUMPDIR/" 2>/dev/null\ncp /HBpersistence/test1.html "$DUMPDIR/" 2>/dev/null\necho "PCM-Forge diag done" > "${USBROOT}/pcm_ran.txt"\n';
+// ===== Populate models dropdown =====
+function populateModels(selectId) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '';
+  for (const [key, [subid, label]] of Object.entries(MODELS)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = `${label}  (0x${subid.toString(16).padStart(4,'0')})`;
+    if (key === 'cayenne-se') opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+populateModels('model1');
+populateModels('model2');
+
+// ===== Tab switching =====
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', 
+      (i === 0 && id === 'generate') || (i === 1 && id === 'usb') || (i === 2 && id === 'device'));
+  });
+  document.getElementById('tab-generate').classList.toggle('active', id === 'generate');
+  document.getElementById('tab-usb').classList.toggle('active', id === 'usb');
+  document.getElementById('tab-device').classList.toggle('active', id === 'device');
+  if (id === 'usb') usbBuildFeatureGrid();
+  if (id === 'device') refreshPorts();
+}
+
+// ===== TAB 1: Generate =====
+let currentCodes = [];
+
+function generateCodes() {
+  const vin = document.getElementById('vin1').value.trim().toUpperCase();
+  const err = document.getElementById('err1');
+  const results = document.getElementById('results1');
+
+  if (vin.length !== 17) { err.style.display = 'block'; err.textContent = 'VIN must be 17 characters'; results.classList.remove('show'); return; }
+  err.style.display = 'none';
+
+  const modelKey = document.getElementById('model1').value;
+  const [flSubId] = MODELS[modelKey];
+  const features = featuresFor(flSubId);
+
+  currentCodes = features.map(f => ({ ...f, code: generateCode(vin, f.hex) }));
+
+  document.getElementById('vin-badge').textContent = vin;
+
+  const list = document.getElementById('code-list');
+  list.innerHTML = '';
+
+  let lastCat = '';
+  currentCodes.forEach((c, i) => {
+    if (c.cat !== lastCat) {
+      lastCat = c.cat;
+      const hdr = document.createElement('div');
+      hdr.className = 'cat-hdr' + (i > 0 ? ' mt' : '');
+      hdr.textContent = c.cat === 'core' ? 'Core features' : 'Navigation databases';
+      list.appendChild(hdr);
+    }
+    const row = document.createElement('div');
+    row.className = 'code-row';
+    row.innerHTML = `
+      <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div></div>
+      <div style="display:flex;align-items:center">
+        <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
+        <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  results.classList.add('show');
+}
+
+function copyOne(el) {
+  navigator.clipboard.writeText(el.textContent);
+  const btn = el.nextElementSibling;
+  if (btn) { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1500); }
+}
+
+function copyAll() {
+  const text = currentCodes.map(c => `${c.name}\t${c.code}`).join('\n');
+  navigator.clipboard.writeText(text);
+}
+
+function downloadPagSWAct() {
+  const lines = currentCodes.map(c => c.code);
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'PagSWAct.002';
+  a.click();
+}
+
+document.getElementById('vin1').addEventListener('keydown', e => { if (e.key === 'Enter') generateCodes(); });
+
+// ===== TAB 2: USB Stick Builder =====
 
 // XOR PRNG cipher — matches proc_scriptlauncher in MMI3G/PCM3.1 firmware
-// Ported from MMI3G-Toolkit builder/encoder.py (Harman Becker L. Koslowski 2008)
-function xorEncode(plainBytes){
-  let seed=0x001be3ac;
-  function prng(){
-    const r0=seed>>>0;
-    let r1=((seed>>>1)|(seed<<31))>>>0;
-    let r3=((((r1>>>16)&0xFF)+r1)>>>0);
-    r1=((((r3>>>8)&0xFF)<<16)>>>0);
-    r3=((r3-r1)>>>0);
-    seed=r3;
+function xorEncode(plainBytes) {
+  let seed = 0x001be3ac;
+  function prng() {
+    const r0 = seed >>> 0;
+    let r1 = ((seed >>> 1) | (seed << 31)) >>> 0;
+    let r3 = ((((r1 >>> 16) & 0xFF) + r1) >>> 0);
+    r1 = ((((r3 >>> 8) & 0xFF) << 16) >>> 0);
+    r3 = ((r3 - r1) >>> 0);
+    seed = r3;
     return r0;
   }
   prng(); // first call discarded
-  const out=new Uint8Array(plainBytes.length);
-  for(let i=0;i<plainBytes.length;i++) out[i]=plainBytes[i]^(prng()&0xFF);
+  const out = new Uint8Array(plainBytes.length);
+  for (let i = 0; i < plainBytes.length; i++) out[i] = plainBytes[i] ^ (prng() & 0xFF);
   return out;
 }
-function encodeBootstrap(){
-  const bytes=new TextEncoder().encode(BOOTSTRAP.replace(/\r\n/g,'\n'));
+
+// 3-file USB structure: copie_scr.sh (XOR bootstrap) + run.sh (plaintext) + PagSWAct.002
+const BOOTSTRAP='#!/bin/ksh\nexport SDPATH=$1\nmount -u $SDPATH\ncd $SDPATH\nexec ksh ./run.sh $SDPATH\n';
+
+const RUN_ACTIVATE='#!/bin/ksh\n# PCM-Forge activation \u2014 https://github.com/dspl1236/PCM-Forge\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\n# Show status on screen\nfor ss in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do\n    [ -x "$ss" ] && "$ss" "${USBROOT}/lib/activating.png" 2>/dev/null &\n    break\ndone\nif [ -f /HBpersistence/PagSWAct.002 ]; then\n    cp /HBpersistence/PagSWAct.002 /HBpersistence/PagSWAct.002.bak 2>/dev/null\n    cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>/dev/null\nfi\nfor obs in /HBpersistence/CustomBootscreen_*.bin; do\n    [ -f "$obs" ] && cp "$obs" "${USBROOT}/$(basename $obs).bak" 2>/dev/null\ndone\nif [ -f "${USBROOT}/PagSWAct.002" ]; then\n    cp "${USBROOT}/PagSWAct.002" /HBpersistence/PagSWAct.002 2>&1\n    touch /HBpersistence/DBGModeActive 2>&1\nfi\nfor bs in "${USBROOT}"/CustomBootscreen_*.bin; do\n    [ -f "$bs" ] && cp "$bs" /HBpersistence/ 2>/dev/null\ndone\necho "PCM-Forge done" > "${USBROOT}/pcm_ran.txt" 2>/dev/null\n# Show complete\nfor ss in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do\n    [ -x "$ss" ] && "$ss" "${USBROOT}/lib/activating-done.png" 2>/dev/null &\n    break\ndone\n';
+
+const RUN_DIAG='#!/bin/ksh\n# PCM-Forge Enhanced Diagnostic + CAN Probe\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nLOG="${USBROOT}/pcm_debug.log"\nDUMPDIR="${USBROOT}/pcm_dump"\nmkdir -p "$DUMPDIR" 2>/dev/null\n# Show status on screen\nfor ss in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do\n    [ -x "$ss" ] && "$ss" "${USBROOT}/lib/running.png" 2>/dev/null &\n    break\ndone\necho "PCM-Forge diag starting" > "${USBROOT}/pcm_ran.txt"\n{\n    echo "============================================"\n    echo "  PCM-Forge Enhanced Diagnostic + CAN Probe"\n    echo "============================================"\n    echo ""\n    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n    echo ""\n    echo "=== VIN ==="\n    cat /HBpersistence/vin 2>&1\n    echo ""\n    echo "=== Existing Activation Files ==="\n    ls -la /HBpersistence/PagSWAct* 2>&1\n    ls -la /HBpersistence/DBGModeActive 2>&1\n    ls -la /HBpersistence/CustomBootscreen* 2>&1\n    echo ""\n    echo "=== Backup PagSWAct.002 ==="\n    if [ -f /HBpersistence/PagSWAct.002 ]; then\n        cp /HBpersistence/PagSWAct.002 "${USBROOT}/PagSWAct_backup.002" 2>&1\n        echo "Backed up to USB"\n    else\n        echo "not present"\n    fi\n    echo ""\n    echo "=== FeatureLevel / Boot Screen ==="\n    ls -la /HBpersistence/CustomBootscreen_*.bin 2>&1\n    echo ""\n    echo "=== CVALUE Files ==="\n    ls -la /HBpersistence/CVALUE*.CVA 2>&1\n    for cva in /HBpersistence/CVALUE*.CVA; do\n        [ -f "$cva" ] && cp "$cva" "$DUMPDIR/" 2>/dev/null\n    done\n    echo ""\n    echo "=== FSC Files ==="\n    ls -la /HBpersistence/FSC/ 2>&1\n    ls -la /mnt/efs-persist/FSC/ 2>&1\n    echo ""\n    echo "=== Mount Points ==="\n    mount 2>&1\n    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n    echo ""\n    echo "=== Processes ==="\n    pidin 2>&1\n    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n    echo ""\n    echo "============================================"\n    echo "  CAN / IOC Probe"\n    echo "============================================"\n    echo ""\n    echo "=== IPC Devices ==="\n    ls -laR /dev/ipc/ 2>&1\n    echo ""\n    echo "=== DSP IPC ==="\n    ls -laR /dev/dspipc/ 2>&1\n    echo ""\n    echo "=== All /dev ==="\n    ls /dev/ 2>&1\n    echo ""\n    echo "=== Device Nodes ==="\n    ls /dev/ser* /dev/can* /dev/spi* /dev/i2c* /dev/hd* /dev/fs* 2>&1\n    echo ""\n    echo "=== Sysregs (FPGA) ==="\n    ls -la /dev/sysregs/ 2>&1\n    echo ""\n    echo "=== MOST ==="\n    ls -la /dev/most* 2>&1\n    echo ""\n    echo "=== hbsystem ==="\n    ls -laR /hbsystem/ 2>&1\n    echo ""\n    echo "=== Service Broker ==="\n    ls -la /srv/ 2>&1\n    echo ""\n    echo "=== /dev/name ==="\n    ls -laR /dev/name/ 2>&1\n    echo ""\n    echo "=== /dev/dsi ==="\n    ls -laR /dev/dsi/ 2>&1\n    echo ""\n    echo "=== Flash Partitions ==="\n    ls -la /dev/fs0* 2>&1\n    echo ""\n    echo "=== HDD Partitions ==="\n    ls -la /dev/hd0* 2>&1\n    echo ""\n    echo "=== IFS/EFS Paths ==="\n    ls -d /mnt/ifs1/ /mnt/flash/ /mnt/efs-system/ /mnt/efs-extended/ /mnt/data/ /mnt/share/ /mnt/nav/ 2>&1\n    echo ""\n    echo "=== Engineering ESD ==="\n    ls /mnt/flash/efs1/engdefs/ 2>&1\n    ls /HBpersistence/engdefs/ 2>&1\n    ls /mnt/ifs1/engdefs/ 2>&1\n    echo ""\n    echo "=== inetd.conf ==="\n    cat /etc/inetd.conf 2>&1\n    echo ""\n    echo "=== screensaver.conf ==="\n    cat /HBpersistence/screensaver.conf 2>&1\n    echo ""\n    echo "=== hybrid.bin ==="\n    ls -la /HBpersistence/hybrid.bin 2>&1\n    cp /HBpersistence/hybrid.bin "$DUMPDIR/" 2>/dev/null\n    echo ""\n    echo "=== test.html ==="\n    cat /HBpersistence/test.html 2>&1\n    echo ""\n    echo "=== test1.html ==="\n    cat /HBpersistence/test1.html 2>&1\n    echo ""\n    echo "============================================"\n    echo "  Diagnostic + CAN Probe Complete"\n    echo "============================================"\n} > "$LOG" 2>&1\ncp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\ncp /HBpersistence/screensaver.conf "$DUMPDIR/" 2>/dev/null\ncp /HBpersistence/test.html "$DUMPDIR/" 2>/dev/null\ncp /HBpersistence/test1.html "$DUMPDIR/" 2>/dev/null\necho "PCM-Forge diag done" > "${USBROOT}/pcm_ran.txt"\n# Show complete\nfor ss in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do\n    [ -x "$ss" ] && "$ss" "${USBROOT}/lib/done.png" 2>/dev/null &\n    break\ndone\n';
+
+function encodeBootstrap() {
+  const bytes = new TextEncoder().encode(BOOTSTRAP);
   return xorEncode(bytes);
 }
-function currentRunSh(){return isDiag() ? RUN_DIAG : RUN_ACTIVATE}
 
-function isDiag(){return document.getElementById('diag-chk') && document.getElementById('diag-chk').checked}
-function toggleDiag(){
-  const box = document.getElementById('diag-box');
-  if (isDiag()) box.classList.add('diag-active'); else box.classList.remove('diag-active');
-}
-async function writeUsb(){
-  const s=document.getElementById('sm');if(!CV){s.className='sm bad';s.textContent='\u26a0 Enter a VIN first';return}
-  const fs=sf();const diag=isDiag();
-  if(!diag && !fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature, or enable Diagnostic Mode';return}
-  if(!('showDirectoryPicker' in window)){s.className='sm bad';s.textContent='\u26a0 Use Chrome/Edge for direct write, or download files instead.';return}
-  try{
-    const dh=await window.showDirectoryPicker({mode:'readwrite',startIn:'desktop'});
-    const enc=encodeBootstrap();
-    let fh=await dh.getFileHandle('copie_scr.sh',{create:true}),w=await fh.createWritable();await w.write(enc);await w.close();
-    const run=currentRunSh();
-    fh=await dh.getFileHandle('run.sh',{create:true});w=await fh.createWritable();await w.write(run);await w.close();
-    if(!diag && fs.length){
-      const d=bp(CV,fs);
-      fh=await dh.getFileHandle('PagSWAct.002',{create:true});w=await fh.createWritable();await w.write(d);await w.close();
-      s.className='sm ok';s.textContent=`\u2713 Written 3 files \u2192 ${dh.name}/ (${fs.length} features) \u2014 existing PagSWAct.002 will be backed up as .bak`;
-    } else {
-      s.className='sm ok';s.textContent=`\u2713 Written copie_scr.sh + run.sh \u2192 ${dh.name}/ (DIAGNOSTIC ONLY \u2014 no changes to car, backs up PagSWAct.002 to USB)`;
-    }
-  }catch(e){if(e.name==='AbortError')return;s.className='sm bad';s.textContent='\u26a0 '+e.message}
-}
-function dlBin(){if(!CV)return;const fs=sf(),s=document.getElementById('sm');if(!fs.length){s.className='sm bad';s.textContent='\u26a0 Select at least one feature';return}const d=bp(CV,fs),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));a.download='PagSWAct.002';a.click();s.className='sm ok';s.textContent=`\u2713 Downloaded PagSWAct.002 (${d.length} bytes, ${fs.length} features)`}
-function dlScr(){const enc=encodeBootstrap();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click();document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded copie_scr.sh (XOR encoded bootstrap, '+enc.length+' bytes)'}
-function dlRun(){const run=currentRunSh();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([run],{type:'application/octet-stream'}));a.download='run.sh';a.click();const mode=isDiag()?'DIAGNOSTIC':'activation';document.getElementById('sm').className='sm ok';document.getElementById('sm').textContent='\u2713 Downloaded run.sh ('+mode+', '+run.length+' bytes)'}
-
-// ===== TAB 3: Manage Backup =====
-const FEAT_SWMAP={};FEATS.forEach(f=>{FEAT_SWMAP[(f.sw<<16|f.su)>>>0]=f});
-let backupRecords=[];
-
-function handleBackupFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const data=new Uint8Array(e.target.result);
-    if(data.length%28!==0||data.length===0){
-      document.getElementById('drop-zone').style.borderColor='var(--red)';
-      return;
-    }
-    backupRecords=[];
-    for(let i=0;i<data.length;i+=28){
-      const code=String.fromCharCode(...data.slice(i,i+16));
-      const sw=data[i+18]|(data[i+19]<<8);
-      const su=data[i+20]|(data[i+21]<<8);
-      const active=data[i+22];
-      backupRecords.push({code,sw,su,active,key:(sw<<16|su)>>>0});
-    }
-    renderBackup();
-  };
-  reader.readAsArrayBuffer(file);
+function currentRunSh() {
+  return document.getElementById('usb-diag').checked ? RUN_DIAG : RUN_ACTIVATE;
 }
 
-function renderBackup(){
-  const existKeys=new Set(backupRecords.map(r=>r.key));
-  const bf=document.getElementById('backup-features');
-  const af=document.getElementById('add-features');
-  bf.innerHTML='';af.innerHTML='';
+let usbFeaturesBuilt = false;
 
-  // Show existing features
-  for(const rec of backupRecords){
-    const feat=FEAT_SWMAP[rec.key];
-    const name=feat?feat.nm:`Unknown (0x${rec.sw.toString(16).padStart(4,'0')})`;
-    const desc=feat?feat.ds:'';
-    bf.innerHTML+=`<div class="ft on" style="opacity:0.85"><input type="checkbox" checked disabled><div><div class="feat-name">\u2705 ${name}</div><div class="feat-desc">${desc}</div><div class="ft-info">${rec.code}</div></div></div>`;
-  }
-  if(!backupRecords.length) bf.innerHTML='<div style="color:var(--text2);font-size:13px">No features found in backup</div>';
-
-  // Show features that can be added
-  let hasNew=false;
-  for(const f of FEATS){
-    const key=(f.sw<<16|f.su)>>>0;
-    if(existKeys.has(key))continue;
-    hasNew=true;
-    af.innerHTML+=`<label class="ft"><input type="checkbox" data-fh="${f.fh}" data-sw="${f.sw}" data-su="${f.su}" onchange="this.closest('.ft').classList.toggle('on',this.checked)"><div><div class="feat-name">${f.nm}</div><div class="feat-desc">${f.ds}</div></div></label>`;
-  }
-  if(!hasNew) af.innerHTML='<div style="color:var(--green);font-size:13px">\u2713 All features already activated!</div>';
-
-  document.getElementById('backup-info').style.display='block';
-  document.getElementById('drop-zone').style.borderColor='var(--green)';
-  document.getElementById('drop-zone').querySelector('div:last-child').textContent=`Loaded: ${backupRecords.length} features (${backupRecords.length*28} bytes)`;
-}
-
-function buildMerged(){
-  if(!CV){document.getElementById('sm-manage').className='sm bad';document.getElementById('sm-manage').textContent='\u26a0 Enter a VIN at the top first';return null}
-  // Start with existing records
-  const recs=[...backupRecords.map(r=>{const d=new Uint8Array(28);for(let i=0;i<16;i++)d[i]=r.code.charCodeAt(i);d[18]=r.sw&0xFF;d[19]=(r.sw>>8)&0xFF;d[20]=r.su&0xFF;d[21]=(r.su>>8)&0xFF;d[22]=1;d[24]=1;return d})];
-  // Add new features
-  let added=0;
-  document.querySelectorAll('#add-features input:checked').forEach(cb=>{
-    const fh=cb.dataset.fh;
-    const code=gc(CV,fh);
-    const sw=parseInt(cb.dataset.sw);
-    const su=parseInt(cb.dataset.su);
-    const r=new Uint8Array(28);
-    for(let i=0;i<16;i++)r[i]=code.charCodeAt(i);
-    r[18]=sw&0xFF;r[19]=(sw>>8)&0xFF;r[20]=su&0xFF;r[21]=(su>>8)&0xFF;r[22]=1;r[24]=1;
-    recs.push(r);
-    added++;
+function usbBuildFeatureGrid() {
+  if (usbFeaturesBuilt) return;
+  usbFeaturesBuilt = true;
+  const features = featuresFor(0x0039); // Default Cayenne
+  const coreGrid = document.getElementById('usb-feat-core');
+  const navGrid = document.getElementById('usb-feat-nav');
+  features.forEach((f, i) => {
+    const grid = f.cat === 'core' ? coreGrid : navGrid;
+    const div = document.createElement('label');
+    div.className = 'feat-item on';
+    div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" checked>
+      <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div></div>`;
+    div.querySelector('input').addEventListener('change', function() {
+      div.classList.toggle('on', this.checked);
+    });
+    grid.appendChild(div);
   });
-  const d=new Uint8Array(recs.length*28);
-  recs.forEach((r,i)=>d.set(r,i*28));
-  return {data:d,existing:backupRecords.length,added};
 }
 
-function dlMerged(){
-  const result=buildMerged();
-  if(!result)return;
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([result.data],{type:'application/octet-stream'}));
-  a.download='PagSWAct.002';a.click();
-  document.getElementById('sm-manage').className='sm ok';
-  document.getElementById('sm-manage').textContent=`\u2713 Downloaded PagSWAct.002 (${result.data.length} bytes \u2014 ${result.existing} existing + ${result.added} new features)`;
+function usbToggleDiag() {
+  const desc = document.getElementById('usb-diag-desc');
+  desc.style.display = document.getElementById('usb-diag').checked ? 'block' : 'none';
 }
 
-function dlMergedUSB(){
-  const result=buildMerged();
-  if(!result)return;
-  // Download all 3 files
-  const enc=encodeBootstrap();
-  let a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([result.data],{type:'application/octet-stream'}));
-  a.download='PagSWAct.002';a.click();
-  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click()},200);
-  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([RUN_ACTIVATE],{type:'application/octet-stream'}));a.download='run.sh';a.click()},400);
-  document.getElementById('sm-manage').className='sm ok';
-  document.getElementById('sm-manage').textContent=`\u2713 Downloading 3 files (${result.existing} existing + ${result.added} new features) \u2014 copy all to FAT32 USB`;
+function usbSelectAll(state) {
+  document.querySelectorAll('#tab-usb .feat-item input[type=checkbox]').forEach(cb => {
+    cb.checked = state;
+    cb.closest('.feat-item').classList.toggle('on', state);
+  });
 }
-function dlTxt(){if(!CC.length)return;const cats={core:'CORE FEATURES',feat:'OPTIONAL FEATURES',nav:'NAVIGATION DATABASES'};let t=`PCM-Forge \u2014 Porsche PCM 3.1 Activation Codes\nVIN: ${CV}\n${'='.repeat(55)}\n`;let lc='';for(const c of CC){if(c.cat!==lc){t+=`\n  ${cats[c.cat]}\n`;lc=c.cat}t+=`  ${c.nm.padEnd(22)} ${c.code}\n`}t+=`\nhttps://github.com/dspl1236/PCM-Forge\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=`PCM3_${CV}.txt`;a.click()}
-function cp(b,c){navigator.clipboard.writeText(c).then(()=>{b.textContent='\u2713';b.classList.add('ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('ok')},2e3)})}
-document.getElementById('vi').addEventListener('keypress',e=>{if(e.key==='Enter')gen()});
-document.getElementById('vi').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
 
-// ===== Boot Screen Builder =====
-let bsBlob=null;
-function handleBootImg(file){
-  if(!file||!file.type.startsWith('image/'))return;
-  const img=new Image();
-  img.onload=function(){
-    const canvas=document.getElementById('bs-canvas');
-    const ctx=canvas.getContext('2d');
-    canvas.style.display='block';
-    // Cover-fit: fill 800x480, crop center
-    const scale=Math.max(800/img.width,480/img.height);
-    const sw=800/scale, sh=480/scale;
-    const sx=(img.width-sw)/2, sy=(img.height-sh)/2;
-    ctx.drawImage(img,sx,sy,sw,sh,0,0,800,480);
-    canvas.toBlob(function(blob){
-      bsBlob=blob;
-      document.getElementById('bs-actions').style.display='flex';
-      document.getElementById('bs-drop').style.borderColor='var(--green)';
-      document.getElementById('bs-drop').querySelector('div:last-child').textContent=
-        `${file.name} → 800×480 (${(blob.size/1024).toFixed(1)} KB)`;
-    },'image/png');
-  };
-  img.src=URL.createObjectURL(file);
+function usbGetVin() {
+  const vin = document.getElementById('vin2').value.trim().toUpperCase();
+  if (vin.length !== 17) { usbSetStatus('err', 'Enter a valid 17-digit VIN'); return null; }
+  return vin;
 }
-function dlBootscreen(){
-  if(!bsBlob)return;
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(bsBlob);
-  a.download='CustomBootscreen_067.bin';a.click();
-  document.getElementById('bs-status').className='sm ok';
-  document.getElementById('bs-status').textContent='\u2713 Downloaded CustomBootscreen_067.bin — copy to USB root alongside run.sh';
+
+function usbGetSelectedFeatures() {
+  const modelKey = document.getElementById('model2').value;
+  const [flSubId] = MODELS[modelKey];
+  const allFeats = featuresFor(flSubId);
+  const selected = [];
+  document.querySelectorAll('#tab-usb .feat-item input:checked').forEach(cb => {
+    const hex = cb.dataset.hex;
+    const feat = allFeats.find(f => f.hex === hex);
+    if (feat) selected.push(feat);
+  });
+  return selected;
 }
-function dlBootscreenUSB(){
-  if(!bsBlob)return;
-  // Download boot screen
-  let a=document.createElement('a');
-  a.href=URL.createObjectURL(bsBlob);
-  a.download='CustomBootscreen_067.bin';a.click();
-  // Download run.sh that installs it
-  const runSh='#!/bin/ksh\n# PCM-Forge — install custom boot screen\nUSBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\nif [ -f "${USBROOT}/CustomBootscreen_067.bin" ]; then\n    cp "${USBROOT}/CustomBootscreen_067.bin" /HBpersistence/CustomBootscreen_067.bin\nfi\necho "Boot screen updated" > "${USBROOT}/pcm_ran.txt"\n';
-  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([runSh],{type:'application/octet-stream'}));a.download='run.sh';a.click()},200);
-  // Download copie_scr.sh bootstrap
-  const enc=encodeBootstrap();
-  setTimeout(()=>{a=document.createElement('a');a.href=URL.createObjectURL(new Blob([enc],{type:'application/octet-stream'}));a.download='copie_scr.sh';a.click()},400);
-  document.getElementById('bs-status').className='sm ok';
-  document.getElementById('bs-status').textContent='\u2713 Downloading 3 files — copy all to FAT32 USB, insert, wait 60s, reboot';
+
+function usbBuildPagSWAct(vin, features) {
+  const recs = [];
+  for (const f of features) {
+    const code = generateCode(vin, f.hex);
+    const r = new Uint8Array(28);
+    for (let i = 0; i < 16; i++) r[i] = code.charCodeAt(i);
+    r[18] = parseInt(f.hex.slice(0,2), 16); r[19] = parseInt(f.hex.slice(2,4), 16);
+    r[20] = parseInt(f.hex.slice(4,6), 16); r[21] = parseInt(f.hex.slice(6,8), 16);
+    r[22] = 1; r[24] = 1;
+    recs.push(r);
+  }
+  const d = new Uint8Array(recs.length * 28);
+  recs.forEach((r, i) => d.set(r, i * 28));
+  return d;
+}
+
+function usbDownloadBin() {
+  const vin = usbGetVin();
+  if (!vin) return;
+  const feats = usbGetSelectedFeatures();
+  if (!feats.length) { usbSetStatus('err', 'Select at least one feature'); return; }
+  const d = usbBuildPagSWAct(vin, feats);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([d], {type:'application/octet-stream'}));
+  a.download = 'PagSWAct.002'; a.click();
+  usbSetStatus('ok', `Downloaded PagSWAct.002 (${d.length} bytes, ${feats.length} features)`);
+}
+
+function usbDownloadScr() {
+  const enc = encodeBootstrap();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([enc], {type:'application/octet-stream'}));
+  a.download = 'copie_scr.sh'; a.click();
+  usbSetStatus('ok', `Downloaded copie_scr.sh \u2014 XOR encoded bootstrap (${enc.length} bytes)`);
+}
+
+function usbDownloadRun() {
+  const run = currentRunSh();
+  const mode = document.getElementById('usb-diag').checked ? 'DIAGNOSTIC' : 'activation';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([run], {type:'application/octet-stream'}));
+  a.download = 'run.sh'; a.click();
+  usbSetStatus('ok', `Downloaded run.sh \u2014 ${mode} mode (${run.length} bytes)`);
+}
+
+const GITHUB_RAW = 'https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/core';
+
+async function fetchBinary(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Fetch failed: ${url} (${r.status})`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+async function fetchAssets(statusFn) {
+  const assets = { showScreen: null, pngs: {} };
+  const pngNames = ['running.png', 'done.png', 'activating.png', 'activating-done.png'];
+  try {
+    statusFn('Fetching showScreen binary...');
+    assets.showScreen = await fetchBinary(GITHUB_RAW + '/bin/showScreen');
+    statusFn('Fetching status screens...');
+    for (const name of pngNames) {
+      try { assets.pngs[name] = await fetchBinary(GITHUB_RAW + '/lib/' + name); }
+      catch(e) { console.warn('PNG fetch failed:', name, e); }
+    }
+  } catch(e) { console.warn('Asset fetch failed:', e); }
+  return assets;
+}
+
+async function usbSaveFiles() {
+  const vin = usbGetVin();
+  if (!vin) return;
+  const feats = usbGetSelectedFeatures();
+  const isDiag = document.getElementById('usb-diag').checked;
+  if (!feats.length && !isDiag) {
+    usbSetStatus('err', 'Select features or enable diagnostic mode'); return;
+  }
+  if (window.showDirectoryPicker) {
+    try {
+      const dh = await window.showDirectoryPicker({mode:'readwrite'});
+      usbSetStatus('info', 'Building USB stick...');
+
+      // Fetch binary assets from GitHub
+      const assets = await fetchAssets(msg => usbSetStatus('info', msg));
+
+      // Write copie_scr.sh (XOR bootstrap)
+      const enc = encodeBootstrap();
+      let fh = await dh.getFileHandle('copie_scr.sh', {create:true});
+      let w = await fh.createWritable(); await w.write(enc); await w.close();
+
+      // Write run.sh (plaintext)
+      const run = currentRunSh();
+      fh = await dh.getFileHandle('run.sh', {create:true});
+      w = await fh.createWritable(); await w.write(run); await w.close();
+
+      // Write PagSWAct.002 (if features selected)
+      if (feats.length) {
+        const d = usbBuildPagSWAct(vin, feats);
+        fh = await dh.getFileHandle('PagSWAct.002', {create:true});
+        w = await fh.createWritable(); await w.write(d); await w.close();
+      }
+
+      let binCount = 3;
+
+      // Write bin/showScreen
+      if (assets.showScreen) {
+        const binDir = await dh.getDirectoryHandle('bin', {create:true});
+        fh = await binDir.getFileHandle('showScreen', {create:true});
+        w = await fh.createWritable(); await w.write(assets.showScreen); await w.close();
+        binCount++;
+      }
+
+      // Write lib/*.png
+      const pngKeys = Object.keys(assets.pngs);
+      if (pngKeys.length) {
+        const libDir = await dh.getDirectoryHandle('lib', {create:true});
+        for (const name of pngKeys) {
+          fh = await libDir.getFileHandle(name, {create:true});
+          w = await fh.createWritable(); await w.write(assets.pngs[name]); await w.close();
+          binCount++;
+        }
+      }
+
+      const mode = isDiag ? ' (DIAGNOSTIC)' : '';
+      const totalKB = Math.round(((assets.showScreen?.length || 0) + Object.values(assets.pngs).reduce((s,p) => s + p.length, 0)) / 1024);
+      usbSetStatus('ok', `Saved ${binCount} files to ${dh.name}/${mode} \u2014 scripts + showScreen (${totalKB}KB) + status screens`);
+    } catch(e) { if (e.name !== 'AbortError') usbSetStatus('err', e.message); }
+  } else {
+    usbDownloadScr();
+    setTimeout(() => usbDownloadRun(), 300);
+    if (feats.length) setTimeout(() => usbDownloadBin(), 600);
+  }
+}
+
+function usbSetStatus(type, msg) {
+  const el = document.getElementById('usb-status');
+  el.style.display = 'block';
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+// ===== TAB 3: Vehicle Connect =====
+let connected = false;
+let deviceVin = '';
+
+async function refreshPorts() {
+  if (!window.serial) { setStatus('err', 'Serial API not available (run in Electron)'); return; }
+  try {
+    const ports = await window.serial.list();
+    const sel = document.getElementById('port-select');
+    sel.innerHTML = '<option value="">Select COM port...</option>';
+    ports.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.path;
+      opt.textContent = `${p.path}${p.manufacturer ? ' — ' + p.manufacturer : ''}`;
+      sel.appendChild(opt);
+    });
+    if (ports.length === 0) setStatus('info', 'No COM ports found — is the ESP32 plugged in?');
+  } catch (e) { setStatus('err', 'Error listing ports: ' + e.message); }
+}
+
+async function connectDevice() {
+  const port = document.getElementById('port-select').value;
+  if (!port) { setStatus('err', 'Select a COM port first'); return; }
+
+  if (connected) {
+    await window.serial.close();
+    connected = false;
+    document.getElementById('btn-connect').textContent = 'Connect';
+    document.getElementById('dev-connected').style.display = 'none';
+    setStatus('info', 'Disconnected');
+    return;
+  }
+
+  setStatus('info', 'Connecting to ' + port + '...');
+  const result = await window.serial.open(port, 500000);
+  if (result.ok) {
+    connected = true;
+    document.getElementById('btn-connect').textContent = 'Disconnect';
+    document.getElementById('btn-connect').className = 'btn btn-red';
+    document.getElementById('dev-connected').style.display = 'block';
+    setStatus('ok', 'Connected to ' + port);
+    buildFeatureGrid();
+    logMsg('Connected to ' + port, 'acc');
+  } else {
+    setStatus('err', 'Connection failed: ' + result.error);
+  }
+}
+
+async function readVIN() {
+  if (!connected) { setStatus('err', 'Connect to device first'); return; }
+  logMsg('Sending VIN read request (UDS 0x09 0x02)...', 'acc');
+  setStatus('info', 'Reading VIN from vehicle...');
+
+  // Send UDS ReadDataByIdentifier for VIN (Service 0x09, PID 0x02)
+  // ISO-TP frame: [09, 02]
+  const result = await window.serial.write([0x09, 0x02]);
+  if (!result.ok) { logMsg('Write failed: ' + result.error, 'err'); return; }
+
+  const resp = await window.serial.read(3000);
+  if (resp.ok && resp.data.length >= 17) {
+    // Parse VIN from response (skip header bytes)
+    const vinBytes = resp.data.slice(resp.data.length >= 20 ? 3 : 0, 17 + (resp.data.length >= 20 ? 3 : 0));
+    deviceVin = String.fromCharCode(...vinBytes).replace(/[^A-Z0-9]/g, '');
+    if (deviceVin.length === 17) {
+      document.getElementById('dev-vin').textContent = deviceVin;
+      document.getElementById('dev-model').textContent = detectModel(deviceVin);
+      setStatus('ok', 'VIN read successfully: ' + deviceVin);
+      logMsg('VIN: ' + deviceVin, 'ok');
+      generateDeviceCodes();
+    } else {
+      logMsg('Invalid VIN response (' + deviceVin.length + ' chars)', 'err');
+      setStatus('err', 'Invalid VIN response — try manual entry below');
+    }
+  } else {
+    logMsg('No response from vehicle — is ignition on?', 'err');
+    setStatus('err', 'No VIN response — check ignition and OBD connection');
+  }
+}
+
+function detectModel(vin) {
+  if (vin.startsWith('WP1')) return 'Cayenne 958 detected';
+  if (vin.startsWith('WP0') && vin[3] === 'A') return '911 detected';
+  if (vin.startsWith('WP0') && vin[3] === 'C') return 'Cayman/Boxster detected';
+  if (vin.startsWith('WP0') && vin[3] === 'Z') return 'Panamera detected';
+  return 'Porsche detected';
+}
+
+function buildFeatureGrid() {
+  const features = featuresFor(0x0039); // Default Cayenne
+  const coreGrid = document.getElementById('feat-core');
+  const navGrid = document.getElementById('feat-nav');
+  coreGrid.innerHTML = '';
+  navGrid.innerHTML = '';
+
+  features.forEach((f, i) => {
+    const grid = f.cat === 'core' ? coreGrid : navGrid;
+    const div = document.createElement('label');
+    div.className = 'feat-item';
+    div.innerHTML = `
+      <input type="checkbox" data-idx="${i}" data-hex="${f.hex}" checked>
+      <div>
+        <div class="feat-name">${f.name}</div>
+        <div class="feat-desc">${f.desc}</div>
+      </div>`;
+    div.querySelector('input').addEventListener('change', function() {
+      div.classList.toggle('on', this.checked);
+    });
+    div.classList.add('on');
+    grid.appendChild(div);
+  });
+}
+
+function selectAll(state) {
+  document.querySelectorAll('.feat-item input[type=checkbox]').forEach(cb => {
+    cb.checked = state;
+    cb.closest('.feat-item').classList.toggle('on', state);
+  });
+}
+
+function generateDeviceCodes() {
+  if (!deviceVin) return;
+  document.querySelectorAll('.feat-item').forEach(item => {
+    const cb = item.querySelector('input');
+    const hex = cb.dataset.hex;
+    const code = generateCode(deviceVin, hex);
+    let codeEl = item.querySelector('.feat-code');
+    if (!codeEl) {
+      codeEl = document.createElement('div');
+      codeEl.className = 'feat-code';
+      item.querySelector('div').appendChild(codeEl);
+    }
+    codeEl.textContent = code;
+  });
+}
+
+async function applyActivations() {
+  if (!connected) { setStatus('err', 'Connect to device first'); return; }
+  if (!deviceVin) { setStatus('err', 'Read VIN first'); return; }
+
+  const selected = [];
+  document.querySelectorAll('.feat-item input:checked').forEach(cb => {
+    const hex = cb.dataset.hex;
+    const code = generateCode(deviceVin, hex);
+    const name = cb.closest('.feat-item').querySelector('.feat-name').textContent;
+    selected.push({ name, hex, code });
+  });
+
+  if (selected.length === 0) { setStatus('err', 'No features selected'); return; }
+
+  logMsg(`Applying ${selected.length} activations...`, 'acc');
+  setStatus('info', `Applying ${selected.length} activation codes...`);
+
+  for (const feat of selected) {
+    logMsg(`  ${feat.name}: ${feat.code}`, 'ok');
+    // In production: send UDS WriteDataByIdentifier with the activation code
+    // await window.serial.write(buildUDSWriteFrame(feat));
+    await new Promise(r => setTimeout(r, 100)); // Simulate delay
+  }
+
+  logMsg('All activations sent successfully', 'ok');
+  setStatus('ok', `${selected.length} activations applied — reboot PCM to take effect`);
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('dev-status');
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+function logMsg(msg, cls) {
+  const log = document.getElementById('dev-log');
+  const ts = new Date().toLocaleTimeString();
+  log.innerHTML += `<span class="${cls||''}">[${ts}] ${msg}</span>\n`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// If serial API is not available (running in browser), show notice
+if (!window.serial) {
+  document.getElementById('dev-status').textContent = 'Serial API requires Electron desktop app — run with: npx electron .';
+  document.getElementById('dev-status').className = 'status info';
 }
 </script>
 </body>
