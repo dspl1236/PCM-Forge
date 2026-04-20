@@ -157,7 +157,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="card">
       <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
         <span style="color:var(--accent);font-family:var(--mono);font-weight:700">How it works:</span>
-        Copy all <strong>3 files</strong> to a <strong>FAT32 USB stick</strong> root: <code>copie_scr.sh</code> (XOR bootstrap), <code>run.sh</code> (plaintext script), and <code>PagSWAct.002</code> (activation codes). Insert into Cayenne USB port with ignition on. Wait 60–90 seconds. Remove and cycle ignition.
+        Copy all <strong>3 files</strong> to a <strong>FAT32 USB stick</strong> root: <code>copie_scr.sh</code> (XOR bootstrap), <code>run.sh</code> (plaintext script), and <code>PagSWAct.002</code> (activation codes). The <strong>Save to folder</strong> button also bundles <code>bin/showScreen</code> and <code>lib/*.png</code> status screens automatically. Insert into Cayenne USB port with ignition on. Wait 60–90 seconds. Remove and cycle ignition.
       </div>
 
       <div style="padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px;margin-bottom:16px">
@@ -182,7 +182,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         <button class="btn btn-outline" onclick="usbSelectAll(true)">Select all</button>
         <button class="btn btn-outline" onclick="usbSelectAll(false)">Deselect all</button>
         <div style="flex:1"></div>
-        <button class="btn btn-green" onclick="usbSaveFiles()">&#128190; Save to folder</button>
+        <button class="btn btn-green" onclick="usbSaveFiles()">&#128190; Build USB stick</button>
         <button class="btn btn-outline" onclick="usbDownloadScr()">&#8595; copie_scr.sh</button>
         <button class="btn btn-outline" onclick="usbDownloadRun()">&#8595; run.sh</button>
         <button class="btn btn-outline" onclick="usbDownloadBin()">&#8595; PagSWAct.002</button>
@@ -638,32 +638,86 @@ function usbDownloadRun() {
   usbSetStatus('ok', `Downloaded run.sh \u2014 ${mode} mode (${run.length} bytes)`);
 }
 
+const GITHUB_RAW = 'https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/core';
+
+async function fetchBinary(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Fetch failed: ${url} (${r.status})`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+async function fetchAssets(statusFn) {
+  const assets = { showScreen: null, pngs: {} };
+  const pngNames = ['running.png', 'done.png', 'activating.png', 'activating-done.png'];
+  try {
+    statusFn('Fetching showScreen binary...');
+    assets.showScreen = await fetchBinary(GITHUB_RAW + '/bin/showScreen');
+    statusFn('Fetching status screens...');
+    for (const name of pngNames) {
+      try { assets.pngs[name] = await fetchBinary(GITHUB_RAW + '/lib/' + name); }
+      catch(e) { console.warn('PNG fetch failed:', name, e); }
+    }
+  } catch(e) { console.warn('Asset fetch failed:', e); }
+  return assets;
+}
+
 async function usbSaveFiles() {
   const vin = usbGetVin();
   if (!vin) return;
   const feats = usbGetSelectedFeatures();
-  if (!feats.length && !document.getElementById('usb-diag').checked) {
+  const isDiag = document.getElementById('usb-diag').checked;
+  if (!feats.length && !isDiag) {
     usbSetStatus('err', 'Select features or enable diagnostic mode'); return;
   }
   if (window.showDirectoryPicker) {
     try {
       const dh = await window.showDirectoryPicker({mode:'readwrite'});
+      usbSetStatus('info', 'Building USB stick...');
+
+      // Fetch binary assets from GitHub
+      const assets = await fetchAssets(msg => usbSetStatus('info', msg));
+
       // Write copie_scr.sh (XOR bootstrap)
       const enc = encodeBootstrap();
       let fh = await dh.getFileHandle('copie_scr.sh', {create:true});
       let w = await fh.createWritable(); await w.write(enc); await w.close();
+
       // Write run.sh (plaintext)
       const run = currentRunSh();
       fh = await dh.getFileHandle('run.sh', {create:true});
       w = await fh.createWritable(); await w.write(run); await w.close();
+
       // Write PagSWAct.002 (if features selected)
       if (feats.length) {
         const d = usbBuildPagSWAct(vin, feats);
         fh = await dh.getFileHandle('PagSWAct.002', {create:true});
         w = await fh.createWritable(); await w.write(d); await w.close();
       }
-      const mode = document.getElementById('usb-diag').checked ? ' (DIAGNOSTIC)' : '';
-      usbSetStatus('ok', `Saved 3 files to ${dh.name}/${mode} \u2014 copie_scr.sh + run.sh + PagSWAct.002`);
+
+      let binCount = 3;
+
+      // Write bin/showScreen
+      if (assets.showScreen) {
+        const binDir = await dh.getDirectoryHandle('bin', {create:true});
+        fh = await binDir.getFileHandle('showScreen', {create:true});
+        w = await fh.createWritable(); await w.write(assets.showScreen); await w.close();
+        binCount++;
+      }
+
+      // Write lib/*.png
+      const pngKeys = Object.keys(assets.pngs);
+      if (pngKeys.length) {
+        const libDir = await dh.getDirectoryHandle('lib', {create:true});
+        for (const name of pngKeys) {
+          fh = await libDir.getFileHandle(name, {create:true});
+          w = await fh.createWritable(); await w.write(assets.pngs[name]); await w.close();
+          binCount++;
+        }
+      }
+
+      const mode = isDiag ? ' (DIAGNOSTIC)' : '';
+      const totalKB = Math.round(((assets.showScreen?.length || 0) + Object.values(assets.pngs).reduce((s,p) => s + p.length, 0)) / 1024);
+      usbSetStatus('ok', `Saved ${binCount} files to ${dh.name}/${mode} \u2014 scripts + showScreen (${totalKB}KB) + status screens`);
     } catch(e) { if (e.name !== 'AbortError') usbSetStatus('err', e.message); }
   } else {
     usbDownloadScr();
