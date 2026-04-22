@@ -108,9 +108,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('generate')"><span class="tab-icon">&#9881;</span>Generate codes</button>
+    <button class="tab active" onclick="switchTab('generate')"><span class="tab-icon">&#9881;</span>Codes</button>
     <button class="tab" onclick="switchTab('usb')"><span class="tab-icon">&#128190;</span>USB stick</button>
-    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Vehicle connect</button>
+    <button class="tab" onclick="switchTab('toolkit')"><span class="tab-icon">&#128295;</span>Toolkit</button>
+    <button class="tab" onclick="switchTab('device')"><span class="tab-icon">&#9889;</span>Vehicle</button>
   </div>
 
   <!-- TAB 1: Generate Codes -->
@@ -191,7 +192,46 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
   </div>
 
-  <!-- TAB 3: Vehicle Connect -->
+  <!-- TAB 3: Toolkit -->
+  <div id="tab-toolkit" class="panel">
+    <div class="card">
+      <div class="card-title">PCM 3.1 Toolkit</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <span style="color:var(--accent);font-family:var(--mono);font-weight:700">Modular USB toolkit for PCM 3.1</span> &mdash;
+        Select modules below, build a USB stick, insert into your Cayenne/911/Boxster. Scripts run via the same <code>copie_scr.sh</code> autorun mechanism used by the activation tab. All modules are read-only diagnostics unless marked otherwise.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Select modules</div>
+      <div id="tk-modules" style="display:grid;grid-template-columns:1fr;gap:10px"></div>
+
+      <div class="action-bar" style="margin-top:20px">
+        <button class="btn btn-outline" onclick="tkSelectAll(true)">Select all</button>
+        <button class="btn btn-outline" onclick="tkSelectAll(false)">Deselect all</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-green" onclick="tkBuild()">&#128295; Build USB stick</button>
+      </div>
+      <div id="tk-status" class="status info" style="margin-top:12px;display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Connectivity</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        <p style="margin-bottom:10px">The PCM 3.1's built-in <strong>Cinterion AC75i</strong> modem (3G UMTS) is dead after the 3G network shutdown. Internet can be restored via USB ethernet:</p>
+        <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:11px;line-height:1.8;margin-bottom:10px">
+          USB port &rarr; AX88772 adapter &rarr; LTE router &rarr; internet<br>
+          Driver: <span style="color:var(--green)">devn-asix.so</span> (already in PCM firmware)<br>
+          Interface: <span style="color:var(--green)">en5</span> (same as Audi MMI3G+)<br>
+          Chipset: AX88772, 772A, 772B &mdash; <span style="color:var(--red)">NOT 772D</span><br>
+          772D fix: <span style="color:var(--accent)">io-pkt-v4-hc -d asix did=0x772D,vid=0x0B95</span>
+        </div>
+        <p>See <a href="https://github.com/dspl1236/PCM-Forge/blob/main/research/PCM31_CONNECTIVITY.md" style="color:var(--accent)">research/PCM31_CONNECTIVITY.md</a> for the full LTE restoration guide.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Vehicle Connect -->
   <div id="tab-device" class="panel">
     <div class="card">
       <div class="card-title">OBD-II connection</div>
@@ -429,12 +469,14 @@ populateModels('model2');
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', 
-      (i === 0 && id === 'generate') || (i === 1 && id === 'usb') || (i === 2 && id === 'device'));
+      (i === 0 && id === 'generate') || (i === 1 && id === 'usb') || (i === 2 && id === 'toolkit') || (i === 3 && id === 'device'));
   });
   document.getElementById('tab-generate').classList.toggle('active', id === 'generate');
   document.getElementById('tab-usb').classList.toggle('active', id === 'usb');
+  document.getElementById('tab-toolkit').classList.toggle('active', id === 'toolkit');
   document.getElementById('tab-device').classList.toggle('active', id === 'device');
   if (id === 'usb') usbBuildFeatureGrid();
+  if (id === 'toolkit') tkRenderModules();
   if (id === 'device') refreshPorts();
 }
 
@@ -907,6 +949,160 @@ function logMsg(msg, cls) {
   const ts = new Date().toLocaleTimeString();
   log.innerHTML += `<span class="${cls||''}">[${ts}] ${msg}</span>\n`;
   log.scrollTop = log.scrollHeight;
+}
+
+// ===== TAB 3: Toolkit =====
+const TK_MODULES = [
+  { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '&#128196;',
+    desc: 'Full PCM 3.1 system dump: version, VIN, mount points, processes, network, partitions, IPC devices, engineering screens. Read-only.',
+    scripts: ['tk_sysinfo.sh'] },
+  { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '&#128421;',
+    desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent — reverts on reboot.',
+    scripts: ['tk_telnet.sh'] },
+  { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '&#128225;',
+    desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter.',
+    scripts: ['tk_lte.sh'] },
+  { id: 'password-dump', name: 'Password Dump', status: 'planned', icon: '&#128273;',
+    desc: 'Dump stored WiFi, Bluetooth, and connectivity credentials to USB. Read-only.',
+    scripts: ['tk_passwords.sh'] },
+  { id: 'persistence', name: 'Persistence Dump', status: 'planned', icon: '&#128451;',
+    desc: 'Export CVALUE files, screensaver config, hybrid.bin, and HBpersistence contents to USB.',
+    scripts: ['tk_persistence.sh'] },
+  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'planned', icon: '&#9889;',
+    desc: 'Scan IPC devices, DSP, MOST bus, CAN interfaces, FPGA sysregs, and V850 IOC state.',
+    scripts: ['tk_can_probe.sh'] },
+];
+
+const TK_STATUS_BADGE = { ready: '&#9989;', alpha: '&#9888;&#65039;', planned: '&#128736;' };
+const TK_STATUS_LABEL = { ready: 'Ready', alpha: 'Alpha', planned: 'Planned' };
+let tkRendered = false;
+
+function tkRenderModules() {
+  if (tkRendered) return;
+  tkRendered = true;
+  const container = document.getElementById('tk-modules');
+  container.innerHTML = TK_MODULES.map(m => `
+    <label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:${m.status === 'planned' ? 'default' : 'pointer'};opacity:${m.status === 'planned' ? '0.5' : '1'}">
+      <input type="checkbox" class="tk-cb" data-id="${m.id}" ${m.status === 'planned' ? 'disabled' : ''} style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">
+          <span style="margin-right:6px">${m.icon}</span>${m.name}
+          <span style="float:right;font-size:11px;font-family:var(--mono);color:${m.status==='ready'?'var(--green)':m.status==='alpha'?'var(--accent)':'var(--text2)'}">${TK_STATUS_LABEL[m.status]}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${m.desc}</div>
+      </div>
+    </label>
+  `).join('');
+}
+
+function tkSelectAll(state) {
+  document.querySelectorAll('.tk-cb:not(:disabled)').forEach(cb => cb.checked = state);
+}
+
+function tkBuild() {
+  const selected = [...document.querySelectorAll('.tk-cb:checked')].map(cb => cb.dataset.id);
+  const status = document.getElementById('tk-status');
+
+  if (selected.length === 0) {
+    status.style.display = 'block';
+    status.className = 'status info';
+    status.textContent = 'Select at least one module';
+    return;
+  }
+
+  // Build combined run.sh from selected modules
+  let runSh = '#!/bin/ksh\n# PCM-Forge Toolkit — https://github.com/dspl1236/PCM-Forge\n';
+  runSh += 'USBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\n';
+  runSh += 'DTSTAMP=$(date +%Y%m%d_%H%M%S 2>/dev/null || echo nodate)\n';
+  runSh += 'LOG="${USBROOT}/pcm_toolkit_${DTSTAMP}.log"\n';
+  runSh += 'DUMPDIR="${USBROOT}/pcm_toolkit_${DTSTAMP}"\n';
+  runSh += 'mkdir -p "$DUMPDIR" 2>/dev/null\n';
+  runSh += '# Show status\nSS=""; for s in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do [ -f "$s" ] && SS="$s" && break; done\n';
+  runSh += 'if [ -n "$SS" ]; then TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; cp "$SS" "$TMPD/showScreen" 2>/dev/null; chmod +x "$TMPD/showScreen" 2>/dev/null; "$TMPD/showScreen" "${USBROOT}/lib/running.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
+  runSh += 'echo "PCM-Forge Toolkit starting: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"\n{\n';
+
+  if (selected.includes('sysinfo')) {
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "  System Info"\n';
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "=== PCM Version ==="\n';
+    runSh += '    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n';
+    runSh += '    echo ""\n    echo "=== VIN ==="\n    cat /HBpersistence/vin 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Mount Points ==="\n    mount 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Processes ==="\n    pidin 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Flash Partitions ==="\n    ls -la /dev/fs0* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== HDD Partitions ==="\n    ls -la /dev/hd0* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== IFS/EFS Paths ==="\n';
+    runSh += '    ls -d /mnt/ifs1/ /mnt/flash/ /mnt/efs-system/ /mnt/data/ /mnt/share/ /mnt/nav/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Engineering ESD ==="\n';
+    runSh += '    ls /mnt/flash/efs1/engdefs/ /HBpersistence/engdefs/ /mnt/ifs1/engdefs/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== inetd.conf ==="\n    cat /etc/inetd.conf 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /dev ==="\n    ls /dev/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== IPC/DSP ==="\n    ls -laR /dev/ipc/ /dev/dspipc/ 2>&1\n';
+    runSh += '    cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\n\n';
+  }
+
+  if (selected.includes('telnet')) {
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "  Telnet Enabler"\n';
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "Starting USB ethernet + telnet..."\n';
+    runSh += '    io-pkt-v4-hc -d asix verbose &\n';
+    runSh += '    sleep 3\n';
+    runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+    runSh += '    inetd &\n';
+    runSh += '    echo "Telnet should now be available at 172.16.42.1"\n';
+    runSh += '    ifconfig en5 2>&1\n\n';
+  }
+
+  if (selected.includes('lte-setup')) {
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "  LTE Setup"\n';
+    runSh += '    echo "========================================"\n';
+    runSh += '    echo "Starting USB ethernet + DHCP..."\n';
+    runSh += '    io-pkt-v4-hc -d asix verbose &\n';
+    runSh += '    sleep 3\n';
+    runSh += '    dhcp.client -i en5 &\n';
+    runSh += '    sleep 5\n';
+    runSh += '    echo "Network state:"\n';
+    runSh += '    ifconfig en5 2>&1\n';
+    runSh += '    echo ""\n    echo "Route table:"\n';
+    runSh += '    route -n show 2>&1\n';
+    runSh += '    echo ""\n    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
+  }
+
+  runSh += '} > "$LOG" 2>&1\n';
+  runSh += 'echo "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
+  runSh += '# Show complete\nTMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; if [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
+
+  // Generate files
+  const copieScrBytes = encodeBootstrap();
+  const runShBytes = new TextEncoder().encode(runSh);
+
+  // Create ZIP using JSZip if available, otherwise download individually
+  const blob1 = new Blob([copieScrBytes], { type: 'application/octet-stream' });
+  const blob2 = new Blob([runShBytes], { type: 'text/plain' });
+
+  // Download copie_scr.sh
+  const a1 = document.createElement('a');
+  a1.href = URL.createObjectURL(blob1);
+  a1.download = 'copie_scr.sh';
+  a1.click();
+
+  // Download run.sh
+  setTimeout(() => {
+    const a2 = document.createElement('a');
+    a2.href = URL.createObjectURL(blob2);
+    a2.download = 'run.sh';
+    a2.click();
+  }, 500);
+
+  status.style.display = 'block';
+  status.className = 'status info';
+  status.innerHTML = `<strong>Built ${selected.length} module(s):</strong> ${selected.join(', ')}<br>
+    Copy <code>copie_scr.sh</code> and <code>run.sh</code> to a FAT32 USB stick root. Insert into PCM USB port with ignition on. Wait 60s, remove.`;
 }
 
 // If serial API is not available (running in browser), show notice
