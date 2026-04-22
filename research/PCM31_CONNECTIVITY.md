@@ -283,3 +283,60 @@ All share the same IFS2 (main firmware) but have different IFS1
 - MMI3G-Toolkit `research/DATA_CONNECTIVITY_OPTIONS.md` — Audi LTE setup
 - MMI3G-Toolkit `research/CUSTOM_DRIVER_INJECTION.md` — Driver loading methods
 - [DrGER2/MMI3GP-LAN-Setup](https://github.com/DrGER2/MMI3GP-LAN-Setup) — Original Audi LTE method
+
+## QNX devn-asix.so Driver Documentation (CRITICAL FINDING)
+
+Official QNX 6.4.0 documentation reveals the ASIX driver supports
+**explicit USB device ID override** via command-line parameters:
+
+```
+io-pkt-v4-hc -d asix [option,option,...] &
+```
+
+### Key Options
+
+| Option | Description |
+|--------|-------------|
+| `did=0xXXXX` | Force USB device ID (overrides auto-detection) |
+| `vid=0xXXXX` | Force USB vendor ID |
+| `busnum=0xXX` | Target specific USB bus |
+| `devnum=0xXX` | Target specific USB device |
+| `speed=10\|100` | Force media speed |
+| `duplex=0\|1` | Force half/full duplex |
+| `mac=XXXXXXXXXXXX` | Override MAC address |
+| `verbose=1..4` | Debug output to slogger |
+| `wait=num` | Seconds to wait for USB stack (default 60) |
+
+### AX88772D Compatibility
+
+The QNX documentation explicitly states:
+
+> "If the device enumerators don't recognize your device, try
+> explicitly specifying the device ID with the `did` option."
+
+This means the AX88772D may work WITHOUT hex-patching the driver:
+
+```sh
+# Force driver to recognize AX88772D
+io-pkt-v4-hc -d asix did=0x772D,vid=0x0B95 &
+
+# Or for some AX88772D variants
+io-pkt-v4-hc -d asix did=0x0074,vid=0x1790 &
+```
+
+The AX88772D's register layout is compatible with the 772/772A/772B.
+The only reason it fails auto-detection is a different USB product ID.
+Forcing the ID via command line bypasses this entirely.
+
+**This eliminates the need to hex-patch devn-asix.so or buy a
+specific adapter revision.** Any AX88772-family adapter should work
+with the `did` override.
+
+### Source
+
+QNX Neutrino 6.4.0 documentation:
+https://qnx.com/developers/docs/6.4.0/neutrino/utilities/d/devn-asix.so.html
+
+Note: The MMI3G+ runs QNX 6.3.0 SP1, but the driver interface is
+compatible. The `did`/`vid` parameters are part of the io-pkt
+driver framework, not specific to any QNX version.
