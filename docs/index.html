@@ -723,6 +723,8 @@ const TK_MODULES = [
     desc: 'Export full HBpersistence contents: CVALUE coding files, FSC activation, screensaver config, hybrid.bin, VIN, activation files. Copies files to USB.' },
   { id: 'can-probe', name: 'CAN / IOC Probe', status: 'tested', icon: '\u26A1',
     desc: 'Scan IPC devices, DSP channels, MOST bus, CAN interfaces, FPGA sysregs, V850 IOC state, service broker, and device nodes.' },
+  { id: 'driver-patch', name: 'ASIX Driver Patch', status: 'alpha', icon: '\u{1F527}',
+    desc: 'Hex-patch devn-asix.so to add unrecognized USB PIDs (AX88178/772B/772D). Copies driver to /tmp, patches 2 bytes, mounts patched driver. Non-persistent \u2014 reverts on reboot.' },
 ];
 
 let tkRendered = false;
@@ -751,6 +753,15 @@ function tkRenderModules() {
         + '<select id="tk-telnet-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
         + '<option value="std">AX88772 / 772A / 772B (standard)</option>'
         + '<option value="772d">AX88178/772B/772D (device ID override)</option>'
+        + '</select></div>';
+    }
+    if (m.id === 'driver-patch') {
+      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
+        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Add PID (replaces AX88172 entry)</div>'
+        + '<select id="tk-patch-pid" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
+        + '<option value="1780">AX88178 (PID 0x1780) \u2014 Plugable USB2-E1000</option>'
+        + '<option value="772B">AX88772B (PID 0x772B)</option>'
+        + '<option value="772D">AX88772D (PID 0x772D)</option>'
         + '</select></div>';
     }
     return '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (m.status === 'planned' ? 'default' : 'pointer') + ';opacity:' + (m.status === 'planned' ? '0.5' : '1') + '">'
@@ -1022,6 +1033,46 @@ function tkBuild() {
     runSh += '    ls -la /dev/ipc/ioc/ 2>&1\n';
     runSh += '    echo ""\n    echo "=== Shared Memory ==="\n';
     runSh += '    ls /dev/shmem/ 2>&1\n\n';
+  }
+  if (selected.indexOf('driver-patch') >= 0) {
+    var patchSel = document.getElementById('tk-patch-pid');
+    var patchPid = patchSel ? patchSel.value : '1780';
+    var pidNames = { '1780': 'AX88178', '772B': 'AX88772B', '772D': 'AX88772D' };
+    var pidName = pidNames[patchPid] || patchPid;
+    // PID bytes in little-endian
+    var pidBytes = { '1780': '\\x80\\x17', '772B': '\\x2B\\x77', '772D': '\\x2D\\x77' };
+    var patchBytes = pidBytes[patchPid] || '\\x80\\x17';
+    runSh += '    echo "======== ASIX Driver Patch ========"\n';
+    runSh += '    echo "Target: ' + pidName + ' (PID 0x' + patchPid + ')"\n';
+    runSh += '    echo "Patching entry 0 (AX88172 PID) at offset 67528"\n';
+    runSh += '    DRVSRC=""\n';
+    runSh += '    for d in /lib/dll/devn-asix.so /mnt/ifs-root/lib/dll/devn-asix.so; do\n';
+    runSh += '        [ -f "$d" ] && DRVSRC="$d" && break\n    done\n';
+    runSh += '    if [ -z "$DRVSRC" ]; then\n';
+    runSh += '        echo "[ERROR] devn-asix.so not found!"\n';
+    runSh += '    else\n';
+    runSh += '        echo "[OK] Source: $DRVSRC"\n';
+    runSh += '        TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs\n';
+    runSh += '        cp "$DRVSRC" "$TMPD/devn-asix.so" 2>&1\n';
+    runSh += '        chmod 755 "$TMPD/devn-asix.so" 2>/dev/null\n';
+    runSh += '        echo "[PATCH] Original PID at offset 67528:"\n';
+    runSh += '        dd if="$TMPD/devn-asix.so" bs=1 skip=67528 count=2 2>/dev/null | od -A x -t x1 | head -1\n';
+    runSh += '        printf "' + patchBytes + '" | dd of="$TMPD/devn-asix.so" bs=1 seek=67528 count=2 conv=notrunc 2>&1\n';
+    runSh += '        echo "[PATCH] Patched PID at offset 67528:"\n';
+    runSh += '        dd if="$TMPD/devn-asix.so" bs=1 skip=67528 count=2 2>/dev/null | od -A x -t x1 | head -1\n';
+    runSh += '        echo "[MOUNT] Loading patched driver..."\n';
+    runSh += '        if [ -e /dev/io-net ]; then\n';
+    runSh += '            mount -T io-net "$TMPD/devn-asix.so" 2>&1\n';
+    runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
+    runSh += '            /sbin/io-pkt-v4-hc -d "$TMPD/devn-asix.so" verbose &\n';
+    runSh += '            sleep 2\n';
+    runSh += '        fi\n';
+    runSh += '        sleep 3\n';
+    runSh += '        echo "[CHECK] Interface status:"\n';
+    runSh += '        ifconfig en5 2>&1 || echo "en5 not found — adapter may not be connected"\n';
+    runSh += '        # Backup patched driver to USB for inspection\n';
+    runSh += '        cp "$TMPD/devn-asix.so" "$DUMPDIR/devn-asix-patched.so" 2>/dev/null\n';
+    runSh += '    fi\n\n';
   }
   runSh += '} > "$LOG" 2>&1\necho "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
   runSh += 'if [ $SHOW_OK -eq 1 ] && [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
