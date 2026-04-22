@@ -210,21 +210,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
       <div id="tk-status" class="status info" style="margin-top:12px;display:none"></div>
     </div>
-
-    <div class="card">
-      <div class="card-title">Connectivity</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.6">
-        <p style="margin-bottom:10px">The PCM 3.1's built-in <strong>Cinterion AC75i</strong> modem (3G UMTS) is dead after the 3G network shutdown. Internet can be restored via USB ethernet:</p>
-        <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:11px;line-height:1.8;margin-bottom:10px">
-          USB port &rarr; AX88772 adapter &rarr; LTE router &rarr; internet<br>
-          Driver: <span style="color:var(--green)">devn-asix.so</span> (already in PCM firmware)<br>
-          Interface: <span style="color:var(--green)">en5</span> (same as Audi MMI3G+)<br>
-          Chipset: AX88772, 772A, 772B &mdash; <span style="color:var(--red)">NOT 772D</span><br>
-          772D fix: <span style="color:var(--accent)">io-pkt-v4-hc -d asix did=0x772D,vid=0x0B95</span>
-        </div>
-        <p>See <a href="https://github.com/dspl1236/PCM-Forge/blob/main/research/PCM31_CONNECTIVITY.md" style="color:var(--accent)">research/PCM31_CONNECTIVITY.md</a> for the full LTE restoration guide.</p>
-      </div>
-    </div>
   </div>
 
 
@@ -731,7 +716,7 @@ const TK_MODULES = [
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
     desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent \u2014 reverts on reboot.' },
   { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
-    desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter.' },
+    desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter. See research/PCM31_CONNECTIVITY.md for the full LTE restoration guide.' },
   { id: 'password-dump', name: 'Password Dump', status: 'alpha', icon: '\u{1F511}',
     desc: 'Dump stored WiFi passwords, Bluetooth pairings, connectivity credentials, and saved network configs to USB. Read-only.' },
   { id: 'persistence', name: 'Persistence Dump', status: 'alpha', icon: '\u{1F4C3}',
@@ -915,19 +900,37 @@ function tkBuild() {
 
   var copieScrBytes = encodeBootstrap();
   var runShBytes = new TextEncoder().encode(runSh);
-  var a1 = document.createElement('a');
-  a1.href = URL.createObjectURL(new Blob([copieScrBytes], { type: 'application/octet-stream' }));
-  a1.download = 'copie_scr.sh';
-  a1.click();
-  setTimeout(function() {
-    var a2 = document.createElement('a');
-    a2.href = URL.createObjectURL(new Blob([runShBytes], { type: 'text/plain' }));
-    a2.download = 'run.sh';
-    a2.click();
-  }, 500);
-  status.style.display = 'block';
-  status.className = 'status info';
-  status.innerHTML = '<strong>Built ' + selected.length + ' module(s):</strong> ' + selected.join(', ') + '<br>Copy copie_scr.sh and run.sh to a FAT32 USB stick root.';
+
+  // Try File System Access API (save to folder), fall back to ZIP
+  if (window.showDirectoryPicker) {
+    (async function() {
+      try {
+        var dh = await window.showDirectoryPicker({ mode: 'readwrite' });
+        var f1 = await dh.getFileHandle('copie_scr.sh', { create: true });
+        var w1 = await f1.createWritable(); await w1.write(copieScrBytes); await w1.close();
+        var f2 = await dh.getFileHandle('run.sh', { create: true });
+        var w2 = await f2.createWritable(); await w2.write(runShBytes); await w2.close();
+        status.style.display = 'block';
+        status.className = 'status info';
+        status.innerHTML = '<strong>Saved ' + selected.length + ' module(s) to ' + dh.name + '</strong>: ' + selected.join(', ') + '<br>Copy folder contents to FAT32 USB stick root.';
+      } catch(e) { if (e.name !== 'AbortError') { status.style.display='block'; status.className='status info'; status.textContent=e.message; } }
+    })();
+  } else {
+    // Fallback: download copie_scr.sh then run.sh with delay
+    var a1 = document.createElement('a');
+    a1.href = URL.createObjectURL(new Blob([copieScrBytes], { type: 'application/octet-stream' }));
+    a1.download = 'copie_scr.sh';
+    a1.click();
+    setTimeout(function() {
+      var a2 = document.createElement('a');
+      a2.href = URL.createObjectURL(new Blob([runShBytes], { type: 'text/plain' }));
+      a2.download = 'run.sh';
+      a2.click();
+    }, 1000);
+    status.style.display = 'block';
+    status.className = 'status info';
+    status.innerHTML = '<strong>Built ' + selected.length + ' module(s):</strong> ' + selected.join(', ') + '<br>Check your downloads for <strong>both</strong> copie_scr.sh and run.sh. Copy both to FAT32 USB stick root.';
+  }
 }
 
 // Auto-render toolkit if tab is already active on load
