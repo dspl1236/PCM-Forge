@@ -712,7 +712,7 @@ function usbSetStatus(type, msg) {
 // ===== TAB 3: Toolkit =====
 const TK_MODULES = [
   { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
-    desc: 'Full PCM 3.1 system dump: version, VIN, mount points, processes, network, partitions, IPC devices, engineering screens. Read-only.' },
+    desc: 'Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only. Run this first.' },
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
     desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent \u2014 reverts on reboot.' },
   { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
@@ -803,7 +803,38 @@ function tkBuild() {
     runSh += '    echo ""\n    echo "=== inetd.conf ==="\n    cat /etc/inetd.conf 2>&1\n';
     runSh += '    echo ""\n    echo "=== /dev ==="\n    ls /dev/ 2>&1\n';
     runSh += '    echo ""\n    echo "=== IPC/DSP ==="\n    ls -laR /dev/ipc/ /dev/dspipc/ 2>&1\n';
-    runSh += '    cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\n\n';
+    runSh += '    cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\n';
+    // --- Password section (folded into sysinfo) ---
+    runSh += '    echo ""\n    echo "=== WiFi / Network Credentials ==="\n';
+    runSh += '    cat /HBpersistence/wifi_networks.conf 2>&1\n';
+    runSh += '    cat /HBpersistence/wpa_supplicant.conf 2>&1\n';
+    runSh += '    ls -la /HBpersistence/DLinkReplacesPPP /HBpersistence/usedhcp 2>&1\n';
+    runSh += '    cat /etc/inetd.conf 2>&1\n';
+    runSh += '    for wf in /HBpersistence/wifi* /HBpersistence/wpa* /HBpersistence/common.cfg; do\n';
+    runSh += '        [ -f "$wf" ] && cp "$wf" "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    done\n';
+    // --- Persistence section (folded into sysinfo) ---
+    runSh += '    echo ""\n    echo "=== Persistence Dump ==="\n';
+    runSh += '    ls -laR /HBpersistence/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== CVALUE Files ==="\n';
+    runSh += '    for cva in /HBpersistence/CVALUE*.CVA; do\n';
+    runSh += '        [ -f "$cva" ] && cp "$cva" "$DUMPDIR/" 2>/dev/null && echo "  Copied: ${cva##*/}"\n';
+    runSh += '    done\n';
+    runSh += '    mkdir -p "$DUMPDIR/FSC" 2>/dev/null\n    cp -r /HBpersistence/FSC/* "$DUMPDIR/FSC/" 2>/dev/null\n';
+    runSh += '    [ -f /HBpersistence/PagSWAct.002 ] && cp /HBpersistence/PagSWAct.002 "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    cp /HBpersistence/screensaver.conf /HBpersistence/hybrid.bin "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    for bs in /HBpersistence/CustomBootscreen_*.bin; do [ -f "$bs" ] && cp "$bs" "$DUMPDIR/" 2>/dev/null; done\n';
+    runSh += '    mkdir -p "$DUMPDIR/engdefs" 2>/dev/null\n    cp /HBpersistence/engdefs/* "$DUMPDIR/engdefs/" 2>/dev/null\n';
+    runSh += '    cp /HBpersistence/test.html /HBpersistence/test1.html "$DUMPDIR/" 2>/dev/null\n';
+    // --- CAN/IOC section (folded into sysinfo) ---
+    runSh += '    echo ""\n    echo "=== CAN / IOC Probe ==="\n';
+    runSh += '    ls -laR /dev/ipc/ /dev/dspipc/ 2>&1\n';
+    runSh += '    ls -la /dev/can* /dev/ser* /dev/spi* /dev/i2c* /dev/most* 2>&1\n';
+    runSh += '    ls -la /dev/sysregs/ 2>&1\n';
+    runSh += '    ls /dev/ 2>&1\n';
+    runSh += '    ls -la /srv/ 2>&1\n';
+    runSh += '    ls -laR /hbsystem/ 2>&1\n';
+    runSh += '    ls /dev/shmem/ 2>&1\n\n';
   }
   if (selected.indexOf('telnet') >= 0) {
     var telnetMode = document.getElementById('tk-telnet-mode');
