@@ -854,15 +854,31 @@ function tkBuild() {
     var drvArgs = use772d ? ' did=0x772D,vid=0x0B95' : '';
     runSh += '    echo "======== LTE Setup ========"\n';
     runSh += '    echo "Config: ' + lteVal + '"\n';
-    runSh += '    echo "Starting USB ethernet..."\n';
-    runSh += '    io-pkt-v4-hc -d asix' + drvArgs + ' verbose &\n    sleep 3\n';
+    runSh += '    echo "Starting USB ethernet driver..."\n';
+    runSh += '    io-pkt-v4-hc -d asix' + drvArgs + ' verbose &\n';
+    runSh += '    inetd &\n';
     if (useStatic) {
-      runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
-      runSh += '    echo "Static IP configured: 172.16.42.1"\n';
-      runSh += '    echo "Connect PC to same subnet (172.16.42.x)"\n';
+      runSh += '    # Static IP: wait for adapter, then configure\n';
+      runSh += '    echo "Waiting for adapter (swap USB now)..."\n';
+      runSh += '    N=0\n    while [ $N -lt 60 ]; do\n';
+      runSh += '        ifconfig en5 >/dev/null 2>&1 && break\n';
+      runSh += '        N=$((N + 1))\n        sleep 2\n    done\n';
+      runSh += '    if ifconfig en5 >/dev/null 2>&1; then\n';
+      runSh += '        ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+      runSh += '        echo "Static IP configured: 172.16.42.1"\n';
+      runSh += '    else\n        echo "en5 not detected after 120s"\n    fi\n';
     } else {
-      runSh += '    dhcp.client -i en5 &\n    sleep 5\n';
-      runSh += '    echo "DHCP client started"\n';
+      runSh += '    # DHCP: wait for adapter in background, then run DHCP\n';
+      runSh += '    echo "Background DHCP waiter started — swap USB for adapter now"\n';
+      runSh += '    ( N=0; while [ $N -lt 60 ]; do\n';
+      runSh += '        ifconfig en5 >/dev/null 2>&1 && break\n';
+      runSh += '        N=$((N + 1)); sleep 2\n';
+      runSh += '    done\n';
+      runSh += '    if ifconfig en5 >/dev/null 2>&1; then\n';
+      runSh += '        dhcp.client -i en5 &\n        sleep 5\n';
+      runSh += '        ifconfig en5 >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
+      runSh += '        echo "LTE ready" >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
+      runSh += '    fi ) &\n';
     }
     runSh += '    echo "Network:"\n    ifconfig en5 2>&1\n';
     runSh += '    echo "Route:"\n    route -n show 2>&1\n';
