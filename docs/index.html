@@ -781,6 +781,7 @@ function tkBuild() {
     return;
   }
   var runSh = '#!/bin/ksh\n# PCM-Forge Toolkit \u2014 https://github.com/dspl1236/PCM-Forge\n';
+  runSh += 'export PATH="/sbin:/usr/sbin:/bin:/usr/bin:$PATH"\n';
   runSh += 'USBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\n';
   runSh += 'DTSTAMP=$(date +%Y%m%d_%H%M%S 2>/dev/null || echo nodate)\n';
   runSh += 'LOG="${USBROOT}/pcm_toolkit_${DTSTAMP}.log"\n';
