@@ -842,14 +842,14 @@ function tkBuild() {
     var use772d = telnetMode && telnetMode.value === '772d';
     var drvArgs = use772d ? ' did=0x772D,vid=0x0B95' : '';
     runSh += '    echo "======== Telnet Enabler ========"\n';
-    runSh += '    NETCMD=""\n';
-    runSh += '    for cmd in /sbin/io-pkt-v4-hc /usr/sbin/io-pkt-v4-hc io-pkt-v4-hc; do\n';
-    runSh += '        [ -x "$cmd" ] && NETCMD="$cmd" && break\n    done\n';
-    runSh += '    if [ -n "$NETCMD" ]; then $NETCMD -d asix' + drvArgs + ' verbose &\n';
-    runSh += '    else mount -T io-net /lib/dll/devn-asix.so 2>&1; fi\n';
+    runSh += '    if [ -e /dev/io-net ]; then\n';
+    runSh += '        mount -T io-net /lib/dll/devn-asix.so' + drvArgs + ' 2>&1\n';
+    runSh += '    elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
+    runSh += '        /sbin/io-pkt-v4-hc -d asix' + drvArgs + ' verbose &\n';
+    runSh += '    fi\n';
     runSh += '    sleep 3\n';
     runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
-    runSh += '    inetd 2>/dev/null &\n    /usr/sbin/inetd 2>/dev/null &\n';
+    runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
     runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig en5 2>&1\n\n';
   }
   if (selected.indexOf('lte-setup') >= 0) {
@@ -861,21 +861,22 @@ function tkBuild() {
     runSh += '    echo "======== LTE Setup ========"\n';
     runSh += '    echo "Config: ' + lteVal + '"\n';
     runSh += '    echo "Detecting network stack..."\n';
-    runSh += '    NETCMD=""\n';
-    runSh += '    for cmd in /sbin/io-pkt-v4-hc /usr/sbin/io-pkt-v4-hc io-pkt-v4-hc; do\n';
-    runSh += '        if [ -x "$cmd" ] || command -v "$cmd" >/dev/null 2>&1; then\n';
-    runSh += '            NETCMD="$cmd"\n            break\n        fi\n    done\n';
-    runSh += '    if [ -z "$NETCMD" ]; then\n';
-    runSh += '        echo "[WARN] io-pkt-v4-hc not found, trying io-net mount..."\n';
-    runSh += '        echo "Searching:" && find / -name "io-pkt*" -o -name "io-net*" 2>/dev/null | head -5\n';
-    runSh += '        echo "Trying: mount -T io-net /lib/dll/devn-asix.so"\n';
+    runSh += '    NETOK=0\n';
+    runSh += '    # Try io-net first (PCM3.1 Cayenne uses io-net from boot)\n';
+    runSh += '    if [ -e /dev/io-net ]; then\n';
+    runSh += '        echo "[OK] io-net running — mounting ASIX driver"\n';
     runSh += '        mount -T io-net /lib/dll/devn-asix.so' + drvArgs + ' 2>&1\n';
+    runSh += '        NETOK=1\n';
     runSh += '    else\n';
-    runSh += '        echo "[OK] Found: $NETCMD"\n';
-    runSh += '        $NETCMD -d asix' + drvArgs + ' verbose &\n';
-    runSh += '    fi\n';
+    runSh += '        echo "[INFO] io-net not found, trying io-pkt-v4-hc..."\n';
+    runSh += '        for cmd in /sbin/io-pkt-v4-hc /usr/sbin/io-pkt-v4-hc; do\n';
+    runSh += '            if [ -x "$cmd" ]; then\n';
+    runSh += '                echo "[OK] Found: $cmd"\n';
+    runSh += '                $cmd -d asix' + drvArgs + ' verbose &\n';
+    runSh += '                NETOK=1\n                break\n            fi\n';
+    runSh += '        done\n    fi\n';
+    runSh += '    if [ $NETOK -eq 0 ]; then echo "[ERROR] No network stack found"; fi\n';
     runSh += '    sleep 3\n';
-    runSh += '    inetd 2>/dev/null &\n';
     runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
     if (useStatic) {
       runSh += '    # Static IP: wait for adapter, then configure\n';
