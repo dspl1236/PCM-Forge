@@ -732,12 +732,12 @@ const TK_MODULES = [
     desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent \u2014 reverts on reboot.' },
   { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
     desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter.' },
-  { id: 'password-dump', name: 'Password Dump', status: 'planned', icon: '\u{1F511}',
-    desc: 'Dump stored WiFi, Bluetooth, and connectivity credentials to USB. Read-only.' },
-  { id: 'persistence', name: 'Persistence Dump', status: 'planned', icon: '\u{1F4C3}',
-    desc: 'Export CVALUE files, screensaver config, hybrid.bin, and HBpersistence contents to USB.' },
-  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'planned', icon: '\u26A1',
-    desc: 'Scan IPC devices, DSP, MOST bus, CAN interfaces, FPGA sysregs, and V850 IOC state.' },
+  { id: 'password-dump', name: 'Password Dump', status: 'alpha', icon: '\u{1F511}',
+    desc: 'Dump stored WiFi passwords, Bluetooth pairings, connectivity credentials, and saved network configs to USB. Read-only.' },
+  { id: 'persistence', name: 'Persistence Dump', status: 'alpha', icon: '\u{1F4C3}',
+    desc: 'Export full HBpersistence contents: CVALUE coding files, FSC activation, screensaver config, hybrid.bin, VIN, activation files. Copies files to USB.' },
+  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'alpha', icon: '\u26A1',
+    desc: 'Scan IPC devices, DSP channels, MOST bus, CAN interfaces, FPGA sysregs, V850 IOC state, service broker, and device nodes.' },
 ];
 
 let tkRendered = false;
@@ -813,6 +813,102 @@ function tkBuild() {
     runSh += '    echo "Network:"\n    ifconfig en5 2>&1\n';
     runSh += '    echo "Route:"\n    route -n show 2>&1\n';
     runSh += '    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
+  }
+  if (selected.indexOf('password-dump') >= 0) {
+    runSh += '    echo "======== Password Dump ========"\n';
+    runSh += '    echo "=== WiFi Saved Networks ==="\n';
+    runSh += '    cat /HBpersistence/wifi_networks.conf 2>&1\n';
+    runSh += '    cat /HBpersistence/wpa_supplicant.conf 2>&1\n';
+    runSh += '    ls -la /HBpersistence/wifi* /HBpersistence/wlan* /HBpersistence/wpa* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Bluetooth Pairings ==="\n';
+    runSh += '    ls -la /HBpersistence/bt* /HBpersistence/BT* /HBpersistence/bluetooth* 2>&1\n';
+    runSh += '    for btf in /HBpersistence/bt* /HBpersistence/BT* /HBpersistence/bluetooth*; do\n';
+    runSh += '        [ -f "$btf" ] && echo "--- $btf ---" && cat "$btf" 2>&1 && cp "$btf" "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    done\n';
+    runSh += '    echo ""\n    echo "=== Connectivity Credentials ==="\n';
+    runSh += '    cat /HBpersistence/common.cfg 2>&1\n';
+    runSh += '    ls -la /HBpersistence/SIM* /HBpersistence/sim* /HBpersistence/apn* /HBpersistence/APN* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Network Config ==="\n';
+    runSh += '    cat /etc/resolv.conf 2>&1\n';
+    runSh += '    echo ""\n    echo "=== DLink / PPP Mode ==="\n';
+    runSh += '    ls -la /HBpersistence/DLinkReplacesPPP /HBpersistence/usedhcp 2>&1\n';
+    runSh += '    echo ""\n    echo "=== inetd.conf (active services) ==="\n';
+    runSh += '    cat /etc/inetd.conf 2>&1\n';
+    runSh += '    cp /HBpersistence/common.cfg "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    for wf in /HBpersistence/wifi* /HBpersistence/wpa*; do\n';
+    runSh += '        [ -f "$wf" ] && cp "$wf" "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    done\n\n';
+  }
+  if (selected.indexOf('persistence') >= 0) {
+    runSh += '    echo "======== Persistence Dump ========"\n';
+    runSh += '    echo "=== /HBpersistence Full Listing ==="\n';
+    runSh += '    ls -laR /HBpersistence/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== VIN ==="\n';
+    runSh += '    cat /HBpersistence/vin 2>&1\n';
+    runSh += '    echo ""\n    echo "=== CVALUE Files ==="\n';
+    runSh += '    ls -la /HBpersistence/CVALUE*.CVA 2>&1\n';
+    runSh += '    for cva in /HBpersistence/CVALUE*.CVA; do\n';
+    runSh += '        [ -f "$cva" ] && cp "$cva" "$DUMPDIR/" 2>/dev/null && echo "  Copied: $(basename $cva)"\n';
+    runSh += '    done\n';
+    runSh += '    echo ""\n    echo "=== FSC Activation Files ==="\n';
+    runSh += '    ls -laR /HBpersistence/FSC/ 2>&1\n';
+    runSh += '    mkdir -p "$DUMPDIR/FSC" 2>/dev/null\n';
+    runSh += '    cp -r /HBpersistence/FSC/* "$DUMPDIR/FSC/" 2>/dev/null\n';
+    runSh += '    echo ""\n    echo "=== Activation Files ==="\n';
+    runSh += '    ls -la /HBpersistence/PagSWAct* /HBpersistence/DBGModeActive 2>&1\n';
+    runSh += '    [ -f /HBpersistence/PagSWAct.002 ] && cp /HBpersistence/PagSWAct.002 "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    echo ""\n    echo "=== Screensaver Config ==="\n';
+    runSh += '    cat /HBpersistence/screensaver.conf 2>&1\n';
+    runSh += '    cp /HBpersistence/screensaver.conf "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    echo ""\n    echo "=== Hybrid Config ==="\n';
+    runSh += '    ls -la /HBpersistence/hybrid.bin 2>&1\n';
+    runSh += '    cp /HBpersistence/hybrid.bin "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    echo ""\n    echo "=== Boot Screens ==="\n';
+    runSh += '    ls -la /HBpersistence/CustomBootscreen_*.bin 2>&1\n';
+    runSh += '    for bs in /HBpersistence/CustomBootscreen_*.bin; do\n';
+    runSh += '        [ -f "$bs" ] && cp "$bs" "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    done\n';
+    runSh += '    echo ""\n    echo "=== Engineering Defs ==="\n';
+    runSh += '    ls -la /HBpersistence/engdefs/ 2>&1\n';
+    runSh += '    mkdir -p "$DUMPDIR/engdefs" 2>/dev/null\n';
+    runSh += '    cp /HBpersistence/engdefs/* "$DUMPDIR/engdefs/" 2>/dev/null\n';
+    runSh += '    echo ""\n    echo "=== Test HTML Pages ==="\n';
+    runSh += '    cat /HBpersistence/test.html 2>&1\n';
+    runSh += '    cat /HBpersistence/test1.html 2>&1\n';
+    runSh += '    cp /HBpersistence/test.html /HBpersistence/test1.html "$DUMPDIR/" 2>/dev/null\n';
+    runSh += '    cp /HBpersistence/vin "$DUMPDIR/" 2>/dev/null\n\n';
+  }
+  if (selected.indexOf('can-probe') >= 0) {
+    runSh += '    echo "======== CAN / IOC Probe ========"\n';
+    runSh += '    echo "=== IPC Devices ==="\n';
+    runSh += '    ls -laR /dev/ipc/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== DSP IPC ==="\n';
+    runSh += '    ls -laR /dev/dspipc/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== CAN Interfaces ==="\n';
+    runSh += '    ls -la /dev/can* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Serial Ports ==="\n';
+    runSh += '    ls -la /dev/ser* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== SPI / I2C ==="\n';
+    runSh += '    ls -la /dev/spi* /dev/i2c* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== MOST Bus ==="\n';
+    runSh += '    ls -la /dev/most* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== FPGA Sysregs ==="\n';
+    runSh += '    ls -la /dev/sysregs/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== All /dev ==="\n';
+    runSh += '    ls /dev/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /dev/name (service registry) ==="\n';
+    runSh += '    ls -laR /dev/name/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /dev/dsi (DSI channels) ==="\n';
+    runSh += '    ls -laR /dev/dsi/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Service Broker ==="\n';
+    runSh += '    ls -la /srv/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== hbsystem ==="\n';
+    runSh += '    ls -laR /hbsystem/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== IOC V850 State ==="\n';
+    runSh += '    ls -la /dev/ipc/ch* 2>&1\n';
+    runSh += '    ls -la /dev/ipc/ioc/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Shared Memory ==="\n';
+    runSh += '    ls /dev/shmem/ 2>&1\n\n';
   }
   runSh += '} > "$LOG" 2>&1\necho "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
   runSh += 'TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; if [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
