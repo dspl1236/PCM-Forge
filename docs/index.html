@@ -717,11 +717,11 @@ const TK_MODULES = [
     desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent \u2014 reverts on reboot.' },
   { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
     desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter. See research/PCM31_CONNECTIVITY.md for the full LTE restoration guide.' },
-  { id: 'password-dump', name: 'Password Dump', status: 'alpha', icon: '\u{1F511}',
+  { id: 'password-dump', name: 'Password Dump', status: 'tested', icon: '\u{1F511}',
     desc: 'Dump stored WiFi passwords, Bluetooth pairings, connectivity credentials, and saved network configs to USB. Read-only.' },
-  { id: 'persistence', name: 'Persistence Dump', status: 'alpha', icon: '\u{1F4C3}',
+  { id: 'persistence', name: 'Persistence Dump', status: 'tested', icon: '\u{1F4C3}',
     desc: 'Export full HBpersistence contents: CVALUE coding files, FSC activation, screensaver config, hybrid.bin, VIN, activation files. Copies files to USB.' },
-  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'alpha', icon: '\u26A1',
+  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'tested', icon: '\u26A1',
     desc: 'Scan IPC devices, DSP channels, MOST bus, CAN interfaces, FPGA sysregs, V850 IOC state, service broker, and device nodes.' },
 ];
 
@@ -731,8 +731,8 @@ function tkRenderModules() {
   if (tkRendered) return;
   tkRendered = true;
   const container = document.getElementById('tk-modules');
-  const statusColors = { ready: 'var(--green)', alpha: 'var(--accent)', planned: 'var(--text2)' };
-  const statusLabels = { ready: 'Ready', alpha: 'Alpha', planned: 'Planned' };
+  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--accent)', planned: 'var(--text2)' };
+  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Alpha', planned: 'Planned' };
   container.innerHTML = TK_MODULES.map(function(m) {
     var dropdown = '';
     if (m.id === 'lte-setup') {
