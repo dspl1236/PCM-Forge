@@ -860,7 +860,7 @@ function tkBuild() {
       runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
       runSh += '            /sbin/io-pkt-v4-hc -d asix did=$DID,vid=0x0B95 verbose &\n            sleep 2\n';
       runSh += '        fi\n';
-      runSh += '        ifconfig en5 >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && break\n';
+      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && break\n';
       runSh += '    done\n';
     } else {
       runSh += '    if [ -e /dev/io-net ]; then\n';
@@ -870,9 +870,9 @@ function tkBuild() {
       runSh += '    fi\n';
     }
     runSh += '    sleep 3\n';
-    runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+    runSh += '    ifconfig $IFACE 172.16.42.1 netmask 255.255.255.0 up\n';
     runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
-    runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig en5 2>&1\n\n';
+    runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig $IFACE 2>ifconfig en5 2>&11\n\n';
   }
   if (selected.indexOf('lte-setup') >= 0) {
     var lteMode = document.getElementById('tk-lte-mode');
@@ -891,7 +891,7 @@ function tkBuild() {
       runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
       runSh += '            /sbin/io-pkt-v4-hc -d asix did=$DID,vid=0x0B95 verbose &\n            sleep 2\n';
       runSh += '        fi\n';
-      runSh += '        ifconfig en5 >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && NETOK=1 && break\n';
+      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && NETOK=1 && break\n';
       runSh += '    done\n';
     } else {
       runSh += '    # Try io-net first (PCM3.1 Cayenne uses io-net from boot)\n';
@@ -910,31 +910,39 @@ function tkBuild() {
     }
     runSh += '    if [ $NETOK -eq 0 ]; then echo "[ERROR] No network stack found"; fi\n';
     runSh += '    sleep 3\n';
+    runSh += '    # Detect interface name (io-net=en0, io-pkt=en5)\n';
+    runSh += '    IFACE=""\n';
+    runSh += '    for ifc in en0 en5 en1; do\n';
+    runSh += '        ifconfig $ifc >/dev/null 2>&1 && IFACE=$ifc && break\n    done\n';
+    runSh += '    echo "Detected interface: ${IFACE:-NONE}"\n';
+    runSh += '    # Kill existing inetd (only listens on lo0) and restart on all interfaces\n';
+    runSh += '    slay -f inetd 2>/dev/null\n    sleep 1\n';
     runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
+    runSh += '    echo "inetd restarted (now listens on $IFACE)"\n';
     if (useStatic) {
       runSh += '    # Static IP: wait for adapter, then configure\n';
       runSh += '    echo "Waiting for adapter (swap USB now)..."\n';
       runSh += '    N=0\n    while [ $N -lt 60 ]; do\n';
-      runSh += '        ifconfig en5 >/dev/null 2>&1 && break\n';
+      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && break\n';
       runSh += '        N=$((N + 1))\n        sleep 2\n    done\n';
-      runSh += '    if ifconfig en5 >/dev/null 2>&1; then\n';
-      runSh += '        ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+      runSh += '    if ifconfig $IFACE >/dev/null 2>&1; then\n';
+      runSh += '        ifconfig $IFACE 172.16.42.1 netmask 255.255.255.0 up\n';
       runSh += '        echo "Static IP configured: 172.16.42.1"\n';
       runSh += '    else\n        echo "en5 not detected after 120s"\n    fi\n';
     } else {
       runSh += '    # DHCP: wait for adapter in background, then run DHCP\n';
       runSh += '    echo "Background DHCP waiter started — swap USB for adapter now"\n';
       runSh += '    ( N=0; while [ $N -lt 60 ]; do\n';
-      runSh += '        ifconfig en5 >/dev/null 2>&1 && break\n';
+      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && break\n';
       runSh += '        N=$((N + 1)); sleep 2\n';
       runSh += '    done\n';
-      runSh += '    if ifconfig en5 >/dev/null 2>&1; then\n';
-      runSh += '        dhcp.client -i en5 &\n        sleep 5\n';
-      runSh += '        ifconfig en5 >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
+      runSh += '    if ifconfig $IFACE >/dev/null 2>&1; then\n';
+      runSh += '        dhcp.client -i $IFACE &\n        sleep 5\n';
+      runSh += '        ifconfig $IFACE >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
       runSh += '        echo "LTE ready" >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
       runSh += '    fi ) &\n';
     }
-    runSh += '    echo "Network:"\n    ifconfig en5 2>&1\n';
+    runSh += '    echo "Network:"\n    ifconfig $IFACE 2>ifconfig en5 2>&11\n';
     runSh += '    echo "Route:"\n    route -n show 2>&1\n';
     runSh += '    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
   }
@@ -1065,7 +1073,7 @@ function tkBuild() {
     runSh += '        fi\n';
     runSh += '        sleep 3\n';
     runSh += '        echo "[CHECK] Interface status:"\n';
-    runSh += '        ifconfig en5 2>&1 || echo "en5 not found — adapter may not be connected"\n';
+    runSh += '        ifconfig $IFACE 2>ifconfig en5 2>&11 || echo "en5 not found — adapter may not be connected"\n';
     runSh += '    fi\n\n';
   }
   runSh += '} > "$LOG" 2>&1\necho "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
