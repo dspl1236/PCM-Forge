@@ -727,6 +727,119 @@ function usbSetStatus(type, msg) {
   el.textContent = msg;
 }
 
+// ===== TAB 3: Toolkit =====
+const TK_MODULES = [
+  { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
+    desc: 'Full PCM 3.1 system dump: version, VIN, mount points, processes, network, partitions, IPC devices, engineering screens. Read-only.' },
+  { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
+    desc: 'Start io-pkt + telnetd on en5 (172.16.42.1). Requires USB ethernet adapter. Non-persistent \u2014 reverts on reboot.' },
+  { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
+    desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter.' },
+  { id: 'password-dump', name: 'Password Dump', status: 'planned', icon: '\u{1F511}',
+    desc: 'Dump stored WiFi, Bluetooth, and connectivity credentials to USB. Read-only.' },
+  { id: 'persistence', name: 'Persistence Dump', status: 'planned', icon: '\u{1F4C3}',
+    desc: 'Export CVALUE files, screensaver config, hybrid.bin, and HBpersistence contents to USB.' },
+  { id: 'can-probe', name: 'CAN / IOC Probe', status: 'planned', icon: '\u26A1',
+    desc: 'Scan IPC devices, DSP, MOST bus, CAN interfaces, FPGA sysregs, and V850 IOC state.' },
+];
+
+let tkRendered = false;
+
+function tkRenderModules() {
+  if (tkRendered) return;
+  tkRendered = true;
+  const container = document.getElementById('tk-modules');
+  const statusColors = { ready: 'var(--green)', alpha: 'var(--accent)', planned: 'var(--text2)' };
+  const statusLabels = { ready: 'Ready', alpha: 'Alpha', planned: 'Planned' };
+  container.innerHTML = TK_MODULES.map(function(m) {
+    return '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (m.status === 'planned' ? 'default' : 'pointer') + ';opacity:' + (m.status === 'planned' ? '0.5' : '1') + '">'
+      + '<input type="checkbox" class="tk-cb" data-id="' + m.id + '"' + (m.status === 'planned' ? ' disabled' : '') + ' style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:600;font-size:14px;margin-bottom:4px">'
+      + '<span style="margin-right:6px">' + m.icon + '</span>' + m.name
+      + '<span style="float:right;font-size:11px;font-family:var(--mono);color:' + statusColors[m.status] + '">' + statusLabels[m.status] + '</span>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text2);line-height:1.5">' + m.desc + '</div>'
+      + '</div></label>';
+  }).join('');
+}
+
+function tkSelectAll(state) {
+  document.querySelectorAll('.tk-cb:not(:disabled)').forEach(function(cb) { cb.checked = state; });
+}
+
+function tkBuild() {
+  var selected = [];
+  document.querySelectorAll('.tk-cb:checked').forEach(function(cb) { selected.push(cb.dataset.id); });
+  var status = document.getElementById('tk-status');
+  if (selected.length === 0) {
+    status.style.display = 'block';
+    status.className = 'status info';
+    status.textContent = 'Select at least one module';
+    return;
+  }
+  var runSh = '#!/bin/ksh\n# PCM-Forge Toolkit \u2014 https://github.com/dspl1236/PCM-Forge\n';
+  runSh += 'USBROOT="$1"\n[ -z "$USBROOT" ] && USBROOT="/fs/usb0"\n';
+  runSh += 'DTSTAMP=$(date +%Y%m%d_%H%M%S 2>/dev/null || echo nodate)\n';
+  runSh += 'LOG="${USBROOT}/pcm_toolkit_${DTSTAMP}.log"\n';
+  runSh += 'DUMPDIR="${USBROOT}/pcm_toolkit_${DTSTAMP}"\nmkdir -p "$DUMPDIR" 2>/dev/null\n';
+  runSh += 'SS=""; for s in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do [ -f "$s" ] && SS="$s" && break; done\n';
+  runSh += 'if [ -n "$SS" ]; then TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; cp "$SS" "$TMPD/showScreen" 2>/dev/null; chmod +x "$TMPD/showScreen" 2>/dev/null; "$TMPD/showScreen" "${USBROOT}/lib/running.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
+  runSh += 'echo "PCM-Forge Toolkit: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"\n{\n';
+  if (selected.indexOf('sysinfo') >= 0) {
+    runSh += '    echo "======== System Info ========"\n';
+    runSh += '    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n';
+    runSh += '    echo ""\n    echo "=== VIN ==="\n    cat /HBpersistence/vin 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Mount Points ==="\n    mount 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Processes ==="\n    pidin 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Network ==="\n    ifconfig 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /HBpersistence ==="\n    ls -la /HBpersistence/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Flash/HDD ==="\n    ls -la /dev/fs0* /dev/hd0* 2>&1\n';
+    runSh += '    echo ""\n    echo "=== IFS/EFS Paths ==="\n    ls -d /mnt/ifs1/ /mnt/flash/ /mnt/efs-system/ /mnt/data/ /mnt/share/ /mnt/nav/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== Engineering ESD ==="\n    ls /mnt/flash/efs1/engdefs/ /HBpersistence/engdefs/ /mnt/ifs1/engdefs/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== inetd.conf ==="\n    cat /etc/inetd.conf 2>&1\n';
+    runSh += '    echo ""\n    echo "=== /dev ==="\n    ls /dev/ 2>&1\n';
+    runSh += '    echo ""\n    echo "=== IPC/DSP ==="\n    ls -laR /dev/ipc/ /dev/dspipc/ 2>&1\n';
+    runSh += '    cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\n\n';
+  }
+  if (selected.indexOf('telnet') >= 0) {
+    runSh += '    echo "======== Telnet Enabler ========"\n';
+    runSh += '    io-pkt-v4-hc -d asix verbose &\n    sleep 3\n';
+    runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+    runSh += '    inetd &\n';
+    runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig en5 2>&1\n\n';
+  }
+  if (selected.indexOf('lte-setup') >= 0) {
+    runSh += '    echo "======== LTE Setup ========"\n';
+    runSh += '    io-pkt-v4-hc -d asix verbose &\n    sleep 3\n';
+    runSh += '    dhcp.client -i en5 &\n    sleep 5\n';
+    runSh += '    echo "Network:"\n    ifconfig en5 2>&1\n';
+    runSh += '    echo "Route:"\n    route -n show 2>&1\n';
+    runSh += '    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
+  }
+  runSh += '} > "$LOG" 2>&1\necho "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
+  runSh += 'TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; if [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
+
+  var copieScrBytes = encodeBootstrap();
+  var runShBytes = new TextEncoder().encode(runSh);
+  var a1 = document.createElement('a');
+  a1.href = URL.createObjectURL(new Blob([copieScrBytes], { type: 'application/octet-stream' }));
+  a1.download = 'copie_scr.sh';
+  a1.click();
+  setTimeout(function() {
+    var a2 = document.createElement('a');
+    a2.href = URL.createObjectURL(new Blob([runShBytes], { type: 'text/plain' }));
+    a2.download = 'run.sh';
+    a2.click();
+  }, 500);
+  status.style.display = 'block';
+  status.className = 'status info';
+  status.innerHTML = '<strong>Built ' + selected.length + ' module(s):</strong> ' + selected.join(', ') + '<br>Copy copie_scr.sh and run.sh to a FAT32 USB stick root.';
+}
+
+// Auto-render toolkit if tab is already active on load
+if (document.getElementById('tab-toolkit') && document.getElementById('tab-toolkit').classList.contains('active')) tkRenderModules();
+
 
 </script>
 </body>
