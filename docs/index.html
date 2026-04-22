@@ -905,14 +905,36 @@ function tkBuild() {
   if (window.showDirectoryPicker) {
     (async function() {
       try {
+        status.style.display = 'block';
+        status.className = 'status info';
+        status.textContent = 'Fetching assets...';
+        var assets = await fetchAssets(function(msg) { status.textContent = msg; });
         var dh = await window.showDirectoryPicker({ mode: 'readwrite' });
         var f1 = await dh.getFileHandle('copie_scr.sh', { create: true });
         var w1 = await f1.createWritable(); await w1.write(copieScrBytes); await w1.close();
         var f2 = await dh.getFileHandle('run.sh', { create: true });
         var w2 = await f2.createWritable(); await w2.write(runShBytes); await w2.close();
+        var fileCount = 2;
+        // Write bin/showScreen
+        if (assets.showScreen) {
+          var binDir = await dh.getDirectoryHandle('bin', { create: true });
+          var fh = await binDir.getFileHandle('showScreen', { create: true });
+          var w = await fh.createWritable(); await w.write(assets.showScreen); await w.close();
+          fileCount++;
+        }
+        // Write lib/*.png
+        var pngKeys = Object.keys(assets.pngs);
+        if (pngKeys.length) {
+          var libDir = await dh.getDirectoryHandle('lib', { create: true });
+          for (var i = 0; i < pngKeys.length; i++) {
+            var fh = await libDir.getFileHandle(pngKeys[i], { create: true });
+            var w = await fh.createWritable(); await w.write(assets.pngs[pngKeys[i]]); await w.close();
+            fileCount++;
+          }
+        }
         status.style.display = 'block';
         status.className = 'status info';
-        status.innerHTML = '<strong>Saved ' + selected.length + ' module(s) to ' + dh.name + '</strong>: ' + selected.join(', ') + '<br>Copy folder contents to FAT32 USB stick root.';
+        status.innerHTML = '<strong>Saved ' + fileCount + ' files to ' + dh.name + '</strong>: ' + selected.join(', ') + '<br>Copy folder contents to FAT32 USB stick root.';
       } catch(e) { if (e.name !== 'AbortError') { status.style.display='block'; status.className='status info'; status.textContent=e.message; } }
     })();
   } else {
@@ -929,7 +951,7 @@ function tkBuild() {
     }, 1000);
     status.style.display = 'block';
     status.className = 'status info';
-    status.innerHTML = '<strong>Built ' + selected.length + ' module(s):</strong> ' + selected.join(', ') + '<br>Check your downloads for <strong>both</strong> copie_scr.sh and run.sh. Copy both to FAT32 USB stick root.';
+    status.innerHTML = '<strong>Built ' + selected.length + ' module(s):</strong> ' + selected.join(', ') + '<br>Check your downloads for <strong>both</strong> copie_scr.sh and run.sh. Copy both to FAT32 USB stick root.<br><em>Note: bin/showScreen and lib/*.png not included in download mode — use Save to Folder on Chrome desktop.</em>';
   }
 }
 
