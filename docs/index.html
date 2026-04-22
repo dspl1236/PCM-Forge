@@ -734,6 +734,25 @@ function tkRenderModules() {
   const statusColors = { ready: 'var(--green)', alpha: 'var(--accent)', planned: 'var(--text2)' };
   const statusLabels = { ready: 'Ready', alpha: 'Alpha', planned: 'Planned' };
   container.innerHTML = TK_MODULES.map(function(m) {
+    var dropdown = '';
+    if (m.id === 'lte-setup') {
+      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
+        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Configuration</div>'
+        + '<select id="tk-lte-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
+        + '<option value="dhcp-std">\u{1F50C} DHCP \u2014 Standard adapter (772/A/B)</option>'
+        + '<option value="dhcp-772d">\u{1F50C} DHCP \u2014 AX88772D (device ID override)</option>'
+        + '<option value="static-std">\u{1F50C} Static IP \u2014 Standard adapter (direct PC)</option>'
+        + '<option value="static-772d">\u{1F50C} Static IP \u2014 AX88772D (direct PC)</option>'
+        + '</select></div>';
+    }
+    if (m.id === 'telnet') {
+      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
+        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Adapter</div>'
+        + '<select id="tk-telnet-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
+        + '<option value="std">AX88772 / 772A / 772B (standard)</option>'
+        + '<option value="772d">AX88772D (device ID override)</option>'
+        + '</select></div>';
+    }
     return '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (m.status === 'planned' ? 'default' : 'pointer') + ';opacity:' + (m.status === 'planned' ? '0.5' : '1') + '">'
       + '<input type="checkbox" class="tk-cb" data-id="' + m.id + '"' + (m.status === 'planned' ? ' disabled' : '') + ' style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">'
       + '<div style="flex:1;min-width:0">'
@@ -742,6 +761,7 @@ function tkRenderModules() {
       + '<span style="float:right;font-size:11px;font-family:var(--mono);color:' + statusColors[m.status] + '">' + statusLabels[m.status] + '</span>'
       + '</div>'
       + '<div style="font-size:12px;color:var(--text2);line-height:1.5">' + m.desc + '</div>'
+      + dropdown
       + '</div></label>';
   }).join('');
 }
@@ -786,16 +806,33 @@ function tkBuild() {
     runSh += '    cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null\n\n';
   }
   if (selected.indexOf('telnet') >= 0) {
+    var telnetMode = document.getElementById('tk-telnet-mode');
+    var use772d = telnetMode && telnetMode.value === '772d';
+    var drvArgs = use772d ? ' did=0x772D,vid=0x0B95' : '';
     runSh += '    echo "======== Telnet Enabler ========"\n';
-    runSh += '    io-pkt-v4-hc -d asix verbose &\n    sleep 3\n';
+    runSh += '    io-pkt-v4-hc -d asix' + drvArgs + ' verbose &\n    sleep 3\n';
     runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
     runSh += '    inetd &\n';
     runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig en5 2>&1\n\n';
   }
   if (selected.indexOf('lte-setup') >= 0) {
+    var lteMode = document.getElementById('tk-lte-mode');
+    var lteVal = lteMode ? lteMode.value : 'dhcp-std';
+    var use772d = lteVal.indexOf('772d') >= 0;
+    var useStatic = lteVal.indexOf('static') >= 0;
+    var drvArgs = use772d ? ' did=0x772D,vid=0x0B95' : '';
     runSh += '    echo "======== LTE Setup ========"\n';
-    runSh += '    io-pkt-v4-hc -d asix verbose &\n    sleep 3\n';
-    runSh += '    dhcp.client -i en5 &\n    sleep 5\n';
+    runSh += '    echo "Config: ' + lteVal + '"\n';
+    runSh += '    echo "Starting USB ethernet..."\n';
+    runSh += '    io-pkt-v4-hc -d asix' + drvArgs + ' verbose &\n    sleep 3\n';
+    if (useStatic) {
+      runSh += '    ifconfig en5 172.16.42.1 netmask 255.255.255.0 up\n';
+      runSh += '    echo "Static IP configured: 172.16.42.1"\n';
+      runSh += '    echo "Connect PC to same subnet (172.16.42.x)"\n';
+    } else {
+      runSh += '    dhcp.client -i en5 &\n    sleep 5\n';
+      runSh += '    echo "DHCP client started"\n';
+    }
     runSh += '    echo "Network:"\n    ifconfig en5 2>&1\n';
     runSh += '    echo "Route:"\n    route -n show 2>&1\n';
     runSh += '    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
