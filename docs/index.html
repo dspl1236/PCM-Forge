@@ -712,7 +712,7 @@ function usbSetStatus(type, msg) {
 // ===== TAB 3: Toolkit =====
 const TK_MODULES = [
   { id: 'driver-patch', name: 'ASIX Driver Patch', status: 'alpha', icon: '\u{1F527}',
-    desc: 'Patch devn-asix.so to add unrecognized USB PIDs (AX88178/772B/772D). Mounts patched driver into io-net. Non-persistent. MUST RUN BEFORE LTE/Telnet if using unsupported adapter.' },
+    desc: 'Patch devn-asix.so to add AX88772B/772D USB PIDs. Mounts patched driver into io-net/io-pkt. Non-persistent. Note: AX88178 is NOT supported (different chip family, null MAC). MUST RUN BEFORE LTE/Telnet.' },
   { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
     desc: 'Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only. Run this first.' },
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
@@ -742,9 +742,9 @@ function tkRenderModules() {
         + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Configuration</div>'
         + '<select id="tk-lte-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
         + '<option value="dhcp-std">\u{1F50C} DHCP \u2014 Standard ASIX (88172/772/772A only)</option>'
-        + '<option value="dhcp-772d">\u{1F50C} DHCP \u2014 AX88178/772B/772D (device ID override)</option>'
+        + '<option value="dhcp-772d">\u{1F50C} DHCP \u2014 AX88772B/772D (device ID override)</option>'
         + '<option value="static-std">\u{1F50C} Static 172.16.42.1 \u2014 Standard ASIX (88172/772/772A)</option>'
-        + '<option value="static-772d">\u{1F50C} Static 172.16.42.1 \u2014 AX88178/772B/772D</option>'
+        + '<option value="static-772d">\u{1F50C} Static 172.16.42.1 \u2014 AX88772B/772D</option>'
         + '</select></div>';
     }
     if (m.id === 'telnet') {
@@ -752,16 +752,16 @@ function tkRenderModules() {
         + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Adapter</div>'
         + '<select id="tk-telnet-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
         + '<option value="std">AX88772 / 772A / 772B (standard)</option>'
-        + '<option value="772d">AX88178/772B/772D (device ID override)</option>'
+        + '<option value="772d">AX88772B/772D (device ID override)</option>'
         + '</select></div>';
     }
     if (m.id === 'driver-patch') {
       dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
         + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Add PID (replaces AX88172 entry)</div>'
         + '<select id="tk-patch-pid" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
-        + '<option value="1780">AX88178 (PID 0x1780) \u2014 Plugable USB2-E1000</option>'
         + '<option value="772B">AX88772B (PID 0x772B)</option>'
         + '<option value="772D">AX88772D (PID 0x772D)</option>'
+        + '<option value="1780">AX88178 (PID 0x1780) \u2014 \u26A0 null MAC, DHCP fails</option>'
         + '</select></div>';
     }
     return '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (m.status === 'planned' ? 'default' : 'pointer') + ';opacity:' + (m.status === 'planned' ? '0.5' : '1') + '">'
@@ -804,8 +804,8 @@ function tkBuild() {
   // Driver patch MUST run first so en0 exists for LTE/Telnet
   if (selected.indexOf('driver-patch') >= 0) {
     var patchSel = document.getElementById('tk-patch-pid');
-    var patchPid = patchSel ? patchSel.value : '1780';
-    var pidNames = { '1780': 'AX88178', '772B': 'AX88772B', '772D': 'AX88772D' };
+    var patchPid = patchSel ? patchSel.value : '772B';
+    var pidNames = { '772B': 'AX88772B', '772D': 'AX88772D', '1780': 'AX88178 (null MAC warning)' };
     var pidName = pidNames[patchPid] || patchPid;
     runSh += '    echo "======== ASIX Driver Patch ========"\n';
     runSh += '    echo "Target: ' + pidName + ' (PID 0x' + patchPid + ')"\n';

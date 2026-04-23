@@ -96,12 +96,15 @@ PCM3.1 IFS contains:
 
 | Chipset | Status | Notes |
 |---------|--------|-------|
-| ASIX AX88772 | ✅ Works | Original D-Link DUB-E100 |
-| ASIX AX88772A | ✅ Works | Updated revision |
-| ASIX AX88772B | ✅ Works | Further revision |
-| ASIX AX88772D | ❌ Fails | Different USB product ID, driver doesn't recognize it |
-| ASIX AX88178 | ✅ Works | Gigabit variant (overkill but compatible) |
+| ASIX AX88172 | ✅ Native | PID 0x1720 in driver table. USB 1.1, rare. |
+| ASIX AX88772 | ✅ Native | PID 0x7720 in driver table. Original D-Link DUB-E100 |
+| ASIX AX88772A | ✅ Native | PID 0x772A in driver table. Updated revision |
+| ASIX AX88772B | ⚠️ Patch | PID 0x772B NOT in driver. Same chip family — driver patch or `did=` override works (io-pkt only) |
+| ASIX AX88772D | ⚠️ Patch | PID 0x772D NOT in driver. Same chip family — driver patch or `did=` override works (io-pkt only) |
+| ASIX AX88178 | ❌ Incompatible | PID 0x1780 NOT in driver. Different chip family — PID patch creates en0 but NULL MAC (00:00:00:00:00:00). Driver uses AX88172 init code which reads MAC from wrong EEPROM registers. Needs QNX 6.4+ driver (not available in HN+ firmware). |
 | Realtek RTL8152 | ❌ No driver | No QNX driver in PCM3.1 IFS |
+
+> **devn-asix.so PID Table:** Harman compiled the driver with only 3 USB Product IDs at offsets 0x107C4-0x107E4 (16 bytes/entry). The `did=` override works on `io-pkt-v4-hc` but NOT on `io-net mount`. For io-net systems (Cayenne PCM3.1), use the pre-patched binary approach. AX88772B/772D patches work because these chips share the same register layout as AX88772. AX88178 is a fundamentally different chip architecture.
 
 ### Network Architecture
 
