@@ -711,6 +711,8 @@ function usbSetStatus(type, msg) {
 
 // ===== TAB 3: Toolkit =====
 const TK_MODULES = [
+  { id: 'driver-patch', name: 'ASIX Driver Patch', status: 'alpha', icon: '\u{1F527}',
+    desc: 'Patch devn-asix.so to add unrecognized USB PIDs (AX88178/772B/772D). Mounts patched driver into io-net. Non-persistent. MUST RUN BEFORE LTE/Telnet if using unsupported adapter.' },
   { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
     desc: 'Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only. Run this first.' },
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
@@ -723,8 +725,6 @@ const TK_MODULES = [
     desc: 'Export full HBpersistence contents: CVALUE coding files, FSC activation, screensaver config, hybrid.bin, VIN, activation files. Copies files to USB.' },
   { id: 'can-probe', name: 'CAN / IOC Probe', status: 'tested', icon: '\u26A1',
     desc: 'Scan IPC devices, DSP channels, MOST bus, CAN interfaces, FPGA sysregs, V850 IOC state, service broker, and device nodes.' },
-  { id: 'driver-patch', name: 'ASIX Driver Patch', status: 'alpha', icon: '\u{1F527}',
-    desc: 'Hex-patch devn-asix.so to add unrecognized USB PIDs (AX88178/772B/772D). Copies driver to /tmp, patches 2 bytes, mounts patched driver. Non-persistent \u2014 reverts on reboot.' },
 ];
 
 let tkRendered = false;
@@ -801,6 +801,31 @@ function tkBuild() {
   runSh += 'SHOW_OK=0\n';
   runSh += 'if [ -n "$SS" ]; then TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; cp "$SS" "$TMPD/showScreen" 2>/dev/null; chmod +x "$TMPD/showScreen" 2>/dev/null; "$TMPD/showScreen" "${USBROOT}/lib/running.png" >>"${USBROOT}/showscreen.log" 2>&1 && SHOW_OK=1; fi\n';
   runSh += 'echo "PCM-Forge Toolkit: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"\n{\n';
+  // Driver patch MUST run first so en0 exists for LTE/Telnet
+  if (selected.indexOf('driver-patch') >= 0) {
+    var patchSel = document.getElementById('tk-patch-pid');
+    var patchPid = patchSel ? patchSel.value : '1780';
+    var pidNames = { '1780': 'AX88178', '772B': 'AX88772B', '772D': 'AX88772D' };
+    var pidName = pidNames[patchPid] || patchPid;
+    runSh += '    echo "======== ASIX Driver Patch ========"\n';
+    runSh += '    echo "Target: ' + pidName + ' (PID 0x' + patchPid + ')"\n';
+    runSh += '    PATCHDRV="${USBROOT}/devn-asix-patched.so"\n';
+    runSh += '    if [ ! -f "$PATCHDRV" ]; then\n';
+    runSh += '        echo "[ERROR] Pre-patched driver not found on USB!"\n';
+    runSh += '    else\n';
+    runSh += '        TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs\n';
+    runSh += '        cp "$PATCHDRV" "$TMPD/devn-asix.so" 2>&1\n';
+    runSh += '        chmod 755 "$TMPD/devn-asix.so" 2>/dev/null\n';
+    runSh += '        echo "[OK] Pre-patched driver copied to $TMPD/devn-asix.so"\n';
+    runSh += '        if [ -e /dev/io-net ]; then\n';
+    runSh += '            mount -T io-net "$TMPD/devn-asix.so" 2>&1\n';
+    runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
+    runSh += '            /sbin/io-pkt-v4-hc -d "$TMPD/devn-asix.so" verbose &\n';
+    runSh += '        fi\n';
+    runSh += '        sleep 3\n';
+    runSh += '        ifconfig 2>&1\n';
+    runSh += '    fi\n\n';
+  }
   if (selected.indexOf('sysinfo') >= 0) {
     runSh += '    echo "======== System Info ========"\n';
     runSh += '    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n';
@@ -1041,40 +1066,6 @@ function tkBuild() {
     runSh += '    ls -la /dev/ipc/ioc/ 2>&1\n';
     runSh += '    echo ""\n    echo "=== Shared Memory ==="\n';
     runSh += '    ls /dev/shmem/ 2>&1\n\n';
-  }
-  if (selected.indexOf('driver-patch') >= 0) {
-    var patchSel = document.getElementById('tk-patch-pid');
-    var patchPid = patchSel ? patchSel.value : '1780';
-    var pidNames = { '1780': 'AX88178', '772B': 'AX88772B', '772D': 'AX88772D' };
-    var pidName = pidNames[patchPid] || patchPid;
-    // PID bytes in little-endian
-    var pidBytes = { '1780': '\\x80\\x17', '772B': '\\x2B\\x77', '772D': '\\x2D\\x77' };
-    var patchBytes = pidBytes[patchPid] || '\\x80\\x17';
-    runSh += '    echo "======== ASIX Driver Patch ========"\n';
-    runSh += '    echo "Target: ' + pidName + ' (PID 0x' + patchPid + ')"\n';
-    runSh += '    PATCHDRV="${USBROOT}/devn-asix-patched.so"\n';
-    runSh += '    if [ ! -f "$PATCHDRV" ]; then\n';
-    runSh += '        echo "[ERROR] Pre-patched driver not found on USB!"\n';
-    runSh += '        echo "        Expected: $PATCHDRV"\n';
-    runSh += '        echo "        Download devn-asix-patched.so from PCM-Forge"\n';
-    runSh += '    else\n';
-    runSh += '        TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs\n';
-    runSh += '        cp "$PATCHDRV" "$TMPD/devn-asix.so" 2>&1\n';
-    runSh += '        chmod 755 "$TMPD/devn-asix.so" 2>/dev/null\n';
-    runSh += '        echo "[OK] Pre-patched driver copied to $TMPD/devn-asix.so"\n';
-    runSh += '        echo "[MOUNT] Loading patched driver..."\n';
-    runSh += '        if [ -e /dev/io-net ]; then\n';
-    runSh += '            echo "  Using: mount -T io-net $TMPD/devn-asix.so"\n';
-    runSh += '            mount -T io-net "$TMPD/devn-asix.so" 2>&1\n';
-    runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
-    runSh += '            echo "  Using: io-pkt-v4-hc -d $TMPD/devn-asix.so"\n';
-    runSh += '            /sbin/io-pkt-v4-hc -d "$TMPD/devn-asix.so" verbose &\n';
-    runSh += '            sleep 2\n';
-    runSh += '        fi\n';
-    runSh += '        sleep 3\n';
-    runSh += '        echo "[CHECK] Interface status:"\n';
-    runSh += '        ifconfig $IFACE 2>ifconfig en5 2>&11 || echo "en5 not found — adapter may not be connected"\n';
-    runSh += '    fi\n\n';
   }
   runSh += '} > "$LOG" 2>&1\necho "PCM-Forge Toolkit done" > "${USBROOT}/pcm_ran.txt"\n';
   runSh += 'if [ $SHOW_OK -eq 1 ] && [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi\n';
