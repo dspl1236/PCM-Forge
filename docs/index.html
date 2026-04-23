@@ -895,9 +895,17 @@ function tkBuild() {
       runSh += '    fi\n';
     }
     runSh += '    sleep 3\n';
-    runSh += '    ifconfig $IFACE 172.16.42.1 netmask 255.255.255.0 up\n';
-    runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
-    runSh += '    echo "Telnet available at 172.16.42.1"\n    ifconfig $IFACE 2>ifconfig en5 2>&11\n\n';
+    runSh += '    # Detect interface\n';
+    runSh += '    IFACE=""\n';
+    runSh += '    for ifc in en0 en5 en1; do ifconfig $ifc >/dev/null 2>&1 && IFACE=$ifc && break; done\n';
+    runSh += '    if [ -n "$IFACE" ]; then\n';
+    runSh += '        ifconfig $IFACE 172.16.42.1 netmask 255.255.255.0 up\n';
+    runSh += '        slay -f inetd 2>/dev/null; sleep 1; /usr/sbin/inetd 2>/dev/null &\n';
+    runSh += '        echo "Telnet available at 172.16.42.1 on $IFACE"\n';
+    runSh += '    else\n';
+    runSh += '        echo "[WARN] No ethernet interface found"\n';
+    runSh += '    fi\n';
+    runSh += '    ifconfig 2>&1\n\n';
   }
   if (selected.indexOf('lte-setup') >= 0) {
     var lteMode = document.getElementById('tk-lte-mode');
@@ -961,13 +969,13 @@ function tkBuild() {
       runSh += '        ifconfig $IFACE >/dev/null 2>&1 && break\n';
       runSh += '        N=$((N + 1)); sleep 2\n';
       runSh += '    done\n';
-      runSh += '    if ifconfig $IFACE >/dev/null 2>&1; then\n';
+      runSh += '    if [ -n "$IFACE" ] && ifconfig $IFACE >/dev/null 2>&1; then\n';
       runSh += '        dhcp.client -i $IFACE &\n        sleep 5\n';
       runSh += '        ifconfig $IFACE >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
       runSh += '        echo "LTE ready" >> "${USBROOT}/pcm_lte_ready.txt" 2>&1\n';
       runSh += '    fi ) &\n';
     }
-    runSh += '    echo "Network:"\n    ifconfig $IFACE 2>ifconfig en5 2>&11\n';
+    runSh += '    echo "Network:"\n    ifconfig 2>&1\n';
     runSh += '    echo "Route:"\n    route -n show 2>&1\n';
     runSh += '    echo "DNS:"\n    cat /etc/resolv.conf 2>&1\n\n';
   }
