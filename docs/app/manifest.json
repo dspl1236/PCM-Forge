@@ -49,10 +49,10 @@
       ]
     },
     "service-reset": {
-      "status": "experimental",
-      "description": "Oil service and inspection interval reset via UDS CAN to instrument cluster. Requires cross-compiled uds_send binary.",
+      "status": "alpha",
+      "description": "Oil service and inspection interval reset via UDS CAN. Sends WriteDataByIdentifier to instrument cluster. No PIWIS needed.",
       "standalone": true,
-      "run_script": "service_reset.sh",
+      "run_script": "service_run.sh",
       "script_dir": "/scripts/ServiceReset",
       "installs_to_flash": false,
       "compatible": [
@@ -62,7 +62,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 652
+          "size": 450
+        },
+        {
+          "path": "bin/uds_send",
+          "size": 66264
         },
         {
           "path": "bin/uds_send.c",
@@ -90,7 +94,11 @@
         },
         {
           "path": "scripts/service_reset.sh",
-          "size": 3502
+          "size": 3522
+        },
+        {
+          "path": "scripts/service_run.sh",
+          "size": 1716
         },
         {
           "path": "scripts/service_status.sh",

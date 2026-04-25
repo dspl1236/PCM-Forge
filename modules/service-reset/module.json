@@ -1,18 +1,13 @@
 {
     "name": "service-reset",
-    "version": "0.2.0",
-    "description": "Oil service and inspection interval reset via UDS CAN to instrument cluster. Requires cross-compiled uds_send binary.",
+    "version": "1.0.0",
+    "description": "Oil service and inspection interval reset via UDS CAN. Sends WriteDataByIdentifier to instrument cluster. No PIWIS needed.",
     "author": "dspl1236",
-    "status": "experimental",
+    "status": "alpha",
     "compatible": ["PCM3.1"],
     "standalone": true,
-    "run_script": "service_reset.sh",
+    "run_script": "service_run.sh",
     "script_dir": "/scripts/ServiceReset",
     "installs_to_flash": false,
-    "engdefs": ["ServiceReset.esd", "ServiceStatus.esd"],
-    "dids": {
-        "0x0156": "ESI: Oil service reset",
-        "0x0D17": "Distance since mileage-dep inspection",
-        "0x0D18": "Time since time-dep inspection"
-    }
+    "bin_files": ["bin/uds_send"]
 }

@@ -8,8 +8,9 @@
 # Part of PCM-Forge: github.com/dspl1236/PCM-Forge
 
 MODE="${1:-all}"
-LOG="/fs/usb0/service_reset.log"
-BINDIR="/scripts/ServiceReset"
+USBROOT="${2:-/fs/usb0}"
+LOG="${USBROOT}/service_reset.log"
+BINDIR="${USBROOT}/bin"
 
 # === UDS Data Identifiers for Cayenne 958 / Touareg 7P Cluster ===
 # IDE00342 = 342 dec = 0x0156 | IDE03351 = 3351 dec = 0x0D17

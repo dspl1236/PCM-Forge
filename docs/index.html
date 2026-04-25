@@ -995,7 +995,9 @@ async function tkBuild() {
   for (const modName of selected) {
     const mod = manifest.modules[modName];
     if (!mod) continue;
-    const scriptFiles = (mod.files || []).filter(f => f.path.startsWith('scripts/') && f.path.endsWith('.sh'));
+    const modFiles = mod.files || [];
+    // Fetch shell scripts
+    const scriptFiles = modFiles.filter(f => f.path.startsWith('scripts/') && f.path.endsWith('.sh'));
     for (const sf of scriptFiles) {
       try {
         const url = rawBase + 'modules/' + modName + '/' + sf.path;
@@ -1004,6 +1006,30 @@ async function tkBuild() {
         status.textContent = 'Fetched ' + modName + '/' + sf.path.split('/').pop();
       } catch(e) {
         console.warn('Failed to fetch ' + sf.path + ':', e);
+      }
+    }
+    // Fetch binary files (uds_send etc)
+    const binFiles = modFiles.filter(f => f.path.startsWith('bin/') && !f.path.endsWith('.c') && !f.path.endsWith('.o') && !f.path.endsWith('.h'));
+    for (const bf of binFiles) {
+      try {
+        const url = rawBase + 'modules/' + modName + '/' + bf.path;
+        const bytes = await tkFetchBinary(url);
+        files.push({ path: 'bin/' + bf.path.split('/').pop(), bytes });
+        status.textContent = 'Fetched binary: ' + bf.path.split('/').pop();
+      } catch(e) {
+        console.warn('Failed to fetch binary ' + bf.path + ':', e);
+      }
+    }
+    // Fetch ESD engineering screens
+    const esdFiles = modFiles.filter(f => f.path.endsWith('.esd'));
+    for (const ef of esdFiles) {
+      try {
+        const url = rawBase + 'modules/' + modName + '/' + ef.path;
+        const bytes = await tkFetchBinary(url);
+        files.push({ path: 'engdefs/' + ef.path.split('/').pop(), bytes });
+        status.textContent = 'Fetched ESD: ' + ef.path.split('/').pop();
+      } catch(e) {
+        console.warn('Failed to fetch ESD ' + ef.path + ':', e);
       }
     }
   }
