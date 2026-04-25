@@ -1,10 +1,12 @@
 {
-  "name": "telnet",
-  "display": "Telnet Enabler",
-  "status": "tested",
-  "icon": "\ud83d\udda5\ufe0f",
-  "desc": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — changes are session-only, re-run after reboot. Requires USB ethernet adapter.",
-  "scripts": ["scripts/telnet_enable.sh"],
-  "engdefs": [],
-  "platform": "PCM3.1"
+    "name": "telnet",
+    "version": "1.1.0",
+    "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.",
+    "author": "dspl1236",
+    "status": "tested",
+    "compatible": ["PCM3.1"],
+    "standalone": true,
+    "run_script": "telnet_enable.sh",
+    "script_dir": "/scripts/Telnet",
+    "installs_to_flash": false
 }

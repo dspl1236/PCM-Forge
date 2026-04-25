@@ -1,16 +1,23 @@
 {
-  "name": "lte-setup",
-  "display": "LTE Setup",
-  "status": "tested",
-  "icon": "\ud83d\udce1",
-  "desc": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces.",
-  "scripts": ["scripts/lte_setup.sh"],
-  "options": [
-    {"id": "lte-mode", "label": "Configuration", "type": "select", "values": [
-      {"value": "dhcp-std", "label": "DHCP — Auto (recommended)"},
-      {"value": "static-std", "label": "Static 172.16.42.1 — Direct connection"}
-    ]}
-  ],
-  "engdefs": [],
-  "platform": "PCM3.1"
+    "name": "lte-setup",
+    "version": "1.1.0",
+    "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.",
+    "author": "dspl1236",
+    "status": "tested",
+    "compatible": ["PCM3.1"],
+    "standalone": true,
+    "run_script": "lte_setup.sh",
+    "script_dir": "/scripts/LTE",
+    "installs_to_flash": false,
+    "options": {
+        "lte-mode": {
+            "label": "Configuration",
+            "type": "select",
+            "default": "dhcp",
+            "values": [
+                {"value": "dhcp", "label": "DHCP — Auto (recommended)"},
+                {"value": "static", "label": "Static 172.16.42.1 — Direct connection"}
+            ]
+        }
+    }
 }

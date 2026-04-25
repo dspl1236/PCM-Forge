@@ -1,10 +1,12 @@
 {
-  "name": "sysinfo",
-  "display": "System Info",
-  "status": "ready",
-  "icon": "\ud83d\udcc4",
-  "desc": "Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only.",
-  "scripts": ["scripts/sysinfo.sh"],
-  "engdefs": [],
-  "platform": "PCM3.1"
+    "name": "sysinfo",
+    "version": "2.0.0",
+    "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory. Read-only, no changes to car.",
+    "author": "dspl1236",
+    "status": "ready",
+    "compatible": ["PCM3.1"],
+    "standalone": true,
+    "run_script": "sysinfo_dump.sh",
+    "script_dir": "/scripts/SysInfo",
+    "installs_to_flash": false
 }

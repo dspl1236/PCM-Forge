@@ -1,0 +1,146 @@
+{
+  "generated": "2026-04-25",
+  "branch": "main",
+  "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
+  "core_files": {
+    "showScreen": "core/bin/showScreen",
+    "lib_running_png": "core/lib/running.png",
+    "lib_done_png": "core/lib/done.png",
+    "lib_activating_png": "core/lib/activating.png",
+    "lib_activating_done_png": "core/lib/activating-done.png"
+  },
+  "modules": {
+    "lte-setup": {
+      "status": "tested",
+      "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.",
+      "standalone": true,
+      "run_script": "lte_setup.sh",
+      "script_dir": "/scripts/LTE",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {
+        "lte-mode": {
+          "label": "Configuration",
+          "type": "select",
+          "default": "dhcp",
+          "values": [
+            {
+              "value": "dhcp",
+              "label": "DHCP \u2014 Auto (recommended)"
+            },
+            {
+              "value": "static",
+              "label": "Static 172.16.42.1 \u2014 Direct connection"
+            }
+          ]
+        }
+      },
+      "files": [
+        {
+          "path": "module.json",
+          "size": 781
+        },
+        {
+          "path": "scripts/lte_setup.sh",
+          "size": 2705
+        }
+      ]
+    },
+    "service-reset": {
+      "status": "experimental",
+      "description": "Oil service and inspection interval reset via UDS CAN to instrument cluster. Requires cross-compiled uds_send binary.",
+      "standalone": true,
+      "run_script": "service_reset.sh",
+      "script_dir": "/scripts/ServiceReset",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 652
+        },
+        {
+          "path": "bin/uds_send.c",
+          "size": 5961
+        },
+        {
+          "path": "bin/uds_send.o",
+          "size": 3696
+        },
+        {
+          "path": "engdefs/ServiceReset.esd",
+          "size": 978
+        },
+        {
+          "path": "engdefs/ServiceStatus.esd",
+          "size": 1499
+        },
+        {
+          "path": "scripts/build_on_target.sh",
+          "size": 2081
+        },
+        {
+          "path": "scripts/service_install.sh",
+          "size": 2355
+        },
+        {
+          "path": "scripts/service_reset.sh",
+          "size": 3502
+        },
+        {
+          "path": "scripts/service_status.sh",
+          "size": 1150
+        }
+      ]
+    },
+    "sysinfo": {
+      "status": "ready",
+      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory. Read-only, no changes to car.",
+      "standalone": true,
+      "run_script": "sysinfo_dump.sh",
+      "script_dir": "/scripts/SysInfo",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 456
+        },
+        {
+          "path": "scripts/sysinfo_dump.sh",
+          "size": 2906
+        }
+      ]
+    },
+    "telnet": {
+      "status": "tested",
+      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u2014 session-only, re-run after reboot.",
+      "standalone": true,
+      "run_script": "telnet_enable.sh",
+      "script_dir": "/scripts/Telnet",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 401
+        },
+        {
+          "path": "scripts/telnet_enable.sh",
+          "size": 1377
+        }
+      ]
+    }
+  }
+}
