@@ -1,0 +1,67 @@
+#############################################
+#  Service Interval Status — PCM-Forge
+#  Reads oil/inspection data from Cayenne 958
+#  instrument cluster via per 3 CAN addresses
+#############################################
+
+screen ServiceStatus Car
+
+# === Service Interval Coding ===
+keyValue
+   value    int per 3 0x0010001F
+   label    "Service interval coded:"
+   poll     5000
+
+keyValue
+   value    int per 3 0x0014004E
+   label    "Service protocol coded:"
+   poll     5000
+
+# === Oil Level ===
+keyValue
+   value    int per 3 0x00100033
+   label    "Oil level gauge coded:"
+   poll     5000
+
+keyValue
+   value    int per 3 0x0014007D
+   label    "Oil level protocol:"
+   poll     5000
+
+# === Probe: SIA CAN Data from Cluster ===
+# Addresses that might carry service interval
+# data from the cluster. Non-zero = live data.
+keyValue
+   value    int per 3 0x00150000
+   label    "Probe 0x150000:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150001
+   label    "Probe 0x150001:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150002
+   label    "Probe 0x150002:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150003
+   label    "Probe 0x150003:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160000
+   label    "Probe 0x160000:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160001
+   label    "Probe 0x160001:"
+   poll     2000
+
+# === Log Everything ===
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/service_status.sh"
+   label    ">> Log to USB <<"

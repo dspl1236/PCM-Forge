@@ -1,0 +1,10 @@
+{
+  "name": "sysinfo",
+  "display": "System Info",
+  "status": "ready",
+  "icon": "\ud83d\udcc4",
+  "desc": "Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only.",
+  "scripts": ["scripts/sysinfo.sh"],
+  "engdefs": [],
+  "platform": "PCM3.1"
+}

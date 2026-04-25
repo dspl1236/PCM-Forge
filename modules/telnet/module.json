@@ -1,0 +1,10 @@
+{
+  "name": "telnet",
+  "display": "Telnet Enabler",
+  "status": "tested",
+  "icon": "\ud83d\udda5\ufe0f",
+  "desc": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — changes are session-only, re-run after reboot. Requires USB ethernet adapter.",
+  "scripts": ["scripts/telnet_enable.sh"],
+  "engdefs": [],
+  "platform": "PCM3.1"
+}
