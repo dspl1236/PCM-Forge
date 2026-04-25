@@ -201,3 +201,33 @@ The cluster communication uses two possible protocols:
 | MMI3GTelephone (Audi) | 5.6MB | same |
 | CarDeviceList.esd | 2KB | EFS engdefs |
 | CarProtocollSwitch.esd | 2KB | EFS engdefs |
+
+---
+
+## April 25, 2026 — Telnet Access Findings
+
+### PCM Shell Environment (confirmed via telnet)
+- QNX 6.3.2, KSH v5.2.14, PROCESSOR=shle (SH4 LE)
+- `/etc/` is READ-ONLY (IFS boot image)
+- No `date`, no `ntpdate`, no `find`, no `strings`
+- No diagnostic/UDS tools anywhere on the PCM
+- GPS data at `/hbsystem/multicore/navi/g` — empty (no fix in garage?)
+- CAN interface: `/dev/ndr/cmd` (command), `/dev/ndr/msq` (message queue, active data)
+- IOC channels: `/dev/ipc/ioc/ch2-ch10` (world-writable)
+
+### Available for Cross-Compile
+- `qnx650sp1-vm.zip` — QNX SDP VM (VMware, SH4 cross-compiler included)
+- `PCM31RDW400.rar` — Full firmware ISO with PCM3_IFS1.ifs
+
+### Next Steps for Oil Service Reset
+1. Set up QNX 650SP1 VM for SH4 cross-compilation
+2. Cross-compile a `date` utility (simple, good first test)
+3. Cross-compile a UDS diagnostic tool that talks to `/dev/ndr/cmd`
+4. Send WriteDataByIdentifier to instrument cluster for oil reset
+5. Package as PCM-Forge module (USB stick or telnet command)
+
+### Next Steps for Time Fix
+1. Cross-compile `date` for QNX 6.3.2 SH4
+2. Or: read GPS NMEA from flexgps and parse time
+3. Or: use simple NTP client (also needs cross-compile)
+4. Add to toolkit startup script
