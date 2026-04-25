@@ -714,7 +714,7 @@ const TK_MODULES = [
   { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
     desc: 'Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only. Run this first.' },
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
-    desc: 'Root shell access via telnet (port 23, passwordless) and raw ksh (port 2323, no login). Adds 2323 to inetd.conf + passwordless root. Requires USB ethernet adapter.' },
+    desc: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — changes are session-only, re-run after reboot. Requires USB ethernet adapter.' },
   { id: 'lte-setup', name: 'LTE Setup', status: 'alpha', icon: '\u{1F4E1}',
     desc: 'Configure DHCP on USB ethernet interface for LTE router connectivity. Restores internet services via AX88772 adapter. See research/PCM31_CONNECTIVITY.md for the full LTE restoration guide.' },
   { id: 'password-dump', name: 'Password Dump', status: 'tested', icon: '\u{1F511}',
@@ -847,32 +847,17 @@ function tkBuild() {
     runSh += '    else\n';
     runSh += '        echo "[WARN] No new interface — using existing"\n';
     runSh += '    fi\n';
-    runSh += '    # Add port 2323 raw root shell (no login needed)\n';
-    runSh += '    if ! grep -q 2323 /etc/inetd.conf 2>/dev/null; then\n';
-    runSh += '        echo "" >> /etc/inetd.conf\n';
-    runSh += '        echo "# PCM-Forge root shell" >> /etc/inetd.conf\n';
-    runSh += '        echo "2323 stream tcp nowait root /bin/ksh ksh -i" >> /etc/inetd.conf\n';
-    runSh += '        echo "[OK] Added port 2323 raw shell to inetd.conf"\n';
-    runSh += '    else\n';
-    runSh += '        echo "[OK] Port 2323 already configured"\n';
-    runSh += '    fi\n';
-    runSh += '    # Passwordless root login (port 23)\n';
-    runSh += '    if [ -f /etc/shadow ]; then\n';
-    runSh += '        ROOTHASH=$(cat /etc/shadow 2>/dev/null | grep "^root:" | head -1)\n';
-    runSh += '        if echo "$ROOTHASH" | grep -q "^root::" 2>/dev/null; then\n';
-    runSh += '            echo "[OK] Root already passwordless"\n';
-    runSh += '        else\n';
-    runSh += '            cp /etc/shadow /etc/shadow.bak 2>/dev/null\n';
-    runSh += '            echo "root::1:0:99999:7:::" > /etc/shadow\n';
-    runSh += '            echo "[OK] Root set to passwordless (port 23)"\n';
-    runSh += '        fi\n';
-    runSh += '    fi\n';
-    runSh += '    # Always restart inetd to bind to all interfaces\n';
-    runSh += '    slay -f inetd 2>/dev/null; sleep 1; /usr/sbin/inetd 2>/dev/null &\n';
-    runSh += '    echo "[OK] inetd restarted"\n';
+    runSh += '    # Restart inetd to bind to all interfaces (port 23 telnet)\n';
+    runSh += '    slay -f inetd 2>/dev/null; sleep 1\n';
+    runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
+    runSh += '    # Start raw ksh shell on port 2323 (session only, /etc is read-only)\n';
+    runSh += '    TMPCONF=/dev/shmem/inetd_extra.conf\n';
+    runSh += '    echo "2323 stream tcp nowait root /bin/ksh ksh -i" > $TMPCONF\n';
+    runSh += '    /usr/sbin/inetd $TMPCONF 2>/dev/null &\n';
+    runSh += '    echo "[OK] inetd restarted (port 23 telnet on all interfaces)"\n';
     runSh += '    echo ""\n';
     runSh += '    echo "Root shell access:"\n';
-    runSh += '    echo "  Port 23:   telnet <IP> (login: root, no password)"\n';
+    runSh += '    echo "  Port 23:   telnet <IP> (login: root)"\n';
     runSh += '    echo "  Port 2323: telnet <IP> 2323 (raw shell, no login)"\n';
     runSh += '    ifconfig 2>&1\n\n';
   }
