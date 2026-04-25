@@ -1007,6 +1007,12 @@ function tkBuild() {
     runSh += '    for ifc in en0 en5 en1; do\n';
     runSh += '        ifconfig $ifc >/dev/null 2>&1 && IFACE=$ifc && break\n    done\n';
     runSh += '    echo "Detected interface: ${IFACE:-NONE}"\n';
+    runSh += '    # Add gateway/PC to hosts (prevents reverse DNS timeout on telnet)\n';
+    runSh += '    GWIP=$(route -n show 2>/dev/null | grep default | awk "{print \\$2}")\n';
+    runSh += '    if [ -n "$GWIP" ]; then\n';
+    runSh += '        echo "$GWIP gateway" >> /etc/hosts 2>/dev/null\n';
+    runSh += '        echo "[OK] Added $GWIP to /etc/hosts"\n';
+    runSh += '    fi\n';
     runSh += '    # Kill existing inetd (only listens on lo0) and restart on all interfaces\n';
     runSh += '    slay -f inetd 2>/dev/null\n    sleep 1\n';
     runSh += '    /usr/sbin/inetd 2>/dev/null &\n';
