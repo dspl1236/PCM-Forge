@@ -711,8 +711,6 @@ function usbSetStatus(type, msg) {
 
 // ===== TAB 3: Toolkit =====
 const TK_MODULES = [
-  { id: 'driver-patch', name: 'ASIX Driver Patch', status: 'alpha', icon: '\u{1F527}',
-    desc: 'Patch devn-asix.so to add AX88772B/772D USB PIDs. Mounts patched driver into io-net/io-pkt. Non-persistent. Note: AX88178 is NOT supported (different chip family, null MAC). MUST RUN BEFORE LTE/Telnet.' },
   { id: 'sysinfo', name: 'System Info', status: 'ready', icon: '\u{1F4C4}',
     desc: 'Complete PCM 3.1 dump: version, VIN, processes, network, credentials, CVALUE/FSC coding, persistence backup, IPC/DSP/MOST/CAN bus scan, FPGA sysregs. Read-only. Run this first.' },
   { id: 'telnet', name: 'Telnet Enabler', status: 'alpha', icon: '\u{1F5A5}',
@@ -741,29 +739,12 @@ function tkRenderModules() {
       dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
         + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Configuration</div>'
         + '<select id="tk-lte-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
-        + '<option value="dhcp-std">\u{1F50C} DHCP \u2014 Standard ASIX (88172/772/772A only)</option>'
-        + '<option value="dhcp-772d">\u{1F50C} DHCP \u2014 AX88772B/772D (device ID override)</option>'
-        + '<option value="static-std">\u{1F50C} Static 172.16.42.1 \u2014 Standard ASIX (88172/772/772A)</option>'
-        + '<option value="static-772d">\u{1F50C} Static 172.16.42.1 \u2014 AX88772B/772D</option>'
+        + '<option value="dhcp-std">\u{1F50C} DHCP \u2014 Auto (recommended)</option>'
+        + '<option value="static-std">\u{1F50C} Static 172.16.42.1 \u2014 Direct connection</option>'
         + '</select></div>';
     }
-    if (m.id === 'telnet') {
-      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
-        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Adapter</div>'
-        + '<select id="tk-telnet-mode" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
-        + '<option value="std">AX88772 / 772A / 772B (standard)</option>'
-        + '<option value="772d">AX88772B/772D (device ID override)</option>'
-        + '</select></div>';
-    }
-    if (m.id === 'driver-patch') {
-      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
-        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">Add PID (replaces AX88172 entry)</div>'
-        + '<select id="tk-patch-pid" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">'
-        + '<option value="772B">AX88772B (PID 0x772B)</option>'
-        + '<option value="772D">AX88772D (PID 0x772D)</option>'
-        + '<option value="1780">AX88178 (PID 0x1780) \u2014 \u26A0 null MAC, DHCP fails</option>'
-        + '</select></div>';
-    }
+
+
     return '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (m.status === 'planned' ? 'default' : 'pointer') + ';opacity:' + (m.status === 'planned' ? '0.5' : '1') + '">'
       + '<input type="checkbox" class="tk-cb" data-id="' + m.id + '"' + (m.status === 'planned' ? ' disabled' : '') + ' style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">'
       + '<div style="flex:1;min-width:0">'
@@ -801,31 +782,7 @@ function tkBuild() {
   runSh += 'SHOW_OK=0\n';
   runSh += 'if [ -n "$SS" ]; then TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs; cp "$SS" "$TMPD/showScreen" 2>/dev/null; chmod +x "$TMPD/showScreen" 2>/dev/null; "$TMPD/showScreen" "${USBROOT}/lib/running.png" >>"${USBROOT}/showscreen.log" 2>&1 && SHOW_OK=1; fi\n';
   runSh += 'echo "PCM-Forge Toolkit: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"\n{\n';
-  // Driver patch MUST run first so en0 exists for LTE/Telnet
-  if (selected.indexOf('driver-patch') >= 0) {
-    var patchSel = document.getElementById('tk-patch-pid');
-    var patchPid = patchSel ? patchSel.value : '772B';
-    var pidNames = { '772B': 'AX88772B', '772D': 'AX88772D', '1780': 'AX88178 (null MAC warning)' };
-    var pidName = pidNames[patchPid] || patchPid;
-    runSh += '    echo "======== ASIX Driver Patch ========"\n';
-    runSh += '    echo "Target: ' + pidName + ' (PID 0x' + patchPid + ')"\n';
-    runSh += '    PATCHDRV="${USBROOT}/devn-asix-patched.so"\n';
-    runSh += '    if [ ! -f "$PATCHDRV" ]; then\n';
-    runSh += '        echo "[ERROR] Pre-patched driver not found on USB!"\n';
-    runSh += '    else\n';
-    runSh += '        TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs\n';
-    runSh += '        cp "$PATCHDRV" "$TMPD/devn-asix.so" 2>&1\n';
-    runSh += '        chmod 755 "$TMPD/devn-asix.so" 2>/dev/null\n';
-    runSh += '        echo "[OK] Pre-patched driver copied to $TMPD/devn-asix.so"\n';
-    runSh += '        if [ -e /dev/io-net ]; then\n';
-    runSh += '            mount -T io-net "$TMPD/devn-asix.so" 2>&1\n';
-    runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
-    runSh += '            /sbin/io-pkt-v4-hc -d "$TMPD/devn-asix.so" verbose &\n';
-    runSh += '        fi\n';
-    runSh += '        sleep 3\n';
-    runSh += '        ifconfig 2>&1\n';
-    runSh += '    fi\n\n';
-  }
+
   if (selected.indexOf('sysinfo') >= 0) {
     runSh += '    echo "======== System Info ========"\n';
     runSh += '    echo "=== PCM Version ==="\n    cat /mnt/ifs1/HBproject/version.txt 2>&1\n    cat /HBproject/version.txt 2>&1\n';
@@ -874,60 +831,36 @@ function tkBuild() {
     runSh += '    ls /dev/shmem/ 2>&1\n\n';
   }
   if (selected.indexOf('telnet') >= 0) {
-    var telnetMode = document.getElementById('tk-telnet-mode');
-    var use772d = telnetMode && telnetMode.value === '772d';
     runSh += '    echo "======== Telnet Enabler ========"\n';
-    if (use772d) {
-      runSh += '    echo "Trying unrecognized ASIX PIDs..."\n';
-      runSh += '    for DID in 0x1780 0x772B 0x772D; do\n';
-      runSh += '        if [ -e /dev/io-net ]; then\n';
-      runSh += '            mount -T io-net /lib/dll/devn-asix.so did=$DID,vid=0x0B95 2>&1\n';
-      runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
-      runSh += '            /sbin/io-pkt-v4-hc -d asix did=$DID,vid=0x0B95 verbose &\n            sleep 2\n';
-      runSh += '        fi\n';
-      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && break\n';
-      runSh += '    done\n';
-    } else {
-      runSh += '    if [ -e /dev/io-net ]; then\n';
-      runSh += '        mount -T io-net /lib/dll/devn-asix.so 2>&1\n';
-      runSh += '    elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
-      runSh += '        /sbin/io-pkt-v4-hc -d asix verbose &\n';
-      runSh += '    fi\n';
-    }
+    runSh += '    if [ -e /dev/io-net ]; then\n';
+    runSh += '        mount -T io-net /lib/dll/devn-asix.so 2>&1\n';
+    runSh += '    elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
+    runSh += '        /sbin/io-pkt-v4-hc -d asix verbose &\n';
+    runSh += '    fi\n';
     runSh += '    sleep 3\n';
     runSh += '    # Detect interface\n';
     runSh += '    IFACE=""\n';
     runSh += '    for ifc in en0 en5 en1; do ifconfig $ifc >/dev/null 2>&1 && IFACE=$ifc && break; done\n';
     runSh += '    if [ -n "$IFACE" ]; then\n';
     runSh += '        ifconfig $IFACE 172.16.42.1 netmask 255.255.255.0 up\n';
-    runSh += '        slay -f inetd 2>/dev/null; sleep 1; /usr/sbin/inetd 2>/dev/null &\n';
     runSh += '        echo "Telnet available at 172.16.42.1 on $IFACE"\n';
     runSh += '    else\n';
-    runSh += '        echo "[WARN] No ethernet interface found"\n';
+    runSh += '        echo "[WARN] No new interface found — using existing"\n';
     runSh += '    fi\n';
+    runSh += '    # Always restart inetd to bind to all interfaces\n';
+    runSh += '    slay -f inetd 2>/dev/null; sleep 1; /usr/sbin/inetd 2>/dev/null &\n';
+    runSh += '    echo "inetd restarted"\n';
     runSh += '    ifconfig 2>&1\n\n';
   }
   if (selected.indexOf('lte-setup') >= 0) {
     var lteMode = document.getElementById('tk-lte-mode');
     var lteVal = lteMode ? lteMode.value : 'dhcp-std';
-    var use772d = lteVal.indexOf('772d') >= 0;
     var useStatic = lteVal.indexOf('static') >= 0;
     runSh += '    echo "======== LTE Setup ========"\n';
     runSh += '    echo "Config: ' + lteVal + '"\n';
     runSh += '    echo "Detecting network stack..."\n';
     runSh += '    NETOK=0\n';
-    if (use772d) {
-      runSh += '    echo "Trying unrecognized ASIX PIDs (0x1780, 0x772B, 0x772D)..."\n';
-      runSh += '    for DID in 0x1780 0x772B 0x772D; do\n';
-      runSh += '        if [ -e /dev/io-net ]; then\n';
-      runSh += '            mount -T io-net /lib/dll/devn-asix.so did=$DID,vid=0x0B95 2>&1\n';
-      runSh += '        elif [ -x /sbin/io-pkt-v4-hc ]; then\n';
-      runSh += '            /sbin/io-pkt-v4-hc -d asix did=$DID,vid=0x0B95 verbose &\n            sleep 2\n';
-      runSh += '        fi\n';
-      runSh += '        ifconfig $IFACE >/dev/null 2>&1 && echo "[OK] Found adapter with PID $DID" && NETOK=1 && break\n';
-      runSh += '    done\n';
-    } else {
-      runSh += '    # Try io-net first (PCM3.1 Cayenne uses io-net from boot)\n';
+    runSh += '    # Try io-net first (PCM3.1 Cayenne uses io-net from boot)\n';
       runSh += '    if [ -e /dev/io-net ]; then\n';
       runSh += '        echo "[OK] io-net running — mounting ASIX driver"\n';
       runSh += '        mount -T io-net /lib/dll/devn-asix.so 2>&1\n';
@@ -940,7 +873,6 @@ function tkBuild() {
       runSh += '                $cmd -d asix verbose &\n';
       runSh += '                NETOK=1\n                break\n            fi\n';
       runSh += '        done\n    fi\n';
-    }
     runSh += '    if [ $NETOK -eq 0 ]; then echo "[ERROR] No network stack found"; fi\n';
     runSh += '    sleep 3\n';
     runSh += '    # Detect interface name (io-net=en0, io-pkt=en5)\n';
