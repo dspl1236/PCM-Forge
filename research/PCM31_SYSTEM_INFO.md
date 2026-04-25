@@ -124,3 +124,55 @@ Jul 08 2009                        — Compile date
 
 5. **Production mode** — WUR_PRODUCTIONMODE suggests a factory/test mode
    exists, potentially useful for debugging.
+
+---
+
+## /mnt/data/tools/ — Harman Development Tools (HDD)
+
+Found on PCM HDD at /mnt/data/tools/. These are factory development/debug
+tools left on the drive. World-writable, executable.
+
+### Key Tools
+| Tool | Size | Purpose |
+|------|------|---------|
+| NavigationNdrInfo | 563KB | NDR/CAN diagnostic — CONFIRMS NDR access works |
+| taco | 5.3MB | Harman trace/diagnostic suite (taco.hbtc config) |
+| find | 79KB | Standard find utility (missing from IFS) |
+| vi | 122KB | Text editor |
+| persdump2 | 278KB | Persistence data dump |
+| sqlite_console | 60KB | SQLite CLI |
+| mmecli | 232KB | Multimedia explorer CLI |
+| mmexplore | 85KB | Multimedia explorer |
+| ping | 39KB | Network ping |
+| fdisk | 119KB | Disk partitioning |
+| which | 7KB | Command finder |
+| hbhogs | 202KB | Process resource monitor |
+| showmetadata | 613KB | Metadata viewer |
+| upd_history_reader | 198KB | Update history reader |
+| ipgrabber | 21KB | Instruction pointer grabber (profiling) |
+| flashinfo | 7KB | Flash information |
+| chkqnx6fs | 44KB | QNX6 filesystem checker |
+
+### NavigationNdrInfo Output (confirmed working)
+Queries NDR message IDs:
+- 0x000203b3: Database version requirements
+- 0x000203b4: Available database files (nav maps)
+- 0x000203b5: Available database packages
+- 0x0002064d: LVM mount options
+
+Proves the NDR devctl() interface is accessible from userspace.
+
+### Usage
+```
+export PATH=$PATH:/mnt/data/tools
+NavigationNdrInfo          # query nav database info via NDR
+find / -name "*.esd"       # search for files
+vi /tmp/test.sh            # edit files
+persdump2                  # dump persistence data
+sqlite_console             # SQLite access
+```
+
+### Implications for Oil Service Reset
+NavigationNdrInfo proves that NDR devctl() works from userspace.
+Our uds_send.c uses the same interface. If we can cross-compile it,
+the CAN communication path is confirmed viable.
