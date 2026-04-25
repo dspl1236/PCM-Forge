@@ -428,6 +428,18 @@ populateModels('model1');
 populateModels('model2');
 
 // ===== Backup Viewer =====
+// Compatibility wrappers (backup viewer uses old variable names)
+function _getCV() { return document.getElementById('vin1').value.trim().toUpperCase() || ''; }
+const gc = generateCode;
+// Build FEATS from current featuresFor() format for backup decoder
+const FEATS = (function(){
+  const raw = featuresFor(0);
+  return raw.map(f => {
+    const sw = parseInt(f.hex.slice(0,4), 16);
+    const su = parseInt(f.hex.slice(4,8), 16);
+    return {nm: f.name, fh: f.hex, ds: f.desc, sw, su, cat: f.cat};
+  });
+})();
 const FEAT_SWMAP={};FEATS.forEach(f=>{FEAT_SWMAP[(f.sw<<16|f.su)>>>0]=f});
 let backupRecords=[];
 
@@ -470,7 +482,7 @@ function renderBackup(){
     const key=(f.sw<<16|f.su)>>>0;
     if(existKeys.has(key))continue;
     hasNew=true;
-    af.innerHTML+='<label class="ft"><input type="checkbox" data-fh="'+f.fh+'" data-sw="'+f.sw+'" data-su="'+f.su+'" onchange="this.closest(\'.ft\').classList.toggle(\'.on\',this.checked)"><div><div class="feat-name">'+f.nm+'</div><div class="feat-desc">'+f.ds+'</div></div></label>';
+    af.innerHTML+='<label class="ft"><input type="checkbox" data-fh="'+f.fh+'" data-sw="'+f.sw+'" data-su="'+f.su+'" onchange="this.closest(\x27.ft\x27).classList.toggle(\x27on\x27,this.checked)"><div><div class="feat-name">'+f.nm+'</div><div class="feat-desc">'+f.ds+'</div></div></label>';
   }
   if(!hasNew) af.innerHTML='<div style="color:var(--green);font-size:13px">\u2713 All features already activated!</div>';
   document.getElementById('backup-info').style.display='block';
@@ -479,7 +491,7 @@ function renderBackup(){
 }
 
 function buildMerged(){
-  if(!CV){document.getElementById('sm-manage').className='sm bad';document.getElementById('sm-manage').textContent='\u26a0 Enter a VIN at the top first';return null}
+  var CV=_getCV();if(!CV){document.getElementById('sm-manage').className='sm bad';document.getElementById('sm-manage').textContent='\u26a0 Enter a VIN at the top first';return null}
   const recs=[...backupRecords.map(r=>{const d=new Uint8Array(28);for(let i=0;i<16;i++)d[i]=r.code.charCodeAt(i);d[18]=r.sw&0xFF;d[19]=(r.sw>>8)&0xFF;d[20]=r.su&0xFF;d[21]=(r.su>>8)&0xFF;d[22]=1;d[24]=1;return d})];
   let added=0;
   document.querySelectorAll('#add-features input:checked').forEach(cb=>{
@@ -522,7 +534,7 @@ function dlMergedUSB(){
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', 
-      (i === 0 && id === 'generate') || (i === 1 && id === 'usb') || (i === 2 && id === 'toolkit'));
+      (i === 0 && id === 'generate') || (i === 1 && id === 'usb') || (i === 2 && id === 'toolkit') || (i === 3 && id === 'backup'));
   });
   document.getElementById('tab-generate').classList.toggle('active', id === 'generate');
   document.getElementById('tab-usb').classList.toggle('active', id === 'usb');
