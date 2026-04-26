@@ -95,3 +95,32 @@ that allows independent image display.
 - /dev/layermanager (does it exist?)
 - /dev/io-display/ (device entries)
 - /dev/pv/ (process video?)
+
+## Cluster Display (240×257)
+The secondary 240×257 display is the **round screen in the instrument cluster**
+between the gauges. In the GEM engineering menu, there's a "PCM to cluster
+mirror" mode that sends PCM content to this screen via IOC/CAN.
+
+This means:
+1. The cluster screen is controlled via /dev/ipc/ioc/ channels (same path as UDS)
+2. We could potentially show oil reset status on the cluster screen
+3. The cluster display might accept image data via IOC commands
+4. The mirror mode suggests a framebuffer-sharing mechanism exists
+
+## Display Probe Script
+Run `tools/display_probe.sh` from PuTTY to investigate:
+- Whether /dev/layermanager exists when PCM is fully booted
+- What display processes are running
+- Layer manager configuration
+- Available graphics libraries
+- showScreen version info
+
+## Timing Hypothesis
+The USB `copie_scr.sh` runs via `proc_scriptlauncher` which triggers
+early in the boot sequence. At that point:
+- io-display might not be started
+- layermanagerV2 might not have registered /dev/layermanager
+- PCM3Root hasn't initialized HMI
+
+Fix: add `waitfor /dev/layermanager 15` before calling showScreen.
+The `waitfor` utility exists in /proc/boot/ on QNX 6.3.2.
