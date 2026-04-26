@@ -1,5 +1,5 @@
 #!/bin/ksh
-# PCM-Forge Service Reset — Full diagnostic + reset
+# PCM-Forge Service Reset v2 — Reads commands from /tmp/uds_cmd
 # Part of PCM-Forge: github.com/dspl1236/PCM-Forge
 
 USBROOT="${1:-/fs/usb0}"
@@ -7,77 +7,58 @@ LOG="${USBROOT}/service_reset.log"
 
 {
 echo "============================================"
-echo "  PCM-Forge Service Reset"
-echo "  $(date 2>/dev/null || echo 'no date cmd')"
+echo "  PCM-Forge Service Reset v2"
 echo "============================================"
 echo ""
 
-# Deploy uds_send binary to /tmp (writable)
+# Deploy uds_send binary
 if [ -f "${USBROOT}/bin/uds_send" ]; then
     cp "${USBROOT}/bin/uds_send" /tmp/uds_send
     chmod +x /tmp/uds_send
-    echo "[OK] uds_send deployed to /tmp ($(ls -la /tmp/uds_send 2>&1))"
+    echo "[OK] uds_send deployed to /tmp"
+    ls -la /tmp/uds_send
 else
-    echo "[ERROR] uds_send binary not found on USB"
-    echo "service-reset FAILED" >> "${USBROOT}/pcm_ran.txt"
-    exit 1
-fi
-
-# Quick test — does the binary run?
-echo ""
-echo "=== Binary Test ==="
-/tmp/uds_send 2>&1
-UDS_RC=$?
-echo "Exit code: $UDS_RC"
-
-if [ $UDS_RC -eq 127 ]; then
-    echo "[ERROR] Binary failed to load (missing libs or wrong arch)"
-    echo "service-reset FAILED" >> "${USBROOT}/pcm_ran.txt"
+    echo "[ERROR] uds_send binary not found"
     exit 1
 fi
 
 echo ""
-echo "=== NDR Device Check ==="
+echo "=== NDR Device ==="
 ls -la /dev/ndr/ 2>&1
 
+# Write UDS commands to /tmp/uds_cmd
+# Format: <ecu_hex> <service_id> [data bytes...]
+# 0x17 = instrument cluster
 echo ""
-echo "=== Step 1: Extended Diagnostic Session (cluster 0x17) ==="
-echo ">> uds_send 0x17 0x10 0x03"
-/tmp/uds_send 0x17 0x10 0x03 2>&1
-echo "RC=$?"
+echo "=== Writing UDS commands ==="
+
+# Step 1: Extended diagnostic session
+echo "17 10 03" > /tmp/uds_cmd
+echo "[CMD] 17 10 03 (Extended Diagnostic Session)"
+/tmp/uds_send 2>&1
 sleep 1
 
-echo ""
-echo "=== Step 2: Reset Oil Service (DID 0x0156) ==="
-echo ">> uds_send 0x17 0x2E 0x01 0x56 0x00"
-/tmp/uds_send 0x17 0x2E 0x01 0x56 0x00 2>&1
-echo "RC=$?"
+# Step 2: Reset oil service (DID 0x0156)
+echo "17 2E 01 56 00" > /tmp/uds_cmd
+echo "[CMD] 17 2E 01 56 00 (Reset Oil Service DID 0x0156)"
+/tmp/uds_send 2>&1
 sleep 1
 
-echo ""
-echo "=== Step 3: Reset Inspection Distance (DID 0x0D17) ==="
-echo ">> uds_send 0x17 0x2E 0x0D 0x17 0x00 0x00 0x00 0x00"
-/tmp/uds_send 0x17 0x2E 0x0D 0x17 0x00 0x00 0x00 0x00 2>&1
-echo "RC=$?"
+# Step 3: Reset inspection distance (DID 0x0D17)
+echo "17 2E 0D 17 00 00 00 00" > /tmp/uds_cmd
+echo "[CMD] 17 2E 0D 17 00 00 00 00 (Reset Distance DID 0x0D17)"
+/tmp/uds_send 2>&1
 sleep 1
 
-echo ""
-echo "=== Step 4: Reset Inspection Time (DID 0x0D18) ==="
-echo ">> uds_send 0x17 0x2E 0x0D 0x18 0x00 0x00 0x00 0x00"
-/tmp/uds_send 0x17 0x2E 0x0D 0x18 0x00 0x00 0x00 0x00 2>&1
-echo "RC=$?"
-
-echo ""
-echo "=== Trying alternate cluster address 0x714 ==="
-echo ">> uds_send 0x714 0x10 0x03"
-/tmp/uds_send 0x714 0x10 0x03 2>&1
-echo "RC=$?"
+# Step 4: Reset inspection time (DID 0x0D18)
+echo "17 2E 0D 18 00 00 00 00" > /tmp/uds_cmd
+echo "[CMD] 17 2E 0D 18 00 00 00 00 (Reset Time DID 0x0D18)"
+/tmp/uds_send 2>&1
 
 echo ""
 echo "============================================"
-echo "  Service Reset Log Complete"
+echo "  Service Reset Complete"
 echo "============================================"
 } > "$LOG" 2>&1
 
 echo "service-reset done" >> "${USBROOT}/pcm_ran.txt"
-echo "Log: $LOG"

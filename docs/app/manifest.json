@@ -66,7 +66,7 @@
         },
         {
           "path": "bin/uds_send",
-          "size": 66264
+          "size": 66268
         },
         {
           "path": "bin/uds_send.c",
@@ -98,7 +98,7 @@
         },
         {
           "path": "scripts/service_run.sh",
-          "size": 2234
+          "size": 1719
         },
         {
           "path": "scripts/service_status.sh",
