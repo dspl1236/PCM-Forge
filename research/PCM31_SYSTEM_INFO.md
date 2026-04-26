@@ -176,3 +176,80 @@ sqlite_console             # SQLite access
 NavigationNdrInfo proves that NDR devctl() works from userspace.
 Our uds_send.c uses the same interface. If we can cross-compile it,
 the CAN communication path is confirmed viable.
+
+---
+
+## QNX Prefix Tree Overlay — Bypassing Read-Only /etc/
+
+### The Problem
+PCM 3.1's `/etc/` is in the IFS boot image (read-only). Can't modify:
+- `/etc/hosts` (DNS timeout fix)
+- `/etc/inetd.conf` (add port 2323)
+- `/etc/resolv.conf` (DNS servers)
+
+### The Solution: QNX Prefix/Mount Overlay
+QNX's namespace uses a prefix tree with longest-match resolution.
+New mounts go "on top of" existing ones. We can mount a writable
+RAM filesystem over `/etc/`:
+
+```bash
+# Step 1: Save current /etc contents to RAM
+mkdir -p /dev/shmem/etc_overlay
+cp /etc/* /dev/shmem/etc_overlay/ 2>/dev/null
+
+# Step 2: Create a writable RAM filesystem mounted at /etc
+# Option A: Use devf-ram
+devf-ram -s0,1m -i10,1   # Create /dev/fs10 (1MB RAM disk)
+mount -t qnx4 /dev/fs10 /etc
+
+# Option B: Just bind a tmpfs directory over /etc
+# (QNX 6.3.2 might support this via io-fs-media or similar)
+
+# Step 3: Copy saved contents back
+cp /dev/shmem/etc_overlay/* /etc/
+
+# Step 4: Now /etc is writable!
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "2323 stream tcp nowait root /bin/ksh ksh -i" >> /etc/inetd.conf
+echo "192.168.0.91 pc" >> /etc/hosts
+```
+
+### Alternative: devf-ram Already Running!
+The PCM already has `devf-ram` running:
+```
+462926 devf-ram -s0,8m -i4,1     ← 8MB RAM disk, instance 4
+266306 devf-ram -s0,1m -i1,3     ← 1MB RAM disk, instance 1 (from IFS)
+```
+
+We might be able to reuse one or start a new instance.
+
+### QNX Prefix Resolution Rule
+When multiple filesystems are mounted at the same prefix, QNX uses
+the **most recently mounted** one first (LIFO). So mounting a
+writable filesystem at `/etc` will shadow the read-only IFS `/etc`.
+
+### Investigation Commands (from PuTTY)
+```bash
+# Check current mounts
+mount
+df
+
+# Try the overlay
+mkdir -p /dev/shmem/etc_save
+cp /etc/* /dev/shmem/etc_save/ 2>/dev/null
+ls /dev/shmem/etc_save/
+
+# Check if we can start a new devf-ram
+devf-ram -s0,512k -i20,1 2>&1
+ls /dev/fs20*
+
+# Try mounting over /etc
+mount /dev/fs20 /etc 2>&1
+```
+
+### Impact if Successful
+- `/etc/hosts` writable → fix telnet DNS timeout
+- `/etc/inetd.conf` writable → persistent port 2323 within session  
+- `/etc/resolv.conf` writable → DNS for internet access
+- All within session (RAM disk, not persistent across reboot)
+- But toolkit script can set it up each time!

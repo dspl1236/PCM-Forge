@@ -103,3 +103,70 @@ echo "============================================"
 } > "$LOG" 2>&1
 
 echo "ndr-probe done" >> "${USBROOT}/pcm_ran.txt"
+
+echo ""
+echo "=== /etc Overlay Test ==="
+echo "Current /etc mount:"
+mount 2>&1 | grep "/etc"
+
+echo ""
+echo "Saving /etc contents..."
+mkdir -p /dev/shmem/etc_save 2>/dev/null
+cp /etc/* /dev/shmem/etc_save/ 2>/dev/null
+ls /dev/shmem/etc_save/ 2>&1
+
+echo ""
+echo "Existing devf-ram instances:"
+pidin ar | grep devf-ram 2>&1
+
+echo ""
+echo "Trying new devf-ram instance..."
+devf-ram -s0,512k -i20,1 2>&1
+sleep 1
+ls /dev/fs20* 2>&1
+
+echo ""
+echo "Trying mount overlay on /etc..."
+mount /dev/fs20 /etc 2>&1
+MOUNT_RC=$?
+echo "mount rc=$MOUNT_RC"
+
+if [ $MOUNT_RC -eq 0 ]; then
+    echo "[OK] /etc overlay mounted!"
+    cp /dev/shmem/etc_save/* /etc/ 2>/dev/null
+    echo "Copied saved contents back"
+    
+    # Now add our fixes
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+    echo "[OK] DNS servers added to /etc/resolv.conf"
+    
+    echo "2323 stream tcp nowait root /bin/ksh ksh -i" >> /etc/inetd.conf
+    echo "[OK] Port 2323 added to /etc/inetd.conf"
+    
+    # Restart inetd to pick up changes
+    slay -f inetd 2>/dev/null
+    sleep 1
+    /usr/sbin/inetd 2>/dev/null &
+    echo "[OK] inetd restarted with new config"
+    
+    cat /etc/resolv.conf
+    cat /etc/inetd.conf | grep 2323
+    echo ""
+    echo "*** /etc OVERLAY WORKS! ***"
+else
+    echo "[WARN] Mount failed — trying alternative approaches"
+    
+    # Try io-fs-media tmpfs
+    echo "Trying tmpfs..."
+    mount -Ttmpfs tmpfs /etc 2>&1
+    
+    # Try prefix utility  
+    echo "Trying prefix redirect..."
+    # On QNX, /dev/shmem is always writable — make it look like /etc
+    ln -sf /dev/shmem/etc_save /dev/shmem/etc_link 2>/dev/null
+fi
+
+echo ""
+echo "=== Final mount table ==="
+mount 2>&1
