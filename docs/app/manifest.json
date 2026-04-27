@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-26",
+  "generated": "2026-04-27",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -65,12 +65,12 @@
           "size": 518
         },
         {
-          "path": "scripts/ndr_probe_run.sh",
-          "size": 2871
-        },
-        {
           "path": "bin/ndr_probe",
           "size": 66264
+        },
+        {
+          "path": "scripts/ndr_probe_run.sh",
+          "size": 4583
         }
       ]
     },
