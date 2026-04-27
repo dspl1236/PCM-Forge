@@ -83,3 +83,76 @@ To reset the oil service interval:
 3. Message contains UDS RoutineControl or WriteDataByIdentifier
 4. Target: Instrument cluster (Kombi) diagnostic address
 5. V850 IOC routes the frame to the CAN bus
+
+---
+
+## V850ES/SJ3 IOC Hardware (Renesas Datasheet)
+
+### Chip: Renesas V850ES/SJ3 (μPD70F3344-3368 series)
+- 32-bit RISC CPU
+- On-chip CAN controller (1 or 2 channels)
+- IEBus controller (automotive LAN)
+- Used as IOC (IO Controller) in Harman PCM 3.1
+
+### CAN Controller Registers (Chapter 19)
+- Base address: 0x03FEC000 (CAN0), 0x03FED000 (CAN1)
+- 32 message buffers per channel (CnMDATA, CnMDLC, CnMCONF, CnMID, CnMCTRL)
+- Standard (11-bit) and Extended (29-bit) CAN IDs supported
+- Baud rate configurable via prescaler + bit timing
+- Error states: Error Active → Error Passive → Bus-Off
+
+### Full CAN Communication Path (PCM 3.1)
+```
+Application (PCM3Root/uds_send)
+    │
+    ├─ open("/dev/ndr/cmd")
+    │  devctl(fd, 0xC0040507, data)  ← class=5, cmd=7 WRITE
+    │  devctl(fd, 0xC0040508, data)  ← class=5, cmd=8 READ
+    │
+    ▼
+NDR Resource Manager (/proc/boot/ndr)
+    │  CLibResMgr → devctl → CTransTel telegram
+    │
+    ▼
+dev-ipc (/dev/ipc/ioc/ch*)
+    │  CHBIpcProtocol (0xFADE magic, telegram framing)
+    │  IOC service channels ch2-ch10
+    │
+    ▼
+Xilinx FPGA (IPC bridge, PCI device 0x10EE:0x9411)
+    │  Hardware bridge between SH4 bus and V850
+    │
+    ▼
+V850ES/SJ3 IO Controller
+    │  On-chip CAN controller
+    │  32 message buffers
+    │  CAN0 registers at 0x03FEC000
+    │
+    ▼
+Physical CAN Bus (ISO 11898)
+    │  CAN-H / CAN-L via transceiver
+    │
+    ▼
+Instrument Cluster (CAN ID 0x0717 for UDS)
+```
+
+### IOC Service Types (19 identified)
+From our CAN architecture research, dev-ipc registers IOC channels:
+- ch2-ch6: CAN transport (IOC_CAN_TP1 = UDS diagnostic)
+- ch7-ch8: Display/media IPC
+- ch9-ch10: Misc services
+- debug, onoff, watchdog: System control
+
+### Implications for Oil Service Reset
+The UDS path: uds_send → NDR devctl (class=5, cmd=7) → NDR process
+→ dev-ipc → FPGA → V850 CAN controller → CAN bus → cluster
+
+The devctl codes (0xC0040507/0xC0040508) go to NDR, which handles
+the CAN transport protocol internally. We don't need to understand
+the V850 register layout — NDR abstracts it. But the V850 datasheet
+confirms the hardware supports standard CAN messaging.
+
+### Reference
+Renesas V850ES/SJ3 User's Manual: Hardware
+Rev.5.00, Feb 2012 (REN_r01uh0248ej0500)
+Chapter 19: CAN Controller (pages 728-886)
