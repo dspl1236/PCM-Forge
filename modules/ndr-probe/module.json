@@ -1,13 +1,10 @@
 {
     "name": "ndr-probe",
-    "version": "1.0.0",
-    "description": "Probe NDR devctl command format. Tries ~450 class/cmd combinations against /dev/ndr/cmd to discover the correct devctl interface for CAN/UDS communication. Results logged to ndr_probe.log on USB.",
+    "version": "2.0.0",
+    "description": "NDR devctl probe with correct DCMD constants (extracted from NavigationNdrInfo binary analysis). Read-only, safe to run.",
     "author": "dspl1236",
     "status": "alpha",
-    "compatible": ["PCM3.1"],
+    "platform": "PCM3.1",
     "standalone": true,
-    "run_script": "ndr_probe_run.sh",
-    "script_dir": "/scripts/NdrProbe",
-    "installs_to_flash": false,
-    "bin_files": ["bin/ndr_probe"]
+    "run_script": "ndr_probe_run.sh"
 }
