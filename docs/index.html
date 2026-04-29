@@ -155,10 +155,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
       <div style="padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px;margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600">
-          <input type="checkbox" id="usb-diag" style="accent-color:var(--accent);width:18px;height:18px" onchange="usbToggleDiag()">
+          <input type="checkbox" id="usb-diag" checked style="accent-color:var(--accent);width:18px;height:18px" onchange="usbToggleDiag()">
           <span>&#128269; Diagnostic mode (run this first!)</span>
         </label>
-        <div id="usb-diag-desc" style="display:none;margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6">
+        <div id="usb-diag-desc" style="display:block;margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6">
           Replaces <code>copie_scr.sh</code> with an enhanced diagnostic probe that writes <code>pcm_debug.log</code> + <code>pcm_dump/</code> folder back to USB —
           29+ tests: PCM version, VIN, activation files, variant coding (CVALUE), FSC state, CAN bus, network/telnet, flash &amp; HDD partitions,
           engineering ESD screens, browser paths, HMI region, SWDL state, HDD SMART data, plus CAN/IOC probe (IPC devices, DSP, FPGA sysregs, MOST, service broker, inetd.conf). Backs up existing PagSWAct. No changes are made to the car.
@@ -694,9 +694,9 @@ function usbBuildFeatureGrid() {
   features.forEach((f, i) => {
     const grid = f.cat === 'core' ? coreGrid : navGrid;
     const div = document.createElement('label');
-    div.className = 'feat-item on';
+    div.className = 'feat-item';
     if (f.name === 'FeatureLevel') {
-      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" data-is-fl="1" checked>
+      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" data-is-fl="1">
         <div><div class="feat-name">${f.name}</div><div class="feat-desc">Boot logo — select your model:</div>
         <select id="boot-model-2" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="updateBootPreview('boot-model-2','boot-preview-2','boot-img-2')"></select>
         <div id="boot-preview-2" style="margin-top:10px;display:none;border-radius:6px;overflow:hidden;border:1px solid var(--border);max-width:320px">
@@ -713,7 +713,7 @@ function usbBuildFeatureGrid() {
         updateBootPreview('boot-model-2', 'boot-preview-2', 'boot-img-2');
       }, 0);
     } else {
-      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" checked>
+      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}">
         <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div></div>`;
     }
     div.querySelector('input').addEventListener('change', function() {
