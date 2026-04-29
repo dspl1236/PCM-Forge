@@ -153,6 +153,18 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         Copy all <strong>3 files</strong> to a <strong>FAT32 USB stick</strong> root: <code>copie_scr.sh</code> (XOR bootstrap), <code>run.sh</code> (plaintext script), and <code>PagSWAct.002</code> (activation codes). The <strong>Save to folder</strong> button also bundles <code>bin/showScreen</code> and <code>lib/*.png</code> status screens automatically. Insert into Cayenne USB port with ignition on. Wait 60–90 seconds. Remove and cycle ignition.
       </div>
 
+      <div style="font-size:13px;line-height:1.7;margin-bottom:16px;padding:12px 14px;background:rgba(220,60,60,.06);border:1px solid rgba(220,60,60,.25);border-radius:8px">
+        <span style="color:#dc3c3c;font-family:var(--mono);font-weight:700">&#9888; Important:</span>
+        The <code>PagSWAct.002</code> file <strong>replaces all existing activations</strong> on your PCM. Only the features you select below will be active after installation &mdash; <strong>anything not selected will be deactivated</strong>.
+        <div style="margin-top:8px">
+          <strong>Recommended workflow:</strong><br>
+          <strong>1.</strong> Run <strong>Diagnostic mode</strong> first to back up your current activations<br>
+          <strong>2.</strong> Upload your backup in the <strong>Backup</strong> tab to see what&rsquo;s currently active<br>
+          <strong>3.</strong> Use <strong>Select all</strong> to keep all existing features, then add any new ones<br>
+          <strong>4.</strong> Build your USB with the complete feature set
+        </div>
+      </div>
+
       <div style="padding:14px 16px;background:rgba(200,164,78,.06);border:1px solid rgba(200,164,78,.25);border-radius:8px;margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600">
           <input type="checkbox" id="usb-diag" checked style="accent-color:var(--accent);width:18px;height:18px" onchange="usbToggleDiag()">
