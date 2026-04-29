@@ -48,7 +48,7 @@ When the 3G modem was functional, PCM 3.1 provided:
 |---------|----------|--------|
 | AHARadio | Aha / Harman | Streaming radio |
 | Weather | Baron Services, Inc. | Current conditions + forecast |
-| Traffic | Inrix (probable) | Real-time traffic overlay |
+| Traffic | SiriusXM (satellite) | Real-time traffic overlay (requires active SiriusXM Traffic subscription, ~$5/mo add-on via 1-800) |
 | Google Search | Google | POI/destination search |
 
 **NOT included:** Google Earth, Google StreetView. Porsche chose not
@@ -147,7 +147,7 @@ Check your specific vehicle.
 | Network interface | `en5` | `en5` |
 | DHCP client | ✅ Present | ✅ Present |
 | USB port | AMI connector | USB-A (model dependent) |
-| Online services | Audi Connect (GE, weather, traffic, POI) | AHARadio, weather, traffic |
+| Online services | Audi Connect (GE, weather, traffic, POI) | AHARadio, weather, traffic (SiriusXM sat) |
 | Google Earth | GEMMI (can be restored) | Never implemented |
 | copie_scr.sh | SD card autorun | USB stick autorun |
 | Setup script delivery | SD card | USB stick |
@@ -174,7 +174,7 @@ With LTE connectivity restored, PCM 3.1 should regain:
 | Service | Likely Status | Notes |
 |---------|--------------|-------|
 | Weather | ⚠️ Depends | Baron Services API may have changed |
-| Traffic | ⚠️ Depends | Inrix API endpoints may have changed |
+| Traffic | ✅ Independent | Delivered via SiriusXM satellite (not internet). Requires active SiriusXM subscription with Traffic add-on (~$5/mo, call 1-800). Works with crude segment-based overlay (red/yellow/green, ~1mi segments). |
 | Google Search | ⚠️ Depends | Google API may require auth updates |
 | AHARadio | ❌ Likely dead | Aha service was acquired/shut down |
 
