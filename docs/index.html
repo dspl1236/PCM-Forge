@@ -122,11 +122,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         <input type="text" id="vin1" class="vin-input" maxlength="17" placeholder="Enter 17-digit VIN" autocomplete="off" spellcheck="false">
         <button class="btn btn-go" onclick="generateCodes()">Generate</button>
       </div>
-      <div class="model-row" style="margin-top:14px">
-        <label>Boot Screen</label>
-        <select id="model1"></select>
-      </div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px">Sets boot logo only — does not affect feature activation codes</div>
       <div id="err1" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></div>
     </div>
 
@@ -150,11 +145,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="vin-row">
         <input type="text" id="vin2" class="vin-input" maxlength="17" placeholder="Enter 17-digit VIN" autocomplete="off" spellcheck="false">
       </div>
-      <div class="model-row" style="margin-top:14px">
-        <label>Boot Screen</label>
-        <select id="model2"></select>
-      </div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px">Sets boot logo only — does not affect feature activation codes</div>
     </div>
 
     <div class="card">
@@ -427,8 +417,7 @@ function populateModels(selectId) {
     sel.appendChild(opt);
   }
 }
-populateModels('model1');
-populateModels('model2');
+// Model dropdowns now embedded inline in FeatureLevel cards
 
 // ===== Backup Viewer =====
 // Compatibility wrappers (backup viewer uses old variable names)
@@ -559,7 +548,8 @@ function generateCodes() {
   if (vin.length !== 17) { err.style.display = 'block'; err.textContent = 'VIN must be 17 characters'; results.classList.remove('show'); return; }
   err.style.display = 'none';
 
-  const modelKey = document.getElementById('model1').value;
+  const modelSel = document.getElementById('boot-model-1');
+  const modelKey = modelSel ? modelSel.value : 'cayenne-se';
   const [flSubId] = MODELS[modelKey];
   const features = featuresFor(flSubId);
 
@@ -581,12 +571,35 @@ function generateCodes() {
     }
     const row = document.createElement('div');
     row.className = 'code-row';
-    row.innerHTML = `
-      <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div></div>
-      <div style="display:flex;align-items:center">
-        <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
-        <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
-      </div>`;
+    if (c.name === 'FeatureLevel') {
+      row.innerHTML = `
+        <div style="flex:1"><div class="code-name">${c.name}</div><div class="code-desc">Boot logo — select your model:</div>
+          <select id="boot-model-1" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="generateCodes()"></select>
+        </div>
+        <div style="display:flex;align-items:center">
+          <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
+          <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
+        </div>`;
+      // Populate inline dropdown after adding to DOM
+      setTimeout(() => {
+        const sel = document.getElementById('boot-model-1');
+        if (sel && sel.options.length === 0) {
+          for (const [key, [subid, label]] of Object.entries(MODELS)) {
+            const opt = document.createElement('option');
+            opt.value = key; opt.textContent = label + '  (0x' + subid.toString(16).padStart(4,'0') + ')';
+            if (key === modelKey) opt.selected = true;
+            sel.appendChild(opt);
+          }
+        }
+      }, 0);
+    } else {
+      row.innerHTML = `
+        <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div></div>
+        <div style="display:flex;align-items:center">
+          <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
+          <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
+        </div>`;
+    }
     list.appendChild(row);
   });
 
@@ -663,8 +676,23 @@ function usbBuildFeatureGrid() {
     const grid = f.cat === 'core' ? coreGrid : navGrid;
     const div = document.createElement('label');
     div.className = 'feat-item on';
-    div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" checked>
-      <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div></div>`;
+    if (f.name === 'FeatureLevel') {
+      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" data-is-fl="1" checked>
+        <div><div class="feat-name">${f.name}</div><div class="feat-desc">Boot logo — select your model:</div>
+        <select id="boot-model-2" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px"></select></div>`;
+      setTimeout(() => {
+        const sel = document.getElementById('boot-model-2');
+        if (sel) for (const [key, [subid, label]] of Object.entries(MODELS)) {
+          const opt = document.createElement('option');
+          opt.value = key; opt.textContent = label + '  (0x' + subid.toString(16).padStart(4,'0') + ')';
+          if (key === 'cayenne-se') opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }, 0);
+    } else {
+      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" checked>
+        <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div></div>`;
+    }
     div.querySelector('input').addEventListener('change', function() {
       div.classList.toggle('on', this.checked);
     });
@@ -691,12 +719,13 @@ function usbGetVin() {
 }
 
 function usbGetSelectedFeatures() {
-  const modelKey = document.getElementById('model2').value;
+  const bootSel = document.getElementById('boot-model-2');
+  const modelKey = bootSel ? bootSel.value : 'cayenne-se';
   const [flSubId] = MODELS[modelKey];
   const allFeats = featuresFor(flSubId);
   const selected = [];
   document.querySelectorAll('#tab-usb .feat-item input:checked').forEach(cb => {
-    const hex = cb.dataset.hex;
+    const hex = cb.dataset.isFl ? ('010e' + flSubId.toString(16).padStart(4,'0')) : cb.dataset.hex;
     const feat = allFeats.find(f => f.hex === hex);
     if (feat) selected.push(feat);
   });
