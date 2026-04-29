@@ -7,7 +7,7 @@
 
 USBROOT="${1:-/fs/usb0}"
 BINDIR="${USBROOT}/bin"
-LOGFILE="${USBROOT}/ndr_probe_v2.log"
+LOGFILE="${USBROOT}/ndr_probe.log"
 
 echo "============================================" > "${LOGFILE}"
 echo "  PCM-Forge NDR devctl Probe v2" >> "${LOGFILE}"
@@ -15,13 +15,13 @@ echo "============================================" >> "${LOGFILE}"
 echo "" >> "${LOGFILE}"
 
 # Deploy probe binary to /tmp
-if [ -f "${BINDIR}/ndr_probe_v2" ]; then
-    cp "${BINDIR}/ndr_probe_v2" /tmp/ndr_probe_v2
-    chmod +x /tmp/ndr_probe_v2
-    echo "[OK] ndr_probe_v2 deployed to /tmp" >> "${LOGFILE}"
-    ls -la /tmp/ndr_probe_v2 >> "${LOGFILE}"
+if [ -f "${BINDIR}/ndr_probe" ]; then
+    cp "${BINDIR}/ndr_probe" /tmp/ndr_probe
+    chmod +x /tmp/ndr_probe
+    echo "[OK] ndr_probe deployed to /tmp" >> "${LOGFILE}"
+    ls -la /tmp/ndr_probe >> "${LOGFILE}"
 else
-    echo "[ERROR] ndr_probe_v2 not found at ${BINDIR}" >> "${LOGFILE}"
+    echo "[ERROR] ndr_probe not found at ${BINDIR}" >> "${LOGFILE}"
     exit 1
 fi
 
@@ -39,7 +39,7 @@ pidin ar | grep ndr >> "${LOGFILE}" 2>&1
 
 echo "" >> "${LOGFILE}"
 echo "=== Running Probe ===" >> "${LOGFILE}"
-/tmp/ndr_probe_v2 "${USBROOT}" >> "${LOGFILE}" 2>&1
+/tmp/ndr_probe "${USBROOT}" >> "${LOGFILE}" 2>&1
 
 echo "" >> "${LOGFILE}"
 echo "=== Probe Complete ===" >> "${LOGFILE}"
