@@ -387,6 +387,7 @@ function featuresFor(flSubId) {
     {name:'BTH',              hex:'010a0000', desc:'Bluetooth telephony',              cat:'core'},
     {name:'KOMP',             hex:'01060000', desc:'Component activation',             cat:'core'},
     {name:'Navigation',       hex:'01010000', desc:'Navigation system',                cat:'core'},
+    {name:'TEL',               hex:'01020000', desc:'Telephone module',                   cat:'core'},
     {name:'UMS',              hex:'01090000', desc:'USB media support',                cat:'core'},
     {name:'FB',               hex:'01030000', desc:'Feature base / boot image',        cat:'core'},
     {name:'SSS',              hex:'01040000', desc:'Voice control',                    cat:'core'},
@@ -441,6 +442,7 @@ const FEATS = (function(){
   });
 })();
 const FEAT_SWMAP={};FEATS.forEach(f=>{FEAT_SWMAP[(f.sw<<16|f.su)>>>0]=f});
+const FEAT_SWONLY={};FEATS.forEach(f=>{if(!FEAT_SWONLY[f.sw])FEAT_SWONLY[f.sw]=f});
 let backupRecords=[];
 
 function handleBackupFile(file){
@@ -471,7 +473,7 @@ function renderBackup(){
   const af=document.getElementById('add-features');
   bf.innerHTML='';af.innerHTML='';
   for(const rec of backupRecords){
-    const feat=FEAT_SWMAP[rec.key];
+    const feat=FEAT_SWMAP[rec.key]||FEAT_SWONLY[rec.sw];
     const name=feat?feat.nm:'Unknown (0x'+rec.sw.toString(16).padStart(4,'0')+')';
     const desc=feat?feat.ds:'';
     bf.innerHTML+='<div class="ft on" style="opacity:0.85"><input type="checkbox" checked disabled><div><div class="feat-name">\u2705 '+name+'</div><div class="feat-desc">'+desc+'</div><div class="ft-info">'+rec.code+'</div></div></div>';
