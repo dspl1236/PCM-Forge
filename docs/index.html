@@ -540,6 +540,21 @@ function switchTab(id) {
 // ===== TAB 1: Generate =====
 let currentCodes = [];
 
+
+function updateBootPreview(selectId, previewId, imgId) {
+  const sel = document.getElementById(selectId);
+  const preview = document.getElementById(previewId);
+  const img = document.getElementById(imgId);
+  if (!sel || !preview || !img) return;
+  const modelKey = sel.value;
+  const [subid] = MODELS[modelKey] || [0];
+  const num = subid.toString().padStart(3, '0');
+  const src = 'bootscreens/boot_' + num + '.png';
+  img.onload = function() { preview.style.display = 'block'; };
+  img.onerror = function() { preview.style.display = 'none'; };
+  img.src = src;
+}
+
 function generateCodes() {
   const vin = document.getElementById('vin1').value.trim().toUpperCase();
   const err = document.getElementById('err1');
@@ -575,12 +590,15 @@ function generateCodes() {
       row.innerHTML = `
         <div style="flex:1"><div class="code-name">${c.name}</div><div class="code-desc">Boot logo — select your model:</div>
           <select id="boot-model-1" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="generateCodes()"></select>
+          <div id="boot-preview-1" style="margin-top:10px;display:none;border-radius:6px;overflow:hidden;border:1px solid var(--border);max-width:320px">
+            <img id="boot-img-1" style="width:100%;display:block" alt="Boot screen preview">
+          </div>
         </div>
         <div style="display:flex;align-items:center">
           <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
           <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
         </div>`;
-      // Populate inline dropdown after adding to DOM
+      // Populate inline dropdown and show preview
       setTimeout(() => {
         const sel = document.getElementById('boot-model-1');
         if (sel && sel.options.length === 0) {
@@ -591,6 +609,7 @@ function generateCodes() {
             sel.appendChild(opt);
           }
         }
+        updateBootPreview('boot-model-1', 'boot-preview-1', 'boot-img-1');
       }, 0);
     } else {
       row.innerHTML = `
@@ -679,7 +698,10 @@ function usbBuildFeatureGrid() {
     if (f.name === 'FeatureLevel') {
       div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" data-is-fl="1" checked>
         <div><div class="feat-name">${f.name}</div><div class="feat-desc">Boot logo — select your model:</div>
-        <select id="boot-model-2" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px"></select></div>`;
+        <select id="boot-model-2" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="updateBootPreview('boot-model-2','boot-preview-2','boot-img-2')"></select>
+        <div id="boot-preview-2" style="margin-top:10px;display:none;border-radius:6px;overflow:hidden;border:1px solid var(--border);max-width:320px">
+          <img id="boot-img-2" style="width:100%;display:block" alt="Boot screen preview">
+        </div></div>`;
       setTimeout(() => {
         const sel = document.getElementById('boot-model-2');
         if (sel) for (const [key, [subid, label]] of Object.entries(MODELS)) {
@@ -688,6 +710,7 @@ function usbBuildFeatureGrid() {
           if (key === 'cayenne-se') opt.selected = true;
           sel.appendChild(opt);
         }
+        updateBootPreview('boot-model-2', 'boot-preview-2', 'boot-img-2');
       }, 0);
     } else {
       div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" checked>
