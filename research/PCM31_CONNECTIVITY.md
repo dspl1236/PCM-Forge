@@ -321,7 +321,7 @@ This means the AX88772D may work WITHOUT hex-patching the driver:
 
 ```sh
 # Force driver to recognize AX88772D
-io-pkt-v4-hc -d asix did=0x772D,vid=0x0B95 &
+io-pkt-v4-hc -d asix did=0x772D,vid=0x0B95,speed=100,duplex=1 &
 
 # Or for some AX88772D variants
 io-pkt-v4-hc -d asix did=0x0074,vid=0x1790 &
