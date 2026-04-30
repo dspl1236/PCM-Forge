@@ -30,7 +30,7 @@ Same codes as PagSWAct.002 — no USB needed if you know the code.
 | 0x0106 | KOMP (Component Protection) |
 | 0x0101 | Navigation |
 | 0x0109 | UMS (USB Media) |
-| 0x0103 | FB (Feature Base / Boot Image) |
+| 0x0103 | FB (Fahrtenbuch — Electronic Logbook) |
 | 0x0104 | SSS (Voice Control) |
 | 0x0105 | SC (Sport Chrono) |
 | 0x0107 | TVINF (Video in Motion) |
