@@ -23,7 +23,9 @@ Unlocks the hidden engineering and diagnostic menu on the PCM. This is the most 
 - SWDL (software download) state information
 - Flash status and firmware version details
 
-**How to access:** CAR → OPTION → SET-CAR → hidden Engineering menu appears
+**How to access:** Press **SOURCE + SOUND** buttons simultaneously (both physical buttons below the screen). The engineering menu appears only if the ENGINEERING activation code is present in PagSWAct.002.
+
+**Note:** Without the activation code, pressing SOURCE + SOUND does nothing — the feature must be activated first.
 
 ---
 
@@ -331,6 +333,28 @@ Each activation code is a 16-character hexadecimal string generated from:
 The activation file `PagSWAct.002` stores all active features as 28-byte records. When the PCM boots, it reads this file and enables/disables features based on which valid codes are present.
 
 **Important:** `PagSWAct.002` is a **complete replacement** — only features with valid codes in the file will be active. If you generate a file with only one feature, all other features will be deactivated. Always include all features you want to keep active.
+
+---
+
+## PCM 3.1 Button Combinations
+
+### Engineering Menu
+**Buttons:** Press **SOURCE + SOUND** simultaneously  
+**Requirement:** ENGINEERING (SWID 0x010b) must be activated  
+**Result:** Opens the hidden engineering diagnostics menu with ESD screens, variant coding, CAN data, and system info.
+
+### Soft Reboot (PCM restart)
+**Buttons:** Press and hold **INFO** for ~10 seconds  
+**Result:** PCM reboots and shows Porsche logo. All settings preserved. Use this when the PCM freezes or misbehaves.
+
+### Hard Reboot (full restart)
+**Buttons:** Press and hold **INFO + CAR** simultaneously  
+**Result:** Forces a complete QNX restart. More thorough than the soft reboot — equivalent to pulling the fuse and reinserting it.
+
+### Vehicle Handover / Factory Reset
+**Sequence:** After a soft reboot, immediately navigate:  
+CAR → OPTION → Set PCM System → Reset PCM → Vehicle Handover → Yes → Yes  
+**Warning:** This deletes ALL personal settings, paired phones, radio stations, and saved destinations.
 
 ---
 
