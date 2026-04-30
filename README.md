@@ -60,28 +60,34 @@ Interface: en5 (same as Audi MMI3G+)
 
 See [research/PCM31_CONNECTIVITY.md](research/PCM31_CONNECTIVITY.md) for the full LTE restoration guide including hardware list, network architecture, and what online services may still work.
 
-## Quick Start
+## ⚡ Quick Start
 
-### Web Tool
-Visit [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/), enter your VIN, download the activation file.
+> **Important:** Always use the [web app](https://dspl1236.github.io/PCM-Forge/) to build your USB stick. Do NOT download `copie_scr.sh` directly from GitHub — the PCM requires a special XOR-encoded version that only the web app generates. Raw files from the repo will not trigger the autorun.
 
-### Command Line
-```bash
-python generate_codes.py WP1AB2958GLA12345
-```
+### Step 1: Run Diagnostics First
+1. Open [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/)
+2. Go to the **USB Stick** tab
+3. Enter your 17-digit VIN
+4. Leave **Diagnostic mode** checked (default)
+5. Click **Save to folder** → select your FAT32 USB drive
+6. Insert USB into car with ignition ON, wait 60–90 seconds
+7. Remove USB — check for `pcm_debug.log` and `pcm_dump/` folder on the drive
 
-### USB Stick Installation
-1. Use the web app's **USB Stick** tab to build your files
-2. Copy `copie_scr.sh`, `run.sh`, and `PagSWAct.002` to a FAT32 USB stick root
-3. Start your car, wait for PCM to fully boot
-4. Insert USB stick into the PCM's USB port
-5. Wait 60–90 seconds (status screen displays if supported)
-6. Remove USB stick and cycle ignition
+### Step 2: Activate Features
+1. Review your diagnostic results to see what's currently active
+2. Go back to the **USB Stick** tab
+3. Uncheck Diagnostic mode
+4. Click **Select all** to keep all existing features (or pick individual ones)
+5. Click **Save to folder** → select your FAT32 USB drive
+6. Insert USB, wait 60–90 seconds, remove, cycle ignition
 
-### Toolkit Installation
-1. Use the web app's **Toolkit** tab to select modules
-2. Copy `copie_scr.sh` and `run.sh` to a FAT32 USB stick root
-3. Insert, wait, remove — diagnostic logs are written back to the USB stick
+⚠️ The activation file (`PagSWAct.002`) **replaces all existing activations**. Only the features you select will be active — anything not selected gets deactivated. Always use **Select all** and then add new features on top.
+
+### Step 3: Verify
+Press **SOURCE + SOUND** simultaneously — if the ENGINEERING feature is activated, the hidden engineering menu will appear. This confirms your activation codes are working.
+
+### Just Need Codes? (for PIWIS / manual entry)
+Use the **Codes** tab — enter your VIN, get all 26 activation codes instantly. No USB stick needed — enter codes manually via PIWIS or the engineering menu.
 
 ## How It Works
 
