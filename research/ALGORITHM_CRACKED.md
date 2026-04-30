@@ -59,7 +59,7 @@ code_string = f"{activation_code:016x}"
 |---------|----------|-------|
 | ENGINEERING | `010b0000` | Engineering menu, diagnostics |
 | BTH | `010a0000` | Bluetooth telephony |
-| KOMP | `01060000` | Component activation |
+| KOMP | `01060000` | Kompass (compass display) |
 
 ### Key Location in Firmware
 
