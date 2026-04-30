@@ -147,16 +147,20 @@ Enables the Sport Chrono display and performance measurement features on the PCM
 
 ### KOMP (SWID 0x0106)
 **Internal name:** Compass  
-**Porsche option:** Compass display  
+**Full name:** Kompass (German for Compass)  
+**Porsche option:** Included with navigation on most models  
 
-Enables the digital compass display on the PCM screen, showing the vehicle's current heading direction.
+Enables the digital compass display on the PCM screen and instrument cluster. On some models (especially Macan without navigation), the compass only appears if this feature is activated.
 
 **What it enables:**
-- Digital compass overlay on map display
+- Digital compass on the PCM "My Screen" / Car Info display
 - Cardinal direction indicator (N, NE, E, SE, S, SW, W, NW)
-- Heading display in navigation mode
+- Compass overlay in navigation map view
+- Heading display in instrument cluster (model-dependent)
 
-**How to access:** Appears as an overlay on the navigation map display
+**How to access:** CAR → My Screen (compass widget), or as an overlay on the navigation map
+
+**Note:** Not to be confused with Komponenschutz (Component Protection), which is a separate anti-theft system handled at the gateway/ECU level, not via PCM activation codes.
 
 ---
 
