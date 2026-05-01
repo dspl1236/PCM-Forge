@@ -1,7 +1,7 @@
 {
     "name": "ndr-probe",
-    "version": "2.0.0",
-    "description": "NDR devctl probe with correct DCMD constants (extracted from NavigationNdrInfo binary analysis). Read-only, safe to run.",
+    "version": "3.0.0",
+    "description": "NDR devctl probe v3 \u2014 uses dlopen for devctl, DCMD constants from binary analysis. Read-only, safe to run.",
     "author": "dspl1236",
     "status": "alpha",
     "platform": "PCM3.1",
