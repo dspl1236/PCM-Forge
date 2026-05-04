@@ -1,0 +1,25 @@
+{
+    "name": "ioc-probe",
+    "version": "1.0.0",
+    "description": "IOC channel probe — maps CAN bus interface via /dev/ipc/ioc channels, captures IPC protocol data, dumps persistence addresses, and copies factory ESD files",
+    "author": "dspl1236",
+    "status": "ready",
+    "platform": "PCM3.1",
+    "architecture_notes": [
+        "CAN bus path: PCM3Root → CGCANConnectionImpl → CHBIpcProtocol (0xFADE) → /dev/ipc/ioc/ch2,ch6,ch8 → FPGA → V850 → CAN",
+        "NDR (/dev/ndr) is for navigation/sensor data only — NOT CAN",
+        "IOC_CAN_TP1 is the UDS Transport Protocol service",
+        "All IOC channels ch2-ch10 are world-writable",
+        "ENCODER_BLOCK_IDs for CAN send: RESETBC, SET_TIME, PERSISTENCE_SETTING, PDC, RVC, COMPASS, etc.",
+        "DECODER_BLOCK_IDs for CAN recv: VEHICLE1, TRIP1/2, CONSUMPTION, HYBRID, DOOR_STATE, etc.",
+        "No SERVICE_RESET_ENCODER_BLOCK exists — Porsche excluded it"
+    ],
+    "captures": [
+        "IOC channel enumeration and permissions",
+        "Raw CAN data samples from ch2/ch6/ch8",
+        "Factory ESD files (engineering screen definitions)",
+        "Persistence address scan (service, cluster, vehicle ranges)",
+        "CVALUE persistence files",
+        "Debug tool inventory"
+    ]
+}

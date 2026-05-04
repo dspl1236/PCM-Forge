@@ -1,0 +1,11 @@
+{
+    "name": "ioc-probe",
+    "version": "1.0.0",
+    "description": "IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
+    "author": "dspl1236",
+    "status": "ready",
+    "compatible": ["PCM3.1"],
+    "standalone": true,
+    "run_script": "ioc_probe_run.sh",
+    "script_dir": "/scripts/IocProbe"
+}

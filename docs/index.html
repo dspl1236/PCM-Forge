@@ -931,8 +931,8 @@ async function tkFetchManifest() {
       'sysinfo': { status: 'ready', description: 'Complete PCM 3.1 diagnostic dump', run_script: 'sysinfo_dump.sh', script_dir: '/scripts/SysInfo', files: [] },
       'telnet':  { status: 'tested', description: 'Root shell (port 23 + 2323)', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'lte-setup': { status: 'tested', description: 'LTE DHCP networking + DNS', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] },
-      'service-reset': { status: 'experimental', description: 'Oil/inspection service reset — deploys GEM engineering screens + UDS tool', run_script: 'service_install.sh', script_dir: '/scripts/ServiceReset', files: [{path:'scripts/service_install.sh'},{path:'scripts/service_reset.sh'},{path:'scripts/service_status.sh'},{path:'scripts/service_run.sh'},{path:'bin/uds_send'},{path:'engdefs/ServiceReset.esd'},{path:'engdefs/ServiceStatus.esd'}] },
-      'ndr-probe': { status: 'ready', description: 'NDR devctl probe v5 — uses dlopen for devctl, DCMD constants from binary analysis (read-only, safe)', run_script: 'ndr_probe_run.sh', script_dir: '/scripts/NdrProbe', files: [{path:'scripts/ndr_probe_run.sh'},{path:'bin/ndr_probe'}] },
+      'service-reset': { status: 'experimental', description: 'Oil/inspection service reset — deploys GEM engineering screens + UDS tool', run_script: 'service_install.sh', script_dir: '/scripts/ServiceReset', files: [{path:'scripts/service_install.sh'},{path:'scripts/service_reset.sh'},{path:'scripts/service_status.sh'},{path:'scripts/service_run.sh'},{path:'bin/uds_send'},{path:'engdefs/ServiceReset.esd'},{path:'engdefs/ServiceStatus.esd'},{path:'engdefs/PersDump.esd'},{path:'scripts/persdump_all.sh'}] },
+      'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence and factory ESD files (read-only, safe)', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'engdefs/IocProbe.esd'}] },
     }, raw_url_base: TK_RAW_BASE };
   }
   return tkManifest;
@@ -940,11 +940,11 @@ async function tkFetchManifest() {
 
 const TK_ICONS = {
   'sysinfo': '\u{1F4C4}', 'telnet': '\u{1F5A5}', 'lte-setup': '\u{1F4E1}',
-  'service-reset': '\u{1F527}', 'ndr-probe': '\u{1F50D}', 'time-fix': '\u23F0'
+  'service-reset': '\u{1F527}', 'ioc-probe': '\u{1F50D}', 'time-fix': '\u23F0'
 };
 const TK_NAMES = {
   'sysinfo': 'System Info', 'telnet': 'Telnet Enabler', 'lte-setup': 'LTE Setup',
-  'service-reset': 'Service Reset', 'ndr-probe': 'NDR Probe v5', 'time-fix': 'Time Fix'
+  'service-reset': 'Service Reset', 'ioc-probe': 'IOC Probe', 'time-fix': 'Time Fix'
 };
 
 async function tkRenderModules() {

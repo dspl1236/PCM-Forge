@@ -1,0 +1,64 @@
+#############################################
+#  IOC Channel Probe — PCM-Forge
+#  Probes /dev/ipc/ioc CAN channels and
+#  captures IPC protocol data for analysis
+#############################################
+
+screen IocProbe System
+
+# === Run Full Probe ===
+script
+   value    sys 1 0x0100 "/scripts/IocProbe/ioc_probe.sh"
+   label    ">> RUN IOC PROBE <<"
+
+# === CAN Channel Status ===
+keyValue
+   value    int per 3 0x0010001F
+   label    "Service interval:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x0014004E
+   label    "Service protocol:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x00100033
+   label    "Oil level gauge:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x0014007D
+   label    "Oil level proto:"
+   poll     3000
+
+# === Live Vehicle Data ===
+keyValue
+   value    int per 3 0x00150000
+   label    "Cluster [150000]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150001
+   label    "Cluster [150001]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150002
+   label    "Cluster [150002]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150003
+   label    "Cluster [150003]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160000
+   label    "Cluster2 [160000]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160001
+   label    "Cluster2 [160001]:"
+   poll     2000

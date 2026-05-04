@@ -1,0 +1,126 @@
+#############################################
+#  Persistence Address Space Probe — PCM-Forge
+#  Scans key per 3 address ranges for live data
+#  Deploy to /HBpersistence/engdefs/
+#############################################
+
+screen PersDump Car
+
+# === KNOWN ADDRESSES (from CarDeviceList.esd) ===
+keyValue
+   value    int per 3 0x0010001F
+   label    "ServiceInterval [0x10001F]:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x0014004E
+   label    "ServiceProtocol [0x14004E]:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x00100033
+   label    "OilLevelGauge  [0x100033]:"
+   poll     3000
+
+keyValue
+   value    int per 3 0x0014007D
+   label    "OilLevelProto  [0x14007D]:"
+   poll     3000
+
+# === CLUSTER DATA RANGE 0x0015xxxx ===
+keyValue
+   value    int per 3 0x00150000
+   label    "Cluster  [0x150000]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150001
+   label    "Cluster  [0x150001]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150002
+   label    "Cluster  [0x150002]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150003
+   label    "Cluster  [0x150003]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150004
+   label    "Cluster  [0x150004]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150005
+   label    "Cluster  [0x150005]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150006
+   label    "Cluster  [0x150006]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150007
+   label    "Cluster  [0x150007]:"
+   poll     2000
+
+# === CLUSTER DATA RANGE 0x0016xxxx ===
+keyValue
+   value    int per 3 0x00160000
+   label    "Cluster2 [0x160000]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160001
+   label    "Cluster2 [0x160001]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160002
+   label    "Cluster2 [0x160002]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00160003
+   label    "Cluster2 [0x160003]:"
+   poll     2000
+
+# === VEHICLE DATA RANGE 0x0010xxxx ===
+keyValue
+   value    int per 3 0x00100000
+   label    "Vehicle  [0x100000]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00100001
+   label    "Vehicle  [0x100001]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00100002
+   label    "Vehicle  [0x100002]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00100010
+   label    "Vehicle  [0x100010]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00100020
+   label    "Vehicle  [0x100020]:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00100030
+   label    "Vehicle  [0x100030]:"
+   poll     2000
+
+# === DUMP EVERYTHING TO USB ===
+script
+   value    sys 1 0x0100 "/scripts/ServiceReset/persdump_all.sh"
+   label    ">> DUMP ALL PER3 TO USB <<"
