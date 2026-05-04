@@ -1,7 +1,7 @@
 {
     "name": "ndr-probe",
-    "version": "4.0.0",
-    "description": "NDR devctl probe v4 \u2014 dlopen for devctl, correct DCMD buffer sizes (4 bytes). Read-only, safe to run.",
+    "version": "5.0.0",
+    "description": "NDR devctl probe v5 \u2014 ultra-minimal, all buffers in BSS (zero stack). Read-only, safe to run.",
     "author": "dspl1236",
     "status": "alpha",
     "platform": "PCM3.1",

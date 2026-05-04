@@ -932,7 +932,7 @@ async function tkFetchManifest() {
       'telnet':  { status: 'tested', description: 'Root shell (port 23 + 2323)', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'lte-setup': { status: 'tested', description: 'LTE DHCP networking + DNS', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] },
       'service-reset': { status: 'experimental', description: 'Oil/inspection reset via UDS CAN (requires cross-compiled binary)', run_script: 'service_reset.sh', script_dir: '/scripts/ServiceReset', files: [] },
-      'ndr-probe': { status: 'ready', description: 'NDR devctl probe v4 — uses dlopen for devctl, DCMD constants from binary analysis (read-only, safe)', run_script: 'ndr_probe_run.sh', script_dir: '/scripts/NdrProbe', files: [{path:'scripts/ndr_probe_run.sh'},{path:'bin/ndr_probe'}] },
+      'ndr-probe': { status: 'ready', description: 'NDR devctl probe v5 — uses dlopen for devctl, DCMD constants from binary analysis (read-only, safe)', run_script: 'ndr_probe_run.sh', script_dir: '/scripts/NdrProbe', files: [{path:'scripts/ndr_probe_run.sh'},{path:'bin/ndr_probe'}] },
     }, raw_url_base: TK_RAW_BASE };
   }
   return tkManifest;
@@ -944,7 +944,7 @@ const TK_ICONS = {
 };
 const TK_NAMES = {
   'sysinfo': 'System Info', 'telnet': 'Telnet Enabler', 'lte-setup': 'LTE Setup',
-  'service-reset': 'Service Reset', 'ndr-probe': 'NDR Probe v4', 'time-fix': 'Time Fix'
+  'service-reset': 'Service Reset', 'ndr-probe': 'NDR Probe v5', 'time-fix': 'Time Fix'
 };
 
 async function tkRenderModules() {
