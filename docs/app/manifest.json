@@ -48,32 +48,6 @@
         }
       ]
     },
-    "ndr-probe": {
-      "status": "alpha",
-      "description": "Probe NDR devctl command format. Tries ~450 class/cmd combinations against /dev/ndr/cmd to discover the correct devctl interface for CAN/UDS communication. Results logged to ndr_probe.log on USB.",
-      "standalone": true,
-      "run_script": "ndr_probe_run.sh",
-      "script_dir": "/scripts/NdrProbe",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {},
-      "files": [
-        {
-          "path": "module.json",
-          "size": 518
-        },
-        {
-          "path": "bin/ndr_probe",
-          "size": 66264
-        },
-        {
-          "path": "scripts/ndr_probe_run.sh",
-          "size": 4583
-        }
-      ]
-    },
     "service-reset": {
       "status": "alpha",
       "description": "Oil service and inspection interval reset via UDS CAN. Sends WriteDataByIdentifier to instrument cluster. No PIWIS needed.",
@@ -173,6 +147,36 @@
         {
           "path": "scripts/telnet_enable.sh",
           "size": 1377
+        }
+      ]
+    },
+    "ioc-probe": {
+      "status": "ready",
+      "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures raw CAN bus data from ch2/ch6/ch8, dumps persistence addresses, copies factory ESD and CVALUE files to USB. Read-only, safe.",
+      "standalone": true,
+      "run_script": "ioc_probe_run.sh",
+      "script_dir": "/scripts/IocProbe",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 400
+        },
+        {
+          "path": "scripts/ioc_probe_run.sh",
+          "size": 600
+        },
+        {
+          "path": "scripts/ioc_probe.sh",
+          "size": 5500
+        },
+        {
+          "path": "engdefs/IocProbe.esd",
+          "size": 1200
         }
       ]
     }
