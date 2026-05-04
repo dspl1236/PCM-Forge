@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27",
+  "generated": "2026-05-04",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -10,6 +10,36 @@
     "lib_activating_done_png": "core/lib/activating-done.png"
   },
   "modules": {
+    "ioc-probe": {
+      "status": "ready",
+      "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
+      "standalone": true,
+      "run_script": "ioc_probe_run.sh",
+      "script_dir": "/scripts/IocProbe",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 403
+        },
+        {
+          "path": "scripts/ioc_probe.sh",
+          "size": 6932
+        },
+        {
+          "path": "scripts/ioc_probe_run.sh",
+          "size": 654
+        },
+        {
+          "path": "engdefs/IocProbe.esd",
+          "size": 1336
+        }
+      ]
+    },
     "lte-setup": {
       "status": "tested",
       "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.",
@@ -65,16 +95,32 @@
           "size": 450
         },
         {
-          "path": "bin/uds_send",
-          "size": 66268
+          "path": "scripts/build_on_target.sh",
+          "size": 2081
         },
         {
-          "path": "bin/uds_send.c",
-          "size": 5961
+          "path": "scripts/persdump_all.sh",
+          "size": 3797
         },
         {
-          "path": "bin/uds_send.o",
-          "size": 3696
+          "path": "scripts/service_install.sh",
+          "size": 2919
+        },
+        {
+          "path": "scripts/service_reset.sh",
+          "size": 3502
+        },
+        {
+          "path": "scripts/service_run.sh",
+          "size": 1719
+        },
+        {
+          "path": "scripts/service_status.sh",
+          "size": 1150
+        },
+        {
+          "path": "engdefs/PersDump.esd",
+          "size": 2681
         },
         {
           "path": "engdefs/ServiceReset.esd",
@@ -85,24 +131,16 @@
           "size": 1499
         },
         {
-          "path": "scripts/build_on_target.sh",
-          "size": 2081
+          "path": "bin/uds_send",
+          "size": 66268
         },
         {
-          "path": "scripts/service_install.sh",
-          "size": 2355
+          "path": "bin/uds_send.c",
+          "size": 5961
         },
         {
-          "path": "scripts/service_reset.sh",
-          "size": 3522
-        },
-        {
-          "path": "scripts/service_run.sh",
-          "size": 1719
-        },
-        {
-          "path": "scripts/service_status.sh",
-          "size": 1150
+          "path": "bin/uds_send.o",
+          "size": 3696
         }
       ]
     },
@@ -147,36 +185,6 @@
         {
           "path": "scripts/telnet_enable.sh",
           "size": 1377
-        }
-      ]
-    },
-    "ioc-probe": {
-      "status": "ready",
-      "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures raw CAN bus data from ch2/ch6/ch8, dumps persistence addresses, copies factory ESD and CVALUE files to USB. Read-only, safe.",
-      "standalone": true,
-      "run_script": "ioc_probe_run.sh",
-      "script_dir": "/scripts/IocProbe",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {},
-      "files": [
-        {
-          "path": "module.json",
-          "size": 400
-        },
-        {
-          "path": "scripts/ioc_probe_run.sh",
-          "size": 600
-        },
-        {
-          "path": "scripts/ioc_probe.sh",
-          "size": 5500
-        },
-        {
-          "path": "engdefs/IocProbe.esd",
-          "size": 1200
         }
       ]
     }
