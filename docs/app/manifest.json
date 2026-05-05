@@ -28,7 +28,7 @@
         },
         {
           "path": "scripts/ioc_probe.sh",
-          "size": 9754
+          "size": 11206
         },
         {
           "path": "scripts/ioc_probe_run.sh",

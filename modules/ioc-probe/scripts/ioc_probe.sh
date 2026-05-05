@@ -312,6 +312,55 @@ else
     echo "  showScreen binary not available" >> "$LOG"
 fi
 
+# === 12. BOOT SCREEN & STORAGE ===
+echo "" >> "$LOG"
+echo "--- Boot Screen & Storage ---" >> "$LOG"
+
+# HDD boot screens (factory images — where custom screen would go)
+echo "  /mnt/share/bootscreens/:" >> "$LOG"
+ls -la /mnt/share/bootscreens/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# Count and total size
+echo "  Factory boot screen count:" >> "$LOG"
+ls /mnt/share/bootscreens/CustomBootscreen_*.bin 2>/dev/null | wc -l >> "$LOG"
+echo "" >> "$LOG"
+
+# Current persistence boot screen
+echo "  /HBpersistence/CustomBootscreen*:" >> "$LOG"
+ls -la /HBpersistence/CustomBootscreen* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# Copy current boot screen to USB for reference
+for bs in /HBpersistence/CustomBootscreen_*.bin; do
+    [ -f "$bs" ] && cp "$bs" "$DUMPDIR/" 2>/dev/null
+done
+
+# Disk space — critical for boot screen sizing
+echo "  Disk space:" >> "$LOG"
+df -h >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# Persistence partition specifically
+echo "  /HBpersistence space:" >> "$LOG"
+df /HBpersistence/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# HDD share partition
+echo "  /mnt/share space:" >> "$LOG"
+df /mnt/share/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# IFS boot screen (the Porsche crest fallback)
+echo "  IFS fallback boot screen:" >> "$LOG"
+ls -la /proc/boot/PCM31_bootScreenPorscheLogo.jpg >> "$LOG" 2>&1
+
+# Firmware version
+echo "" >> "$LOG"
+echo "  Firmware version:" >> "$LOG"
+cat /mnt/ifs1/HBproject/version.txt >> "$LOG" 2>&1
+cat /HBproject/version.txt >> "$LOG" 2>&1
+
 echo "" >> "$LOG"
 echo "=== Probe complete. Files in $DUMPDIR ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1
