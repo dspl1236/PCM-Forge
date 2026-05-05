@@ -161,7 +161,7 @@ which is trusted by the PCM when the 0xFF signature is there.
 5. Executes as root with /bin/ksh
 6. Script copies PagSWAct.002 to /HBpersistence/PagSWAct.002
 7. Touches /HBpersistence/DBGModeActive
-8. PCM reboot validates and activates features
+8. Hard reboot (hold INFO + CAR) validates and activates features
 ```
 
 No firmware update required. No signed update bundle. No dealer tool.

@@ -79,7 +79,7 @@ See [research/PCM31_CONNECTIVITY.md](research/PCM31_CONNECTIVITY.md) for the ful
 3. Uncheck Diagnostic mode
 4. Click **Select all** to keep all existing features (or pick individual ones)
 5. Click **Save to folder** → select your FAT32 USB drive
-6. Insert USB after PCM has booted, wait 60–90 seconds, remove, cycle ignition
+6. Insert USB after PCM has booted, wait 60–90 seconds, remove, hard reboot (hold **INFO + CAR** until screen goes black)
 
 ⚠️ The activation file (`PagSWAct.002`) **replaces all existing activations**. Only the features you select will be active — anything not selected gets deactivated. Always use **Select all** and then add new features on top.
 

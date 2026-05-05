@@ -33,7 +33,7 @@ touch /HBpersistence/DBGModeActive
 sync
 ```
 
-The script copies the activation file to internal storage and creates the engineering mode flag. On next boot, `PCM3Root` reads `/HBpersistence/PagSWAct.002` and validates each activation code against the VIN using `CPPorscheEncrypter::verify`.
+The script copies the activation file to internal storage and creates the engineering mode flag. After removing the USB, hard reboot the PCM (hold **INFO + CAR** simultaneously until the screen goes black). On restart, `PCM3Root` reads `/HBpersistence/PagSWAct.002` and validates each activation code against the VIN using `CPPorscheEncrypter::verify`.
 
 ## PagSWAct.002 Binary Format
 
