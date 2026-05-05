@@ -100,12 +100,24 @@ if (imgA > mmiA) { dh = 480 * zoom; dw = dh * imgA; }
 else { dw = 800 * zoom; dh = dw / imgA; }
 ctx.drawImage(sourceImg, (800 - dw) / 2 + panX, (480 - dh) / 2 + panY, dw, dh);
 
-// Export as PNG Uint8Array for USB bundle
-canvas.toBlob((blob) => {
-  blob.arrayBuffer().then(buf => {
-    customBootscreenBytes = new Uint8Array(buf);  // ready for USB
-  });
-}, 'image/png');
+// Export as JPEG with auto-quality stepping to fit under 55KB
+// PCM 3.1 renders JPEG natively (boot_099 is JPEG in factory firmware)
+const maxBytes = 55000;
+const qualities = [0.92, 0.85, 0.78, 0.70, 0.60, 0.50];
+let step = 0;
+function tryQuality() {
+  const q = qualities[step] || 0.50;
+  canvas.toBlob(function(blob) {
+    if (blob.size > maxBytes && step < qualities.length - 1) {
+      step++;
+      tryQuality();
+      return;
+    }
+    // blob is the final JPEG, ready for USB bundle
+    customBootscreenBytes = new Uint8Array(await blob.arrayBuffer());
+  }, 'image/jpeg', q);
+}
+tryQuality();
 ```
 
 **Reference implementation:** `MMI3G-Toolkit/docs/app/index.html` lines 687–714
@@ -147,29 +159,29 @@ Change to:
 
 ```bash
 # Install custom boot screen ONLY if one is on the USB
+# Only write to HDD — PCM3Root automatically copies to /HBpersistence/
+# on boot when it finds the file matching the FeatureLevel SubID
 if [ -f "${USBROOT}/CustomBootscreen_100.bin" ]; then
-    rm -f /HBpersistence/CustomBootscreen_100.bin
-    rm -f /mnt/share/bootscreens/CustomBootscreen_100.bin
-    cp "${USBROOT}/CustomBootscreen_100.bin" /HBpersistence/ 2>/dev/null
     cp "${USBROOT}/CustomBootscreen_100.bin" /mnt/share/bootscreens/ 2>/dev/null
 fi
-# Factory boot screens (non-custom) still use the existing loop
-for bs in "${USBROOT}"/CustomBootscreen_*.bin; do
-    [ -f "$bs" ] && [ "$(basename "$bs")" != "CustomBootscreen_100.bin" ] && \
-        cp "$bs" /HBpersistence/ 2>/dev/null
-done
 ```
 
-If no `CustomBootscreen_100.bin` is on the USB (user didn't select Custom),
-existing custom and factory boot screens are left untouched.
+PCM3Root handles the persistence copy automatically on boot:
+1. Reads FeatureLevel SubID from PagSWAct.002
+2. Checks `/HBpersistence/CustomBootscreen_100.bin` — not there
+3. Finds `/mnt/share/bootscreens/CustomBootscreen_100.bin` on HDD
+4. Runs `system()` to copy HDD → flash
+5. Displays it
+
+One line in run.sh. No persistence juggling.
 
 ## Constraints
 
 | Constraint | Value | Source |
 |-----------|-------|--------|
 | Resolution | 800 × 480 | All 79 factory screens |
-| Format | PNG (8-bit RGB) | Factory standard (099 is JPEG exception) |
-| Max file size | ~60 KB recommended | HBpersistence flash space is limited |
+| Format | JPEG (auto-quality) | PCM renders JPEG natively (boot_099) |
+| Max file size | 55 KB target | Auto-quality steps down to fit |
 | Slot number | 100 (fixed) | First slot outside factory range (001–099) |
 | SubID | 0x0064 | Hex for slot 100 |
 | Simultaneous custom screens | 1 | One slot, always overwritten |
@@ -203,7 +215,12 @@ No special "restore" flow needed — just pick the factory model.
 **Slot 100 is only touched when `CustomBootscreen_100.bin` is on the USB.**
 If a user runs an activation USB for other features (Nav, Phone, etc.)
 without selecting Custom boot screen, their existing custom screen is
-preserved. The `rm -f` + `cp` only fires conditionally.
+preserved. The HDD copy only happens conditionally.
+
+PCM3Root handles persistence automatically — `run.sh` only writes to
+`/mnt/share/bootscreens/` (HDD). No `rm -f` needed since the HDD file
+is overwritten in place by `cp`, and PCM3Root re-copies from HDD to
+flash on the next boot when the SubID matches.
 
 ## What NOT to Build
 

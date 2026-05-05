@@ -407,26 +407,40 @@ function handleCustomBootFile(file, previewId) {
       if (imgA > mmiA) { dh = 480; dw = dh * imgA; }
       else { dw = 800; dh = dw / imgA; }
       ctx.drawImage(img, (800 - dw) / 2, (480 - dh) / 2, dw, dh);
-      // Show preview
+      // Show preview (PNG for sharp browser display)
       const previewDiv = document.getElementById(previewId);
       const previewImg = previewDiv ? previewDiv.querySelector('img') : null;
       if (previewDiv && previewImg) {
         previewImg.src = canvas.toDataURL('image/png');
         previewDiv.style.display = 'block';
       }
-      // Update size info
-      canvas.toBlob(function(blob) {
-        blob.arrayBuffer().then(function(buf) {
-          customBootscreenBytes = new Uint8Array(buf);
-          const sizeEl = document.getElementById('custom-boot-size');
-          if (sizeEl) {
-            const kb = (customBootscreenBytes.length / 1024).toFixed(1);
-            const warn = customBootscreenBytes.length > 60000 ? ' \u26A0 Large file — may not fit on flash' : '';
-            sizeEl.textContent = img.width + '\u00D7' + img.height + ' \u2192 800\u00D7480 PNG (' + kb + ' KB)' + warn;
-            sizeEl.style.color = customBootscreenBytes.length > 60000 ? '#dc3c3c' : '#888';
+      // Export as JPEG with auto-quality stepping to fit under 55KB
+      // PCM 3.1 renders JPEG natively (boot_099 is JPEG in factory firmware)
+      const maxBytes = 55000;
+      const qualities = [0.92, 0.85, 0.78, 0.70, 0.60, 0.50];
+      let step = 0;
+      function tryQuality() {
+        const q = qualities[step] || 0.50;
+        canvas.toBlob(function(blob) {
+          if (blob.size > maxBytes && step < qualities.length - 1) {
+            step++;
+            tryQuality();
+            return;
           }
-        });
-      }, 'image/png');
+          blob.arrayBuffer().then(function(buf) {
+            customBootscreenBytes = new Uint8Array(buf);
+            const sizeEl = document.getElementById('custom-boot-size');
+            if (sizeEl) {
+              const kb = (customBootscreenBytes.length / 1024).toFixed(1);
+              const qPct = Math.round((qualities[step] || 0.50) * 100);
+              const ok = customBootscreenBytes.length <= maxBytes;
+              sizeEl.textContent = img.width + '\u00D7' + img.height + ' \u2192 800\u00D7480 JPEG @ ' + qPct + '% (' + kb + ' KB)' + (ok ? ' \u2713' : ' \u26A0 Still large');
+              sizeEl.style.color = ok ? '#4a8' : '#dc3c3c';
+            }
+          });
+        }, 'image/jpeg', q);
+      }
+      tryQuality();
     };
     img.src = e.target.result;
   };
