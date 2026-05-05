@@ -113,21 +113,22 @@ done
 Change to:
 
 ```bash
-# Clean any previous custom boot screen (slot 100)
-rm -f /HBpersistence/CustomBootscreen_100.bin
-rm -f /mnt/share/bootscreens/CustomBootscreen_100.bin
-# Install new custom boot screen to both locations
+# Install custom boot screen ONLY if one is on the USB
+if [ -f "${USBROOT}/CustomBootscreen_100.bin" ]; then
+    rm -f /HBpersistence/CustomBootscreen_100.bin
+    rm -f /mnt/share/bootscreens/CustomBootscreen_100.bin
+    cp "${USBROOT}/CustomBootscreen_100.bin" /HBpersistence/ 2>/dev/null
+    cp "${USBROOT}/CustomBootscreen_100.bin" /mnt/share/bootscreens/ 2>/dev/null
+fi
+# Factory boot screens (non-custom) still use the existing loop
 for bs in "${USBROOT}"/CustomBootscreen_*.bin; do
-    [ -f "$bs" ] && {
+    [ -f "$bs" ] && [ "$(basename "$bs")" != "CustomBootscreen_100.bin" ] && \
         cp "$bs" /HBpersistence/ 2>/dev/null
-        cp "$bs" /mnt/share/bootscreens/ 2>/dev/null
-    }
 done
 ```
 
-Writing to both locations ensures:
-- `/HBpersistence/` — immediate use on next boot
-- `/mnt/share/bootscreens/` — survives if persistence is wiped
+If no `CustomBootscreen_100.bin` is on the USB (user didn't select Custom),
+existing custom and factory boot screens are left untouched.
 
 ## Constraints
 
@@ -163,6 +164,13 @@ If a user wants to go back to their car's factory boot screen:
 - `run.sh` removes slot 100 and the factory screen loads from HDD
 
 No special "restore" flow needed — just pick the factory model.
+
+## Key Design Rule
+
+**Slot 100 is only touched when `CustomBootscreen_100.bin` is on the USB.**
+If a user runs an activation USB for other features (Nav, Phone, etc.)
+without selecting Custom boot screen, their existing custom screen is
+preserved. The `rm -f` + `cp` only fires conditionally.
 
 ## What NOT to Build
 
