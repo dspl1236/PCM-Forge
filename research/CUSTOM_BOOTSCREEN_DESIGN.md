@@ -69,14 +69,47 @@ When any factory model is selected:
 
 ### Image Processing (client-side)
 
+Proven pattern from MMI3G-Toolkit splash screen builder (same 800×480 resolution).
+Accepts **any image format** the browser supports (PNG, JPG, WebP, HEIC, BMP, GIF, etc.)
+— the browser handles format conversion automatically.
+
 ```javascript
-// On file upload:
-// 1. Load into Image element
-// 2. Draw to 800x480 canvas (letterbox or stretch — TBD)
-// 3. Export as PNG blob via canvas.toBlob('image/png')
-// 4. Check size — warn if > 60KB
-// 5. Store as Uint8Array for USB bundle
+// handleFile — accepts image/*
+const handleFile = (f) => {
+  if (!f || !f.type.startsWith("image/")) return;
+  const r = new FileReader();
+  r.onload = (e) => {
+    const img = new Image();
+    img.onload = () => { setSourceImg(img); };
+    img.src = e.target.result;
+  };
+  r.readAsDataURL(f);
+};
+
+// processImage — canvas resize to 800x480
+const canvas = document.createElement('canvas');
+canvas.width = 800; canvas.height = 480;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#000';
+ctx.fillRect(0, 0, 800, 480);              // black letterbox fill
+// Aspect-ratio fit with zoom/pan (see MMI3G-Toolkit for sliders)
+const imgA = sourceImg.width / sourceImg.height;
+const mmiA = 800 / 480;
+let dw, dh;
+if (imgA > mmiA) { dh = 480 * zoom; dw = dh * imgA; }
+else { dw = 800 * zoom; dh = dw / imgA; }
+ctx.drawImage(sourceImg, (800 - dw) / 2 + panX, (480 - dh) / 2 + panY, dw, dh);
+
+// Export as PNG Uint8Array for USB bundle
+canvas.toBlob((blob) => {
+  blob.arrayBuffer().then(buf => {
+    customBootscreenBytes = new Uint8Array(buf);  // ready for USB
+  });
+}, 'image/png');
 ```
+
+**Reference implementation:** `MMI3G-Toolkit/docs/app/index.html` lines 687–714
+(splash screen tab — identical resolution, proven in production).
 
 ### FeatureLevel Code Generation
 
