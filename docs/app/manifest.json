@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-04",
+  "generated": "2026-05-05",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -28,7 +28,7 @@
         },
         {
           "path": "scripts/ioc_probe.sh",
-          "size": 6932
+          "size": 9754
         },
         {
           "path": "scripts/ioc_probe_run.sh",

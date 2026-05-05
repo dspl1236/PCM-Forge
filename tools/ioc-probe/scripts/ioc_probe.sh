@@ -221,6 +221,97 @@ for t in taco persdump2 showScreen mmecli vi ping sqlite_console find; do
     fi
 done
 
+# === 11. DISPLAY STACK PROBE ===
+echo "" >> "$LOG"
+echo "--- Display Stack ---" >> "$LOG"
+
+# Layer manager device
+echo "  /dev/layermanager:" >> "$LOG"
+ls -la /dev/layermanager >> "$LOG" 2>&1
+
+# Display processes
+echo "" >> "$LOG"
+echo "  Display processes:" >> "$LOG"
+pidin ar 2>/dev/null | grep -i "layer\|display\|carmine\|io-display\|PCM3Root\|PCM3Boot\|showScreen" >> "$LOG" 2>&1
+
+# Graphics devices
+echo "" >> "$LOG"
+echo "  Graphics devices:" >> "$LOG"
+ls -la /dev/gf* >> "$LOG" 2>&1
+ls -la /dev/io-display* >> "$LOG" 2>&1
+ls -la /dev/pv* >> "$LOG" 2>&1
+
+# Display config
+echo "" >> "$LOG"
+echo "  Display config:" >> "$LOG"
+cat /etc/system/config/display.conf >> "$LOG" 2>&1
+
+# Image codec config (what formats are supported)
+echo "" >> "$LOG"
+echo "  Image codec config:" >> "$LOG"
+cat /etc/system/config/img.conf >> "$LOG" 2>&1
+
+# Layer manager config
+echo "" >> "$LOG"
+echo "  Layer manager config:" >> "$LOG"
+for cfg in /etc/layermanager*.cfg /etc/system/config/layermanager*.cfg; do
+    if [ -f "$cfg" ]; then
+        echo "  === $cfg ===" >> "$LOG"
+        cat "$cfg" >> "$LOG" 2>&1
+        echo "" >> "$LOG"
+        cp "$cfg" "$DUMPDIR/" 2>/dev/null
+    fi
+done
+
+# Carmine GPU config
+echo "" >> "$LOG"
+echo "  Carmine GPU config:" >> "$LOG"
+for cfg in /etc/system/config/carmine*.conf; do
+    if [ -f "$cfg" ]; then
+        echo "  === $cfg ===" >> "$LOG"
+        cat "$cfg" >> "$LOG" 2>&1
+        cp "$cfg" "$DUMPDIR/" 2>/dev/null
+    fi
+done
+
+# showScreen test — try with waitfor to test timing theory
+echo "" >> "$LOG"
+echo "  showScreen test:" >> "$LOG"
+SS=""
+for s in "$USB/bin/showScreen" /usr/bin/showScreen; do
+    [ -f "$s" ] && SS="$s" && break
+done
+if [ -n "$SS" ]; then
+    # Copy to tmpfs (some QNX versions won't exec from USB)
+    TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs
+    cp "$SS" "$TMPD/showScreen" 2>/dev/null
+    chmod +x "$TMPD/showScreen" 2>/dev/null
+
+    # Test 1: direct (this is what currently fails)
+    echo "  Test 1 (direct):" >> "$LOG"
+    "$TMPD/showScreen" 2>> "$LOG"
+    echo "  exit code: $?" >> "$LOG"
+
+    # Test 2: with waitfor (tests timing theory)
+    echo "  Test 2 (waitfor layermanager):" >> "$LOG"
+    if waitfor /dev/layermanager 5 2>/dev/null; then
+        echo "  waitfor: /dev/layermanager EXISTS" >> "$LOG"
+        # Try showing a test image for 3 seconds
+        if [ -f "$USB/lib/running.png" ]; then
+            "$TMPD/showScreen" -t 3 "$USB/lib/running.png" >> "$LOG" 2>&1
+            echo "  showScreen -t 3: exit code $?" >> "$LOG"
+        fi
+    else
+        echo "  waitfor: /dev/layermanager NOT FOUND (timing theory confirmed)" >> "$LOG"
+    fi
+
+    # Test 3: direct GF bypass (no layer manager)
+    echo "  Test 3 (GF devices):" >> "$LOG"
+    ls -la /dev/gf* >> "$LOG" 2>&1
+else
+    echo "  showScreen binary not available" >> "$LOG"
+fi
+
 echo "" >> "$LOG"
 echo "=== Probe complete. Files in $DUMPDIR ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1
