@@ -70,7 +70,7 @@ See [research/PCM31_CONNECTIVITY.md](research/PCM31_CONNECTIVITY.md) for the ful
 3. Enter your 17-digit VIN
 4. Leave **Diagnostic mode** checked (default)
 5. Click **Save to folder** → select your FAT32 USB drive
-6. Insert USB into car with ignition ON, wait 60–90 seconds
+6. Insert USB **after the PCM has fully booted** (wait for the home screen — do NOT insert before starting the car), wait 60–90 seconds
 7. Remove USB — check for `pcm_debug.log` and `pcm_dump/` folder on the drive
 
 ### Step 2: Activate Features
@@ -79,7 +79,7 @@ See [research/PCM31_CONNECTIVITY.md](research/PCM31_CONNECTIVITY.md) for the ful
 3. Uncheck Diagnostic mode
 4. Click **Select all** to keep all existing features (or pick individual ones)
 5. Click **Save to folder** → select your FAT32 USB drive
-6. Insert USB, wait 60–90 seconds, remove, cycle ignition
+6. Insert USB after PCM has booted, wait 60–90 seconds, remove, cycle ignition
 
 ⚠️ The activation file (`PagSWAct.002`) **replaces all existing activations**. Only the features you select will be active — anything not selected gets deactivated. Always use **Select all** and then add new features on top.
 

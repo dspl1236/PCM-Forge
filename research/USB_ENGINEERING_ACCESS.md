@@ -13,6 +13,11 @@ The PCM 3.1 uses the **same `copie_scr.sh` autorun mechanism as the Audi MMI3G**
 6. Decoded script is saved to `/HBpersistence/copie_scr.sh`
 7. Script is executed with `/bin/ksh`
 
+> **Critical timing:** The USB must be inserted **after** the PCM has fully booted
+> (home screen visible). `proc_scriptlauncher` monitors for USB insert *events* —
+> a drive already present at boot is treated as media storage and the script is
+> never triggered.
+
 ### USB Stick Contents
 ```
 USB Root (FAT32)/

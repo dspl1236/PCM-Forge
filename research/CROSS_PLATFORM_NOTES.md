@@ -154,8 +154,8 @@ which is trusted by the PCM when the 0xFF signature is there.
 ### PCM 3.1: `proc_scriptlauncher` + `copie_scr.sh`
 
 ```
-1. USB inserted at /fs/usb0
-2. proc_scriptlauncher (running as root) sees new mount
+1. USB inserted at /fs/usb0 (AFTER PCM has fully booted — not before ignition)
+2. proc_scriptlauncher (running as root) sees new mount event
 3. Looks for /fs/usb0/copie_scr.sh
 4. XOR-decodes with PRNG (seed=0 → identity XOR → plaintext works)
 5. Executes as root with /bin/ksh
