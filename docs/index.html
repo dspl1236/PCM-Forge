@@ -292,6 +292,8 @@ function generateCode(vin, featHex) {
 
 // ===== Models =====
 const MODELS = {
+  // Custom boot screen (slot 100, outside factory range)
+  'custom':           [0x0064, '\u{1F5BC} Custom \u2014 Upload your own'],
   // 911 (997) Coupe
   '911':              [0x0001, '911 (997)'],
   '911-carrera':      [0x0002, '911 (997) Carrera'],
@@ -383,6 +385,69 @@ const MODELS = {
   '911-991-2':        [0x0061, '911 (991.2)'],
   '911-991-2-cab':    [0x0062, '911 (991.2) Cab'],
 };
+
+// === Custom Boot Screen State ===
+let customBootscreenBytes = null;  // Uint8Array of processed PNG, or null
+
+function handleCustomBootFile(file, previewId) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Draw to 800x480 canvas with black letterbox
+      const canvas = document.createElement('canvas');
+      canvas.width = 800; canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 800, 480);
+      const imgA = img.width / img.height;
+      const mmiA = 800 / 480;
+      let dw, dh;
+      if (imgA > mmiA) { dh = 480; dw = dh * imgA; }
+      else { dw = 800; dh = dw / imgA; }
+      ctx.drawImage(img, (800 - dw) / 2, (480 - dh) / 2, dw, dh);
+      // Show preview
+      const previewDiv = document.getElementById(previewId);
+      const previewImg = previewDiv ? previewDiv.querySelector('img') : null;
+      if (previewDiv && previewImg) {
+        previewImg.src = canvas.toDataURL('image/png');
+        previewDiv.style.display = 'block';
+      }
+      // Update size info
+      canvas.toBlob(function(blob) {
+        blob.arrayBuffer().then(function(buf) {
+          customBootscreenBytes = new Uint8Array(buf);
+          const sizeEl = document.getElementById('custom-boot-size');
+          if (sizeEl) {
+            const kb = (customBootscreenBytes.length / 1024).toFixed(1);
+            const warn = customBootscreenBytes.length > 60000 ? ' \u26A0 Large file — may not fit on flash' : '';
+            sizeEl.textContent = img.width + '\u00D7' + img.height + ' \u2192 800\u00D7480 PNG (' + kb + ' KB)' + warn;
+            sizeEl.style.color = customBootscreenBytes.length > 60000 ? '#dc3c3c' : '#888';
+          }
+        });
+      }, 'image/png');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showCustomUpload(selectId, previewId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const isCustom = sel.value === 'custom';
+  // Find the upload zone (sibling of the preview div)
+  const uploadId = previewId.replace('preview', 'upload');
+  const uploadDiv = document.getElementById(uploadId);
+  if (uploadDiv) uploadDiv.style.display = isCustom ? 'block' : 'none';
+  // If switching away from custom, clear the bytes
+  if (!isCustom) {
+    customBootscreenBytes = null;
+    const sizeEl = document.getElementById('custom-boot-size');
+    if (sizeEl) sizeEl.textContent = '';
+  }
+}
 
 function featuresFor(flSubId) {
   const flHex = '010e' + flSubId.toString(16).padStart(4, '0');
@@ -559,6 +624,13 @@ function updateBootPreview(selectId, previewId, imgId) {
   const img = document.getElementById(imgId);
   if (!sel || !preview || !img) return;
   const modelKey = sel.value;
+  // Handle custom boot screen
+  showCustomUpload(selectId, previewId);
+  if (modelKey === 'custom') {
+    // If we already have a custom image, keep showing it; otherwise hide factory preview
+    if (!customBootscreenBytes) { preview.style.display = 'none'; }
+    return;
+  }
   const [subid] = MODELS[modelKey] || [0];
   const num = subid.toString().padStart(3, '0');
   const src = 'bootscreens/boot_' + num + '.png';
@@ -711,6 +783,19 @@ function usbBuildFeatureGrid() {
       div.innerHTML = `<input type="checkbox" data-hex="${f.hex}" data-is-fl="1">
         <div><div class="feat-name">${f.name}</div><div class="feat-desc">Boot logo — select your model:</div>
         <select id="boot-model-2" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="updateBootPreview('boot-model-2','boot-preview-2','boot-img-2')"></select>
+        <div id="boot-upload-2" style="display:none;margin-top:10px">
+          <div style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s"
+               onclick="this.querySelector('input').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor='var(--border)'"
+               ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleCustomBootFile(event.dataTransfer.files[0],'boot-preview-2')">
+            <input type="file" accept="image/*" style="display:none" onchange="handleCustomBootFile(this.files[0],'boot-preview-2')">
+            <div style="font-size:22px;margin-bottom:4px">\u{1F5BC}</div>
+            <div style="font-size:12px;color:var(--text2)">Drop image here or click to browse</div>
+            <div style="font-size:11px;color:#666;margin-top:4px">PNG, JPG, or any image \u2014 resized to 800\u00D7480</div>
+          </div>
+          <div id="custom-boot-size" style="font-size:11px;margin-top:6px;font-family:var(--mono)"></div>
+        </div>
         <div id="boot-preview-2" style="margin-top:10px;display:none;border-radius:6px;overflow:hidden;border:1px solid var(--border);max-width:320px">
           <img id="boot-img-2" style="width:100%;display:block" alt="Boot screen preview">
         </div></div>`;
@@ -869,6 +954,13 @@ async function usbSaveFiles() {
       }
 
       let binCount = 3;
+
+      // Write CustomBootscreen_100.bin (if custom boot screen uploaded)
+      if (customBootscreenBytes) {
+        fh = await dh.getFileHandle('CustomBootscreen_100.bin', {create:true});
+        w = await fh.createWritable(); await w.write(customBootscreenBytes); await w.close();
+        binCount++;
+      }
 
       // Write bin/showScreen
       if (assets.showScreen) {
