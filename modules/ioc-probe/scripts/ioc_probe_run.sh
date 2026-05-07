@@ -3,19 +3,27 @@
 # Part of PCM-Forge
 
 USBROOT="${1:-/fs/usb0}"
-SCRIPTDIR="/scripts/IocProbe"
 
-# Install probe script
-# Web app places files at $USBROOT/scripts/ (flat structure)
-mkdir -p "$SCRIPTDIR" 2>/dev/null
+# Run probe directly from USB (root filesystem is read-only)
+PROBE=""
 if [ -f "$USBROOT/scripts/ioc_probe.sh" ]; then
-    cp "$USBROOT/scripts/ioc_probe.sh" "$SCRIPTDIR/" 2>/dev/null
+    PROBE="$USBROOT/scripts/ioc_probe.sh"
 elif [ -f "$USBROOT/ioc-probe/scripts/ioc_probe.sh" ]; then
-    cp "$USBROOT/ioc-probe/scripts/ioc_probe.sh" "$SCRIPTDIR/" 2>/dev/null
+    PROBE="$USBROOT/ioc-probe/scripts/ioc_probe.sh"
 fi
-chmod 755 "$SCRIPTDIR/ioc_probe.sh" 2>/dev/null
 
-# Install ESD screens
+if [ -n "$PROBE" ]; then
+    chmod 755 "$PROBE" 2>/dev/null
+    ksh "$PROBE"
+else
+    echo "ERROR: ioc_probe.sh not found" >> "$USBROOT/ioc_probe.log"
+    echo "Searched:" >> "$USBROOT/ioc_probe.log"
+    echo "  $USBROOT/scripts/ioc_probe.sh" >> "$USBROOT/ioc_probe.log"
+    echo "  $USBROOT/ioc-probe/scripts/ioc_probe.sh" >> "$USBROOT/ioc_probe.log"
+    ls -laR "$USBROOT/scripts/" >> "$USBROOT/ioc_probe.log" 2>&1
+fi
+
+# Install ESD screens (HBpersistence IS writable)
 for d in "/HBpersistence/engdefs" "/mnt/efs-system/engdefs"; do
     if [ -d "$d" ] || mkdir -p "$d" 2>/dev/null; then
         for esd in "$USBROOT"/engdefs/*.esd "$USBROOT"/ioc-probe/engdefs/*.esd; do
@@ -24,11 +32,3 @@ for d in "/HBpersistence/engdefs" "/mnt/efs-system/engdefs"; do
         break
     fi
 done
-
-# Run probe immediately
-if [ -x "$SCRIPTDIR/ioc_probe.sh" ]; then
-    "$SCRIPTDIR/ioc_probe.sh"
-else
-    echo "ERROR: ioc_probe.sh not found" >> "$USBROOT/ioc_probe.log"
-    ls -la "$USBROOT/scripts/" >> "$USBROOT/ioc_probe.log" 2>&1
-fi
