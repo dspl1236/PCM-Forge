@@ -345,3 +345,59 @@ sendInspectionReset (0x32e5b6)
 2. **VCDS CAN monitoring** — watch traffic while driving, correlate
 3. **VW BAP 3.0 standard** — CDEF CAN IDs are standardized per platform
 4. **Cayenne CAN matrix** — available in ODIS/PIWIS engineering data
+
+---
+
+## COMPLETE: All Parameters Extracted — May 7, 2026
+
+### CAN Arbitration IDs — From V850 Firmware
+
+Found at V850app.bin offset 0x9CA in the BAP channel config table:
+
+```
+Offset 0x9CA: 90 04 91 04
+              ^^^^^ ^^^^^
+              0x490  0x491
+```
+
+**CAN ID 0x490** = PCM/MMI → Cluster (TX)
+**CAN ID 0x491** = Cluster → PCM/MMI (RX)
+
+Same IDs as Audi A6 4F / A8 D3 / Q7 4L (confirmed by FIS-Writer repo).
+VW MLB platform uses standardized BAP CAN IDs across all models.
+
+### Complete Service Reset Command
+
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| CAN TX ID | 0x490 | V850app.bin @ 0x9CA |
+| CAN RX ID | 0x491 | V850app.bin @ 0x9CC |
+| Bus Speed | 500 kbps | BAP standard / FIS-Writer |
+| LSG ID | 0x11 | MMI3GApplication heartbeat log |
+| FKT ID | 0x03 | MMI3GApplication vtable[3] |
+| OpCode | SET | Call chain analysis (r5=1) |
+| Protocol | BAP 3.0 | FIS-Writer full documentation |
+| Handshake | A0 → A1 → A3 keepalive | FIS-Writer / BAP standard |
+
+### What PIWIS Actually Does
+
+PIWIS doesn't use any special protocol. It sends the same BAP command
+that the MMI/PCM would send — FKT 0x03 SET on CAN 0x490 to LSG 0x11.
+The cluster doesn't validate the source. It validates the BAP protocol
+format and resets its internal counters.
+
+The $200+ dealer "service reset" is one CAN frame.
+
+### All Sources Used (No Dealer Documentation)
+
+1. **MMI3GApplication** (10.7MB, K0821) — FKT ID from vtable, LSG ID
+   from heartbeat log, call chain for protocol selection
+2. **V850app.bin** (576KB) — CAN arbitration IDs from BAP config table
+3. **PCM3Root** (6.5MB) — Process inventory, IOC architecture, per 3
+   address mapping (208 unique addresses)
+4. **FIS-Writer repo** (korni92/FIS-Writer-A6-A8-Q7) — Complete BAP
+   transport protocol documentation, handshake sequence, packet format
+5. **On-car IOC probe** — 3 iterations, confirmed IOC channels,
+   display exclusivity, boot screen paths, CVALUE persistence model
+
+Zero dealer tools. Zero leaked documentation. Pure reverse engineering.
