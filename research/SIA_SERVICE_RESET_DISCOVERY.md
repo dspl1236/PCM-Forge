@@ -275,3 +275,73 @@ BAP/CDEF command.
 
 4. **Standalone Binary** — Write a QNX SH4 binary that sends the
    CDEF InspectionReset command via IOC, deploy via USB.
+
+---
+
+## Disassembly Results — May 7, 2026
+
+### From MMI3GApplication binary analysis (10.7MB, SH4 LE, K0821)
+
+**FKT ID = 0x03 (SIA / Service Interval Adjustment)**
+
+The CCarKombiCDEFHandler vtable at file offset 0x8a592c is indexed
+by FKT ID. Entry [3] maps directly to `sendInspectionReset`:
+
+| Index | FKT ID | Handler |
+|-------|--------|---------|
+| 0 | 0x00 | constructor |
+| 1 | 0x01 | processStatusBordComputer |
+| 2 | 0x02 | processStatusBordComputerReset |
+| **3** | **0x03** | **sendInspectionReset** |
+| 4 | 0x04 | sendSetClockDate |
+| 5 | 0x05 | sendSetClockTime |
+| 6 | 0x06 | sendSetClockSource |
+| 7 | 0x07 | sendSetBCDisplayData |
+| 8 | 0x08 | sendResetBCDisplayData |
+| 9 | 0x09 | sendSetWarningVelocityData |
+| 10 | 0x0A | sendSetShiftUpIndication |
+| 11-19 | 0x0B-0x13 | Unit/format setters |
+| 21 | 0x15 | processStatus dispatch (error handler) |
+
+**LSG ID = 0x11 (Kombi / Instrument Cluster)**
+
+From heartbeat log: `[Car][ID08] LSGId 0x11, BapError HeartbeatTimeOut`
+Confirmed: AC = LSG 0x01, Kombi = LSG 0x11 (decimal 17)
+
+**sendInspectionReset call chain:**
+```
+sendInspectionReset (0x32e5b6)
+  r5 = 1 (CDEF protocol selector)
+  r7 = connection flags (0 or 1)
+  → wrapper (0x8375e74)
+    → protocol selector: r4=0 → "BAP", r4≠0 → "CDEF"
+    → BAP stack send (0x807adb0)
+    → logs "CDEF - sendInspectionReset"
+    → processStatusSIAReset confirmation handler
+```
+
+**Status confirmation:** `processStatusSIAReset - No error`
+
+### What We Have
+
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| FKT ID | 0x03 | vtable index |
+| LSG ID | 0x11 | heartbeat log |
+| OpCode | SET | r5=1 in call chain |
+| Protocol | CDEF | 2016 Cayenne (MY2015+) |
+
+### What We Still Need
+
+| Parameter | Notes |
+|-----------|-------|
+| CAN Arbitration ID | The physical CAN address for CDEF to cluster |
+| CDEF frame format | How LSG/FKT/OpCode pack into CAN bytes |
+| Payload | Reset command data (may be empty for SIA reset) |
+
+### Paths to Get Remaining Data
+
+1. **Search binary** for 11-bit CAN IDs near BAP config code
+2. **VCDS CAN monitoring** — watch traffic while driving, correlate
+3. **VW BAP 3.0 standard** — CDEF CAN IDs are standardized per platform
+4. **Cayenne CAN matrix** — available in ODIS/PIWIS engineering data
