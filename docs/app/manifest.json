@@ -28,11 +28,15 @@
         },
         {
           "path": "scripts/ioc_probe.sh",
-          "size": 3506
+          "size": 4479
         },
         {
           "path": "scripts/ioc_probe_run.sh",
           "size": 295
+        },
+        {
+          "path": "bin/bap_a0.bin",
+          "size": 6
         }
       ]
     },
