@@ -27,6 +27,10 @@
           "size": 403
         },
         {
+          "path": "scripts/bap_channel_scan.sh",
+          "size": 1981
+        },
+        {
           "path": "scripts/cluster_scan.sh",
           "size": 3943
         },
@@ -36,7 +40,7 @@
         },
         {
           "path": "scripts/ioc_probe_run.sh",
-          "size": 1263
+          "size": 1392
         },
         {
           "path": "engdefs/Cluster2Scan.esd",

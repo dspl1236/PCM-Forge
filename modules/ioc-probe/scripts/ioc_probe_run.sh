@@ -37,3 +37,8 @@ done
 if [ -f "$USBROOT/scripts/cluster_scan.sh" ]; then
     ksh "$USBROOT/scripts/cluster_scan.sh"
 fi
+
+# Run BAP channel scan
+if [ -f "$USBROOT/scripts/bap_channel_scan.sh" ]; then
+    ksh "$USBROOT/scripts/bap_channel_scan.sh"
+fi
