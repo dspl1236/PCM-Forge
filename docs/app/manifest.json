@@ -27,12 +27,16 @@
           "size": 403
         },
         {
+          "path": "scripts/ch6_capture.sh",
+          "size": 3009
+        },
+        {
           "path": "scripts/ioc_probe.sh",
           "size": 4479
         },
         {
           "path": "scripts/ioc_probe_run.sh",
-          "size": 295
+          "size": 417
         },
         {
           "path": "bin/bap_a0.bin",

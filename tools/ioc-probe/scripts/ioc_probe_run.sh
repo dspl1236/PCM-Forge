@@ -10,3 +10,8 @@ if [ -f "$USBROOT/scripts/ioc_probe.sh" ]; then
 else
     echo "ERROR: ioc_probe.sh not found" >> "$USBROOT/ioc_probe.log"
 fi
+
+# Run ch6 traffic capture
+if [ -f "$USBROOT/scripts/ch6_capture.sh" ]; then
+    ksh "$USBROOT/scripts/ch6_capture.sh"
+fi
