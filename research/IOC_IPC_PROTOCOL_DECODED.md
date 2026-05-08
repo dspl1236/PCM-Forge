@@ -111,3 +111,66 @@ The probe's `dd if=/dev/ipc/ioc/chN` blocked because:
 
 dev-ipc auto-registers clients. The read simply has nothing to return
 until someone sends data TO us on that channel.
+
+---
+
+## Update: May 8, 2026 — On-Car BAP Scan Results
+
+### Channel Map (from PCM3Root firmware analysis)
+
+| Channel | Module | Purpose |
+|---------|--------|---------|
+| ch2 | CGOnOffDevCtrlWorker | Power management (ONOF) |
+| ch6 | **CGCANConnectionImpl** | **CAN bus communication** |
+| ch8 | Data receiver | General data (hex dump log) |
+| ch3-5, 7, 9-10 | Unknown | Unmapped, likely MOST/other |
+
+Source: String references to `/dev/ipc/ioc/chN` in PCM3Root binary.
+
+### BAP Scan Results
+
+All 9 channel writes succeeded (exit=0) but no responses.
+Raw BAP A0 bytes don't reach the cluster because:
+
+1. **IOC channels carry V850 telegrams, not raw CAN frames**
+2. CGCANConnectionImpl constructs messages with service type
+   headers (IOC_CAN_DRIVER / IOC_CAN_MATRIX / IOC_CAN_TP1)
+3. The V850 uses these service types to route to the correct
+   CAN bus with the correct arbitration ID
+
+### IOC Service Types (from PCM3Root)
+
+| Service | Purpose |
+|---------|---------|
+| IOC_CAN_DRIVER | Low-level CAN driver access |
+| IOC_CAN_MATRIX | CAN signal/message matrix (BAP likely here) |
+| IOC_CAN_TP1 | CAN Transport Protocol (UDS diagnostics) |
+| IOC_GW_POOL | Gateway pool |
+| IOC_GW_CFGVER | Gateway config version |
+| IOC_GW_iRTAB | Internal routing table |
+| IOC_GW_eRTAB | External routing table |
+| IOC_GW_eRTABDATE | External routing table date |
+| IOC_DIAG | Diagnostic service |
+
+### showScreen slay+restart Test
+
+- `slay layermanager` returned exit=1 (FAILED to kill)
+- showScreen still got `lmgrHMIConnect failed`
+- Layermanager was restarted (PID 1298436)
+- System eventually rebooted (likely V850 watchdog from IOC writes)
+
+### Next Steps for BAP Sender
+
+The CGCANConnectionImpl message format needs to be decoded.
+Options:
+
+1. **Root shell approach** — Connect ethernet adapter, get root shell,
+   use GDB (qconn available) to trace CGCANConnectionImpl::write
+   while triggering a known CAN event
+
+2. **V850 protocol decode** — Reverse engineer the HPIPC telegram
+   format from V850app.bin to understand service type headers
+
+3. **External approach** — Use VNCI 6154a to send the BAP reset
+   directly on CAN 0x490 via OBD-II, bypassing the PCM entirely.
+   This is the fastest path to a working reset.
