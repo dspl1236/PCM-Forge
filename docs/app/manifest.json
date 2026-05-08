@@ -27,12 +27,16 @@
           "size": 403
         },
         {
+          "path": "scripts/cluster_scan.sh",
+          "size": 3943
+        },
+        {
           "path": "scripts/ioc_probe.sh",
           "size": 7048
         },
         {
           "path": "scripts/ioc_probe_run.sh",
-          "size": 1146
+          "size": 1263
         },
         {
           "path": "engdefs/Cluster2Scan.esd",

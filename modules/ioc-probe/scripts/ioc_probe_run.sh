@@ -32,3 +32,8 @@ for d in "/HBpersistence/engdefs" "/mnt/efs-system/engdefs"; do
         break
     fi
 done
+
+# Run cluster scan
+if [ -f "$USBROOT/scripts/cluster_scan.sh" ]; then
+    ksh "$USBROOT/scripts/cluster_scan.sh"
+fi
