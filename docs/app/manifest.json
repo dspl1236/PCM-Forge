@@ -27,32 +27,12 @@
           "size": 403
         },
         {
-          "path": "scripts/bap_channel_scan.sh",
-          "size": 1981
-        },
-        {
-          "path": "scripts/cluster_scan.sh",
-          "size": 3943
-        },
-        {
           "path": "scripts/ioc_probe.sh",
-          "size": 7048
+          "size": 3506
         },
         {
           "path": "scripts/ioc_probe_run.sh",
-          "size": 1392
-        },
-        {
-          "path": "engdefs/Cluster2Scan.esd",
-          "size": 2337
-        },
-        {
-          "path": "engdefs/ClusterScan.esd",
-          "size": 2443
-        },
-        {
-          "path": "engdefs/IocProbe.esd",
-          "size": 1336
+          "size": 295
         }
       ]
     },
@@ -111,52 +91,8 @@
           "size": 450
         },
         {
-          "path": "scripts/build_on_target.sh",
-          "size": 2081
-        },
-        {
-          "path": "scripts/persdump_all.sh",
-          "size": 3797
-        },
-        {
-          "path": "scripts/service_install.sh",
-          "size": 2919
-        },
-        {
-          "path": "scripts/service_reset.sh",
-          "size": 3502
-        },
-        {
-          "path": "scripts/service_run.sh",
-          "size": 1719
-        },
-        {
-          "path": "scripts/service_status.sh",
-          "size": 1150
-        },
-        {
-          "path": "engdefs/PersDump.esd",
-          "size": 2681
-        },
-        {
-          "path": "engdefs/ServiceReset.esd",
-          "size": 978
-        },
-        {
-          "path": "engdefs/ServiceStatus.esd",
-          "size": 1499
-        },
-        {
-          "path": "bin/uds_send",
-          "size": 66268
-        },
-        {
-          "path": "bin/uds_send.c",
-          "size": 5961
-        },
-        {
-          "path": "bin/uds_send.o",
-          "size": 3696
+          "path": "scripts/service_reset_run.sh",
+          "size": 334
         }
       ]
     },
@@ -178,7 +114,11 @@
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 2906
+          "size": 4668
+        },
+        {
+          "path": "scripts/sysinfo_run.sh",
+          "size": 271
         }
       ]
     },
