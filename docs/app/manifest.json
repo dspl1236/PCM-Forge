@@ -35,6 +35,14 @@
           "size": 1146
         },
         {
+          "path": "engdefs/Cluster2Scan.esd",
+          "size": 2337
+        },
+        {
+          "path": "engdefs/ClusterScan.esd",
+          "size": 2443
+        },
+        {
           "path": "engdefs/IocProbe.esd",
           "size": 1336
         }

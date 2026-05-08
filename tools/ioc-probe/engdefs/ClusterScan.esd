@@ -1,0 +1,139 @@
+#############################################
+#  Cluster Address Scanner — PCM-Forge
+#  Scans ALL per 3 addresses found in PCM3Root
+#  firmware for cluster namespace 0x0015/0x0016
+#############################################
+
+screen ClusterScan Car
+
+# === CLUSTER 0x0015xxxx (27 addresses from firmware) ===
+
+keyValue
+   value    int per 3 0x00150005
+   label    "C 0005:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150008
+   label    "C 0008:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150009
+   label    "C 0009:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150014
+   label    "C 0014:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150015
+   label    "C 0015:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x001500C8
+   label    "C 00C8:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x001500EC
+   label    "C 00EC:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150100
+   label    "C 0100:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x0015011C
+   label    "C 011C:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150124
+   label    "C 0124:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x001501F0
+   label    "C 01F0:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150800
+   label    "C 0800:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150805
+   label    "C 0805:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150806
+   label    "C 0806:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150807
+   label    "C 0807:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150827
+   label    "C 0827:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x0015082A
+   label    "C 082A:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x0015082F
+   label    "C 082F:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150831
+   label    "C 0831:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150857
+   label    "C 0857:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x0015085B
+   label    "C 085B:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x0015085E
+   label    "C 085E:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150860
+   label    "C 0860:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150861
+   label    "C 0861:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150864
+   label    "C 0864:"
+   poll     2000
+
+keyValue
+   value    int per 3 0x00150B00
+   label    "C 0B00:"
+   poll     2000

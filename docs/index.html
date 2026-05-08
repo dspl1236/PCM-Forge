@@ -1038,7 +1038,7 @@ async function tkFetchManifest() {
       'telnet':  { status: 'tested', description: 'Root shell (port 23 + 2323)', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'lte-setup': { status: 'tested', description: 'LTE DHCP networking + DNS', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] },
       'service-reset': { status: 'experimental', description: 'Oil/inspection service reset — deploys GEM engineering screens + UDS tool', run_script: 'service_install.sh', script_dir: '/scripts/ServiceReset', files: [{path:'scripts/service_install.sh'},{path:'scripts/service_reset.sh'},{path:'scripts/service_status.sh'},{path:'scripts/service_run.sh'},{path:'bin/uds_send'},{path:'engdefs/ServiceReset.esd'},{path:'engdefs/ServiceStatus.esd'},{path:'engdefs/PersDump.esd'},{path:'scripts/persdump_all.sh'}] },
-      'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence and factory ESD files (read-only, safe)', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'engdefs/IocProbe.esd'}] },
+      'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence and factory ESD files (read-only, safe)', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'engdefs/IocProbe.esd'},{path:'engdefs/ClusterScan.esd'},{path:'engdefs/Cluster2Scan.esd'}] },
     }, raw_url_base: TK_RAW_BASE };
   }
   return tkManifest;
