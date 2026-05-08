@@ -118,8 +118,8 @@ for d in /mnt/ifs1/engdefs /mnt/flash/efs1/engdefs /mnt/efs-system/engdefs /HBpe
 done
 echo "" >> "$LOG"
 
-# === 7. PERSISTENCE DUMP (quick) ===
-echo "--- 7. Persistence Scan ---" >> "$LOG"
+# === 7. PERSISTENCE TOOLS (quick — just check what's available) ===
+echo "--- 7. Persistence Tools ---" >> "$LOG"
 PERSDUMP=""
 for p in /mnt/data/tools/persdump2 /mnt/ifs1/HBbin/persdump2; do
     if [ -x "$p" ]; then
@@ -129,66 +129,28 @@ for p in /mnt/data/tools/persdump2 /mnt/ifs1/HBbin/persdump2; do
 done
 
 if [ -n "$PERSDUMP" ]; then
-    echo "Using: $PERSDUMP" >> "$LOG"
-
+    echo "  Found: $PERSDUMP" >> "$LOG"
+    # Capture usage/help to figure out correct syntax
+    echo "  Usage:" >> "$LOG"
+    "$PERSDUMP" >> "$LOG" 2>&1
     echo "" >> "$LOG"
-    echo "  Service addresses:" >> "$LOG"
-    for addr in 0x0010001F 0x0014004E 0x00100033 0x0014007D; do
-        echo "  per3 $addr: $($PERSDUMP 3 $addr 2>&1)" >> "$LOG"
-    done
-
+    "$PERSDUMP" --help >> "$LOG" 2>&1
     echo "" >> "$LOG"
-    echo "  Cluster range 0x0015xxxx:" >> "$LOG"
-    i=0
-    while [ $i -lt 32 ]; do
-        addr=$(printf "0x001500%02X" $i)
-        result=$("$PERSDUMP" 3 "$addr" 2>&1)
-        if [ -n "$result" ]; then
-            echo "    $addr: $result" >> "$LOG"
+    "$PERSDUMP" -h >> "$LOG" 2>&1
+    echo "" >> "$LOG"
+    # Try it on an actual CVALUE file to see proper output
+    for cv in /HBpersistence/CVALUE*.CVA; do
+        if [ -f "$cv" ]; then
+            echo "  Test: $PERSDUMP $(basename $cv)" >> "$LOG"
+            "$PERSDUMP" "$cv" >> "$LOG" 2>&1
+            echo "" >> "$LOG"
+            break
         fi
-        i=$((i + 1))
-    done
-
-    echo "" >> "$LOG"
-    echo "  Cluster range 0x0016xxxx:" >> "$LOG"
-    i=0
-    while [ $i -lt 32 ]; do
-        addr=$(printf "0x001600%02X" $i)
-        result=$("$PERSDUMP" 3 "$addr" 2>&1)
-        if [ -n "$result" ]; then
-            echo "    $addr: $result" >> "$LOG"
-        fi
-        i=$((i + 1))
-    done
-
-    echo "" >> "$LOG"
-    echo "  Vehicle range 0x0010xxxx:" >> "$LOG"
-    i=0
-    while [ $i -lt 64 ]; do
-        addr=$(printf "0x001000%02X" $i)
-        result=$("$PERSDUMP" 3 "$addr" 2>&1)
-        if [ -n "$result" ]; then
-            echo "    $addr: $result" >> "$LOG"
-        fi
-        i=$((i + 1))
-    done
-
-    echo "" >> "$LOG"
-    echo "  Protocol range 0x0014xxxx:" >> "$LOG"
-    i=0
-    while [ $i -lt 128 ]; do
-        addr=$(printf "0x001400%02X" $i)
-        result=$("$PERSDUMP" 3 "$addr" 2>&1)
-        if [ -n "$result" ]; then
-            echo "    $addr: $result" >> "$LOG"
-        fi
-        i=$((i + 1))
     done
 else
-    echo "persdump2 not found" >> "$LOG"
+    echo "  persdump2 not found" >> "$LOG"
 fi
 echo "" >> "$LOG"
-
 # === 8. CVALUE FILES (instant) ===
 echo "--- 8. CVALUE Files ---" >> "$LOG"
 ls -la /HBpersistence/CVALUE*.CVA >> "$LOG" 2>&1
