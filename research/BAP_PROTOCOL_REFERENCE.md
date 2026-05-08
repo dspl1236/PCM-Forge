@@ -205,3 +205,45 @@ The GBAP module at 0x0342E is the key. Need to:
 2. Find the device ID table (SIA = which numeric ID?)
 3. Determine the gateway command byte format
 4. Build a test message to write to ch6
+
+### Device ID Tables
+
+**BAP Devices (16 devices):**
+
+| Index | Name | Remapped ID |
+|-------|------|-------------|
+| 0 | ACC | 0x01 |
+| 1 | DRC | 0x00 |
+| 2 | RDK | 0x03 |
+| 3 | OPS | 0x02 |
+| **4** | **SIA** | **0x05** |
+| 5 | Wiper | 0x04 |
+| 6 | Clock | 0x07 |
+| 7 | AC | 0x06 |
+| 8 | BC | — |
+| 9 | Seat | — |
+| 10 | Standheater | — |
+| 11 | Seatheater | — |
+| 12 | Interior light | — |
+| 13 | Exterior light | — |
+| 14 | Door locking | — |
+| 15 | \<unknown\> | — |
+
+Remap table at V850 offset 0x03a78: `01 00 03 02 05 04 07 06`
+Pattern: device pairs are swapped (0↔1, 2↔3, 4↔5, 6↔7)
+
+**CDEF Devices (33 devices):**
+
+| Index | Name |
+|-------|------|
+| 0 | RVC/VPS |
+| 1 | ISafety |
+| 2 | HUD |
+| 3 | ACC |
+| 4 | RDK |
+| 5 | OPS |
+| **6** | **SIA** |
+| 7 | ZEM |
+| 8-32 | (see full list above) |
+
+SIA is device index **4** in BAP, **6** in CDEF.
