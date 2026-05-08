@@ -1037,7 +1037,7 @@ async function tkFetchManifest() {
       'sysinfo': { status: 'ready', description: 'Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
       'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'lte-setup': { status: 'tested', description: 'Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] },
-      'service-reset': { status: 'alpha', description: 'Oil service and inspection interval reset via BAP protocol on CAN 0x490. Sends FKT 0x03 SET to instrument cluster (LSG 0x11). No PIWIS needed.', run_script: 'service_reset_run.sh', script_dir: '/scripts/ServiceReset', files: [] },
+      'service-reset': { status: 'alpha', description: 'Coming soon — Oil service reset via BAP protocol (CAN 0x490, FKT 0x03, LSG 0x11). All parameters extracted, awaiting BAP channel confirmation.', run_script: 'service_reset_run.sh', script_dir: '/scripts/ServiceReset', files: [] },
       'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe + BAP cluster discovery. Maps /dev/ipc/ioc channels, scans for BAP cluster on CAN 0x490/0x491, tests showScreen slay+restart. Read-only, safe.', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'}] },
     }, raw_url_base: TK_RAW_BASE };
   }
@@ -1058,8 +1058,8 @@ async function tkRenderModules() {
   tkRendered = true;
   const manifest = await tkFetchManifest();
   const container = document.getElementById('tk-modules');
-  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--accent)', experimental: 'var(--accent)', planned: 'var(--text2)' };
-  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Alpha', experimental: 'Experimental', planned: 'Planned' };
+  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--text2)', experimental: 'var(--accent)', planned: 'var(--text2)' };
+  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Coming Soon', experimental: 'Experimental', planned: 'Planned' };
 
   let html = '';
   for (const [id, mod] of Object.entries(manifest.modules)) {
@@ -1067,8 +1067,8 @@ async function tkRenderModules() {
     const name = TK_NAMES[id] || id;
     const color = statusColors[mod.status] || 'var(--text2)';
     const label = statusLabels[mod.status] || mod.status;
-    const disabled = mod.status === 'planned' ? ' disabled' : '';
-    const opacity = mod.status === 'planned' ? '0.5' : '1';
+    const disabled = (mod.status === 'planned' || mod.status === 'alpha') ? ' disabled' : '';
+    const opacity = (mod.status === 'planned' || mod.status === 'alpha') ? '0.5' : '1';
 
     // Options dropdown (for lte-setup)
     let dropdown = '';
