@@ -136,3 +136,72 @@ Resync via FPGA
 
 The devctl() command sequence to register as a CHBIpcProtocol client
 on an IOC channel, enabling CAN frame send/receive.
+
+---
+
+## V850 BAP Gateway Architecture — May 8, 2026
+
+### BREAKTHROUGH: V850 is a BAP-Aware Gateway
+
+The V850 firmware (576KB) contains explicit BAP/CDEF/SIA device routing.
+It's not just a dumb CAN proxy — it's a protocol-aware gateway that
+routes BAP frames to the correct CAN bus and device.
+
+### V850 Device Registry (from string analysis)
+
+**BAP Devices:**
+ACC, DRC, RDK, OPS, **SIA**, Wiper, Clock, Seat, Standheater,
+Seatheater, Interior light, Exterior light, Door locking, RVC/VPS,
+ISafety, HUD, ZEM, LDW, SWA, AWV, VZA, SVC, RSE, MKE, TAD,
+UGDO, Hybrid, Nightvision, AC Slave, Charisma, Seat V02
+
+**CAN Bus Names:**
+Komfort, Antrieb, Flexray, Clamp15, **Dashboard**, Infotainment,
+Extended, Fahrwerk
+
+**Protocol Support:** BAP + CDEF (both explicitly named)
+
+### Key V850 Modules
+
+| Offset | 4-char Code | Purpose |
+|--------|-------------|---------|
+| 0x0342E | GBAP | **BAP Gateway** — routes BAP frames |
+| 0x00CB4 | KWPS | KWP2000 sub-bus |
+| 0x00C44 | TP20 | Transport Protocol 2.0 |
+| 0x00CFC | ONOF | Power management |
+| 0x014C4 | PERS | Persistence |
+| 0x00CAC | GATW | Main gateway |
+| 0x01630 | DISS | Display service |
+
+### IPC Channel Types
+
+| Code | Purpose |
+|------|---------|
+| IPCN | IPC Normal (priority) |
+| IPCP | IPC Priority |
+| CfIpc | IPC Configuration |
+
+### What This Means
+
+The V850's GBAP module handles BAP routing. When PCM3Root sends a
+message on ch6, it doesn't need to specify the CAN arbitration ID.
+The V850 looks up the target device (SIA) and routes to the correct
+CAN bus (Dashboard) with the correct CAN ID (0x490).
+
+The message format on ch6 is likely:
+```
+[GBAP header] [Target device: SIA] [FKT: 0x03] [OpCode: SET]
+```
+
+The V850 translates this to:
+```
+CAN ID 0x490, Dashboard bus, BAP frame with LSG 0x11 FKT 0x03
+```
+
+### Next: Decode GBAP Message Format
+
+The GBAP module at 0x0342E is the key. Need to:
+1. Disassemble the GBAP message handler
+2. Find the device ID table (SIA = which numeric ID?)
+3. Determine the gateway command byte format
+4. Build a test message to write to ch6
