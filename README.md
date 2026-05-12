@@ -64,7 +64,7 @@ Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules, build
 
 ## Data Connectivity & LTE Restoration
 
-The PCM 3.1's built-in **Cinterion AC75i** modem (3G UMTS) is dead after the 3G network shutdown (US 2022, EU ongoing). Internet can be restored via USB ethernet:
+The PCM 3.1's built-in **Cinterion AC75i** modem (2G GPRS/EDGE) is dead after the 2G/3G network shutdown (US 2022, EU ongoing). Internet can be restored via USB ethernet:
 
 ```
 USB port → AX88772 adapter → LTE router → internet
@@ -143,7 +143,7 @@ PCM 3.1 shares the Harman Becker HN+ platform with Audi MMI3G+ and VW RNS-850:
 | IOC | Renesas V850 with CMX-RTX RTOS |
 | Display | 7" touchscreen, 800×480 |
 | Storage | Internal SATA HDD |
-| Modem | Cinterion AC75i (3G, dead after network shutdown) |
+| Modem | Cinterion AC75i (2G, dead after network shutdown) |
 | USB ethernet | `devn-asix.so` (ASIX AX88772) in firmware |
 | Autorun | `proc_scriptlauncher` + `copie_scr.sh` via USB |
 

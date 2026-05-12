@@ -7,7 +7,7 @@ MMI3G+ and VW RNS-850. All three use the same SH4A QNX 6.3 core. The
 connectivity hardware and software are closely related, meaning the
 LTE restoration path proven on Audi MMI3G+ applies to PCM3.1 as well.
 
-## Original Connectivity: Cinterion AC75i (3G UMTS)
+## Original Connectivity: Cinterion AC75i (2G GPRS/EDGE)
 
 ### Hardware
 
@@ -42,7 +42,7 @@ link, and routes IP traffic through the resulting `ppp0` interface.
 
 ### Online Services (Original)
 
-When the 3G modem was functional, PCM 3.1 provided:
+When the modem was functional, PCM 3.1 provided:
 
 | Service | Provider | Status |
 |---------|----------|--------|
@@ -56,7 +56,7 @@ to implement GEMMI (Google Earth for MMI) on the PCM 3.1 platform.
 
 ### Current Status: DEAD
 
-The 3G (UMTS/HSPA) cellular networks have been shut down:
+The legacy 2G/3G cellular networks have been shut down:
 - **US**: AT&T 3G sunset February 2022, T-Mobile July 2022
 - **EU**: Ongoing phase-out, varies by country (2025-2028)
 
