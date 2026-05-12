@@ -34,7 +34,7 @@ PCM 3.1 has three hardware revisions. The update disc auto-detects your hardware
 
 Check your version: press **INFO** → **Option** → **Show System Version**.
 
-**Firmware update ISO (v4.76 / v3.43 / v2.47 — all in one):** [hausofdub.com/iso/PCM_NA_20150721.ISO](http://hausofdub.com/iso/PCM_NA_20150721.ISO) — burn to DVD-R (Verbatim recommended, 4x speed). North America region, also confirmed working on ROW units.
+**Firmware update ISO (v4.76 / v3.43 / v2.47 — all in one):** [hausofdub.com/iso/PCM_NA_20150721.ISO](https://hausofdub.com/iso/PCM_NA_20150721.ISO) — burn to DVD-R (Verbatim recommended, 4x speed). North America region, also confirmed working on ROW units.
 
 **PCM-Forge activation compatibility:** Tested and verified on PCMS02XX (v4.76). The RSA-64 algorithm is firmware-independent, but v2.47 and v3.43 are untested — if you're on older firmware and have issues, run the diagnostic USB and [open an issue](https://github.com/dspl1236/PCM-Forge/issues).
 
