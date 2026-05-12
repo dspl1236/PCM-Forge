@@ -22,6 +22,22 @@ All Porsche models with **PCM 3.1** (Harman Becker, SH4A QNX 6.3):
 
 **Not compatible with:** PCM 3.0 (Cayenne 957, 997, 987 — older hardware, different activation algorithm), PCM 4 / MIB2 (991.2+, 718, Panamera 971, refreshed Macan — ARM platform, different architecture).
 
+### Hardware Revisions & Firmware
+
+PCM 3.1 has three hardware revisions. The update disc auto-detects your hardware and installs the correct version — it will not flash the wrong firmware.
+
+| Hardware | Code | Max Firmware | Era | IOC |
+|----------|------|-------------|-----|-----|
+| Gen 1 "9600" | PCMG01XX | v2.47 | 2010–2012 | 9600 |
+| Series 1 "9612" | PCMS01XX | v3.43 | 2012–2013 | 9612 |
+| Series 2 "9633" | PCMS02XX | v4.76 | 2013–2018 | 9612 |
+
+Check your version: press **INFO** → **Option** → **Show System Version**.
+
+**Firmware update ISO (v4.76 / v3.43 / v2.47 — all in one):** [hausofdub.com/iso/PCM_NA_20150721.ISO](http://hausofdub.com/iso/PCM_NA_20150721.ISO) — burn to DVD-R (Verbatim recommended, 4x speed). North America region, also confirmed working on ROW units.
+
+**PCM-Forge activation compatibility:** Tested and verified on PCMS02XX (v4.76). The RSA-64 algorithm is firmware-independent, but v2.47 and v3.43 are untested — if you're on older firmware and have issues, run the diagnostic USB and [open an issue](https://github.com/dspl1236/PCM-Forge/issues).
+
 ## Web App
 
 The web app at [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/) has three tabs:
@@ -89,6 +105,15 @@ Press **SOURCE + SOUND** simultaneously — if the ENGINEERING feature is activa
 ### Just Need Codes? (for PIWIS / manual entry)
 Use the **Codes** tab — enter your VIN, get all 26 activation codes instantly. No USB stick needed — enter codes manually via PIWIS or the engineering menu.
 
+## Replacement / Used PCMs
+
+If you installed a used PCM from another car, activation codes won't work because the PCM validates against its internally stored VIN (the donor car's VIN). Fix this with PCM-Forge alone — no dealer needed:
+
+1. Run **Diagnostic Mode** via USB to pull the donor VIN from the PCM
+2. Enter the donor VIN in PCM-Forge and activate **ENGINEERING** (GEM)
+3. In the Engineering menu, update the VIN to your car's VIN (under SW Activations)
+4. Re-run PCM-Forge with your real VIN to activate all features
+
 ## How It Works
 
 ### Activation Algorithm
@@ -128,24 +153,17 @@ Note: Unlike Audi MMI3G+ which uses Java/J9 for the UI, PCM 3.1 uses a native C+
 
 ```
 PCM-Forge/
-├── docs/
-│   ├── index.html           # Web app (3 tabs: Codes, USB Stick, Toolkit)
-│   └── fonts/               # DM Sans, JetBrains Mono
-├── research/
-│   ├── ACTIVATION_CODE_ANALYSIS.md    # Code format and VIN extraction
-│   ├── ALGORITHM_CRACKED.md           # RSA key recovery details
-│   ├── CAN_IOC_ARCHITECTURE.md        # V850 IOC and CAN bus
-│   ├── CROSS_PLATFORM_NOTES.md        # PCM 3.1 vs PCM 4/MIB2
-│   ├── DISCOVERY_NARRATIVE.md         # Full reverse engineering story
-│   ├── OIL_SERVICE_RESET_ANALYSIS.md  # Service reset research
-│   ├── PCM31_CONNECTIVITY.md          # LTE restoration guide
-│   ├── PCM31_RESEARCH.md              # Platform architecture
-│   ├── PCM31_SYSTEM_INFO.md           # Andrew's Cayenne system details
-│   └── USB_ENGINEERING_ACCESS.md      # USB autorun mechanism
-├── core/                    # Python code generation core
-├── tools/                   # Firmware analysis tools
-├── generate_codes.py        # CLI code generator
-└── FEATURES.md              # 26 activatable features
+├── docs/index.html              # Web app (Codes, USB Stick, Manage Backup, Toolkit)
+├── research/                    # 30+ reverse engineering docs
+│   ├── ALGORITHM_CRACKED.md     # RSA-64 key recovery
+│   ├── FEATURE_REFERENCE.md     # All 26 features explained
+│   ├── DISCOVERY_NARRATIVE.md   # Full RE story
+│   ├── PCM31_CONNECTIVITY.md    # LTE restoration guide
+│   └── firmware/                # Ghidra output, bootscreen format, ISO analysis
+├── tools/                       # Firmware analysis & service reset tools
+├── core/                        # Python code generation core
+├── generate_codes.py            # CLI code generator
+└── FEATURES.md                  # Feature quick reference
 ```
 
 ## Research Highlights
