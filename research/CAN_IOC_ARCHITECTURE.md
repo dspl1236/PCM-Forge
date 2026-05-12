@@ -1,158 +1,128 @@
-# PCM 3.1 CAN Bus / IOC Architecture
+# CAN / IOC Architecture — PCM 3.1 Harman HN+ Platform
 
-## Discovery Date: April 19, 2026
+> Consolidated from 8 research documents. Covers the complete CAN communication
+> path from application to physical bus, IOC channel map, NDR devctl interface,
+> V850 hardware, and cross-platform notes.
 
 ## The Complete CAN Path
 
 ```
-PCM3Root (SH4 application)
+PCM3Root / MMI3GApplication (SH4 application)
    ↓ CGCANConnectionImpl
    ↓ CLibResMgr (devctl() calls)
-/dev/ndr (QNX resource manager)
-   ↓ CHBIpcProtocol (0xFADE header)
+/dev/ndr/cmd (QNX resource manager)
+   ↓ CTransTel telegram framing
+   ↓ CHBIpcProtocol (0xFADE magic header)
 /dev/ipc/ioc/ch* (dev-ipc resource manager)
    ↓ PCI bus
-Xilinx FPGA (0x10EE:0x7007)
+Xilinx FPGA (PCI 0x10EE:0x9411)
    ↓ Internal bus
-V850 IO Controller
+Renesas V850ES/SJ3 IO Controller
+   ↓ On-chip CAN controller (CAN0 @ 0x03FEC000)
    ↓ CAN transceiver
-Physical CAN bus
+Physical CAN bus (ISO 11898)
 ```
 
-## IOC Channel Map (from live Cayenne 958)
+## NDR devctl Interface
 
-| Channel | Permissions | Used By | Purpose |
-|---------|------------|---------|---------|
-| ch2 | nrw-rw-rw- | PCM3Root | CAN/IOC messages |
-| ch3 | nrw-rw-rw- | symlink | Shared access |
-| ch4 | nrw-rw-rw- | symlink | Shared access |
-| ch5 | nrw-rw-rw- | ndr | Sensor data (gyro, accel) |
-| ch6 | nrw-rw-rw- | PCM3Root | CAN/IOC messages |
-| ch7 | nrw-rw-rw- | available | - |
-| ch8 | nrw-rw-rw- | PCM3Root | CAN/IOC messages |
-| ch9 | nrw-rw-rw- | available | - |
-| ch10 | nrw-rw-rw- | available | - |
-| debug | nr--r--r-- | monitoring | Traffic sniffing |
-| onoff | nr--r--r-- | system | Power state |
-| watchdog | nr--r--r-- | system | Watchdog timer |
+Source: `NavigationNdrInfo` binary (563KB SH4 ELF). All use QNX `__DIOTF(class=0x05, cmd, size=4)`.
 
-## IOC Service Types (19 total)
+| DCMD | Cmd | Function | Description |
+|------|-----|----------|-------------|
+| 0xC004050B | 0x0B | ndrOpen | Register client (pid/tid) |
+| 0xC004050A | 0x0A | checkVersion | Expects v3.0.0 (0x3000000) |
+| 0xC0040507 | 0x07 | ndrWrite | Send CTransTel telegram |
+| 0xC0040508 | 0x08 | ndrRead | Receive telegram (16,100B max) |
 
-### CAN Services
-- `IOC_CAN_DRIVER` — Low-level CAN driver control
-- `IOC_CAN_MATRIX` — CAN signal/message matrix
-- `IOC_CAN_TP1` — **CAN Transport Protocol (UDS diagnostics)**
-
-### Diagnostics
-- `IOC_DIAGX` — Extended diagnostics
-- `IOC_DIAG_SWNO` — Diagnostic SW number
-
-### MOST Network
-- `IOC_MOST_NETSVCREV/VER` — MOST service info
-- `IOC_MOST_TRANSX` — MOST transport
-
-### Gateway
-- `IOC_GW_CFGVER` — Config version
-- `IOC_GW_POOL` — Message pool
-- `IOC_GW_eRTAB/iRTAB` — Routing tables
-
-### System
-- `IOC_BOLO/FRONT/POWERCONTROL/SWVERSION/SWRevision/PC_FUSEBYTES`
-
-## IPC Message Protocol
-
-- **Magic header**: `0xFADE`
-- **Frame counter** for sequencing
-- **Telegram format** (VW Group standard)
-- **Flow control**: XOFF/XON
-- **ACK/NACK** with retry logic
-
-## Key Findings
-
-1. All IOC channels are **world-writable** (nrw-rw-rw-)
-2. CAN access requires going through `/dev/ndr` via `devctl()` calls
-3. `IOC_CAN_TP1` is the UDS transport protocol service
-4. FTP + telnet are configured in inetd.conf but no network interface is up
-5. Network interfaces `/dev/io-net/en1` and `/dev/io-net/en5` exist in firmware
-
-## Oil Service Reset Path
-
-To reset the oil service interval:
-1. Open `/dev/ndr` resource manager
-2. Use `devctl()` to send IOC_CAN_TP1 message
-3. Message contains UDS RoutineControl or WriteDataByIdentifier
-4. Target: Instrument cluster (Kombi) diagnostic address
-5. V850 IOC routes the frame to the CAN bus
-
----
-
-## V850ES/SJ3 IOC Hardware (Renesas Datasheet)
-
-### Chip: Renesas V850ES/SJ3 (μPD70F3344-3368 series)
-- 32-bit RISC CPU
-- On-chip CAN controller (1 or 2 channels)
-- IEBus controller (automotive LAN)
-- Used as IOC (IO Controller) in Harman PCM 3.1
-
-### CAN Controller Registers (Chapter 19)
-- Base address: 0x03FEC000 (CAN0), 0x03FED000 (CAN1)
-- 32 message buffers per channel (CnMDATA, CnMDLC, CnMCONF, CnMID, CnMCTRL)
-- Standard (11-bit) and Extended (29-bit) CAN IDs supported
-- Baud rate configurable via prescaler + bit timing
-- Error states: Error Active → Error Passive → Bus-Off
-
-### Full CAN Communication Path (PCM 3.1)
-```
-Application (PCM3Root/uds_send)
-    │
-    ├─ open("/dev/ndr/cmd")
-    │  devctl(fd, 0xC0040507, data)  ← class=5, cmd=7 WRITE
-    │  devctl(fd, 0xC0040508, data)  ← class=5, cmd=8 READ
-    │
-    ▼
-NDR Resource Manager (/proc/boot/ndr)
-    │  CLibResMgr → devctl → CTransTel telegram
-    │
-    ▼
-dev-ipc (/dev/ipc/ioc/ch*)
-    │  CHBIpcProtocol (0xFADE magic, telegram framing)
-    │  IOC service channels ch2-ch10
-    │
-    ▼
-Xilinx FPGA (IPC bridge, PCI device 0x10EE:0x9411)
-    │  Hardware bridge between SH4 bus and V850
-    │
-    ▼
-V850ES/SJ3 IO Controller
-    │  On-chip CAN controller
-    │  32 message buffers
-    │  CAN0 registers at 0x03FEC000
-    │
-    ▼
-Physical CAN Bus (ISO 11898)
-    │  CAN-H / CAN-L via transceiver
-    │
-    ▼
-Instrument Cluster (CAN ID 0x0717 for UDS)
+Usage pattern:
+```c
+fd = open("/dev/ndr/cmd", O_RDWR);
+devctl(fd, 0xC004050B, &pid_tid_tel, ...);   // register
+devctl(fd, 0xC004050A, &version_tel, ...);    // version check
+devctl(fd, 0xC0040507, &write_tel, ...);      // send CAN frame
+devctl(fd, 0xC0040508, &read_tel, ...);       // read response
 ```
 
-### IOC Service Types (19 identified)
-From our CAN architecture research, dev-ipc registers IOC channels:
-- ch2-ch6: CAN transport (IOC_CAN_TP1 = UDS diagnostic)
-- ch7-ch8: Display/media IPC
-- ch9-ch10: Misc services
-- debug, onoff, watchdog: System control
+CTransTel format: `CTransTel(functionId=4, classId, ndrId, value)` where classId 0=read, 1=write.
 
-### Implications for Oil Service Reset
-The UDS path: uds_send → NDR devctl (class=5, cmd=7) → NDR process
-→ dev-ipc → FPGA → V850 CAN controller → CAN bus → cluster
+## IOC Channel Map
 
-The devctl codes (0xC0040507/0xC0040508) go to NDR, which handles
-the CAN transport protocol internally. We don't need to understand
-the V850 register layout — NDR abstracts it. But the V850 datasheet
-confirms the hardware supports standard CAN messaging.
+### Porsche Cayenne 958 (`/dev/ipc/ioc/`)
 
-### Reference
-Renesas V850ES/SJ3 User's Manual: Hardware
-Rev.5.00, Feb 2012 (REN_r01uh0248ej0500)
-Chapter 19: CAN Controller (pages 728-886)
+| Channel | Permissions | Purpose |
+|---------|------------|---------|
+| ch2 | rw-rw-rw- | CAN/IOC messages |
+| ch3–ch4 | rw-rw-rw- | Shared access (symlinks) |
+| ch5 | rw-rw-rw- | Sensor data (gyro, accel) |
+| ch6 | rw-rw-rw- | CAN/IOC messages (BAP/SIA on Porsche) |
+| ch7–ch10 | rw-rw-rw- | Available |
+| debug | r--r--r-- | Traffic monitoring |
+| onoff | r--r--r-- | Power state |
+| watchdog | r--r--r-- | Watchdog timer |
+
+### Audi A6 C7 MMI3G+ (`/dev/ipc/`)
+
+| Channel | Data Size | Purpose |
+|---------|----------|---------|
+| ch2 | 380B | Heartbeat (120B/3s window) |
+| ch5 | 5,250B | BAP SIA messages (main data) |
+| ch4 | 360B | SiriusXM display data |
+| ch3,ch6–ch11 | 0B | Blocked (no client registration) |
+
+Key difference: Audi uses `/dev/ipc/chN`, Porsche uses `/dev/ipc/ioc/chN`.
+
+## IOC Service Types (19 confirmed)
+
+**CAN:** IOC_CAN_DRIVER, IOC_CAN_MATRIX, IOC_CAN_TP1 (UDS transport protocol)
+
+**Diagnostics:** IOC_DIAGX, IOC_DIAG_SWNO
+
+**MOST Network:** IOC_MOST_NETSVCREV, IOC_MOST_NETSVCVER, IOC_MOST_TRANSX
+
+**Gateway:** IOC_GW_CFGVER, IOC_GW_POOL, IOC_GW_eRTAB, IOC_GW_iRTAB
+
+**System:** IOC_BOLO, IOC_FRONT, IOC_POWERCONTROL, IOC_SWVERSION, IOC_SWRevision, IOC_PC_FUSEBYTES
+
+`IOC_CAN_TP1` is the key service for UDS diagnostic commands to the instrument cluster.
+
+## V850 IO Controller Hardware
+
+**Chip:** Renesas V850ES/SJ3 (uPD70F3344–3368 series), 32-bit RISC, CMX-RTX RTOS.
+
+CAN controller: 1–2 channels, 32 message buffers per channel, standard + extended IDs.
+Registers at CAN0 base 0x03FEC000 (CnMDATA, CnMDLC, CnMCONF, CnMID, CnMCTRL).
+
+The NDR resource manager abstracts all V850 register access — application code never touches hardware registers directly.
+
+## CAN Bus Topology (Cayenne 958)
+
+The PCM sits on the **Infotainment CAN** bus. The J533 gateway bridges to other buses:
+
+| Bus | Access | Notes |
+|-----|--------|-------|
+| Infotainment CAN | Direct | BAP, media, phone |
+| Diagnostic CAN | Via OBD-II | UDS to all modules via gateway |
+| Comfort CAN | Via gateway | Body, doors, windows |
+| Powertrain CAN | Via gateway | Engine, transmission |
+
+**Gateway filtering:** The J533 gateway may block certain UDS requests from the infotainment bus. Direct OBD-II access bypasses this limitation.
+
+## Cross-Platform Compatibility
+
+All three platforms share the same CAN hardware stack:
+
+| Platform | Application | IPC Path | IOC Path |
+|----------|------------|----------|----------|
+| Porsche PCM 3.1 | PCM3Root (6.6MB) | /dev/ipc/ioc/ | ch2, ch6 for CAN |
+| Audi MMI3G+ | MMI3GApplication (10.7MB) | /dev/ipc/ | ch5 for BAP SIA |
+| VW RNS-850 | MMI3GApplication (variant) | /dev/ipc/ | Similar to Audi |
+
+The NDR devctl codes (0xC004050x) are identical across platforms. A CAN utility built for one platform should work on all three with path adjustments.
+
+## Safety Notes
+
+**Safe (read-only):** Reading IOC channels, reading devctl responses, pidin, sloginfo.
+
+**Use caution (write):** UDS RoutineControl, WriteDataByIdentifier to cluster. Always test in extended diagnostic session first.
+
+**Never from the head unit:** ECU flashing, gateway coding, key programming, immobilizer operations. These require proper diagnostic tools via OBD-II.

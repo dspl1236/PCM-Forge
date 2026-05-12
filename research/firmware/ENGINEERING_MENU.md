@@ -259,3 +259,70 @@ Custom startup splash screens.
 - [ ] Explore boot screen selection menu
 - [ ] Document CAN Engineering data display fields
 - [ ] Test Sound Diagnosis speaker test sequence
+
+---
+
+## ESD File Format (Engineering Screen Definitions)
+
+GEM renders ESD files as interactive screens with buttons, sliders, key-value displays, and script execution.
+
+### Locations
+- `/HBpersistence/engdefs/` — writable, custom screens go here
+- `/mnt/ifs1/engdefs/` — read-only IFS (factory screens)
+- `/mnt/flash/efs1/engdefs/` — flash filesystem
+
+PCM3Root scans all directories on GEM launch. Custom ESDs appear alongside factory ones.
+
+### Syntax
+```
+screen ScreenName Category
+
+button
+   value    per 3 0xADDRESS "value"
+   label    "Button Label"
+
+choice
+   value    per 3 0xADDRESS
+   label    "Toggle Label"
+
+keyValue
+   value    int per 3 0xADDRESS
+   label    "Display Label:"
+   poll     1000
+
+script
+   value    sys 1 0x0100 "/path/to/script.sh"
+   label    "Execute Button"
+
+slider
+   value    int per 3 0xADDRESS
+   label    "Slider Label"
+   min      0
+   max      100
+```
+
+### Command Types
+- **`per 3 0xADDRESS`** — persistence read/write. Maps to CVALUE storage. Some addresses map to CAN data.
+- **`sys 1 0x0100 "cmd"`** — shell script execution as root with full CAN/IOC/NDR access.
+
+### Known Persistence Addresses
+| Address | Purpose |
+|---------|---------|
+| 0x0010001F | Service interval coded |
+| 0x0014004E | Service protocol coded |
+| 0x00100033 | Oil level gauge coded |
+| 0x0014007D | Oil level protocol |
+
+### Custom Screen Deployment
+1. Create `.esd` file following syntax above
+2. Copy to `/HBpersistence/engdefs/` via USB script or telnet
+3. Restart GEM (exit and re-enter)
+4. Screen appears in the appropriate category submenu
+
+### GEM Access
+- **PCM 3.1:** Press **SOURCE + SOUND** simultaneously (requires ENGINEERING activation)
+- **PCM 4/MHI2:** Press **CAR + TUNER** for 5 seconds
+- ESD persistence: `per 3` on PCM 3.1, `per 30` on PCM 4
+
+### Display Architecture
+GEM is rendered by PCM3Root itself, not a separate process. GEM scripts run with root permissions and have full access to CAN/IOC/NDR interfaces.
