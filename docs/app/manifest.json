@@ -12,7 +12,7 @@
   "modules": {
     "ioc-probe": {
       "status": "ready",
-      "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
+      "description": "IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
       "standalone": true,
       "run_script": "ioc_probe_run.sh",
       "script_dir": "/scripts/IocProbe",
@@ -46,7 +46,7 @@
     },
     "lte-setup": {
       "status": "tested",
-      "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.",
+      "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces.",
       "standalone": true,
       "run_script": "lte_setup.sh",
       "script_dir": "/scripts/LTE",
@@ -62,11 +62,15 @@
           "values": [
             {
               "value": "dhcp",
-              "label": "DHCP \u2014 Auto (recommended)"
+              "label": "DHCP — Auto (AX88772/772A)"
             },
             {
               "value": "static",
-              "label": "Static 172.16.42.1 \u2014 Direct connection"
+              "label": "Static 172.16.42.1 — Direct connection"
+            },
+            {
+              "value": "dhcp-772b",
+              "label": "DHCP — AX88772B Override"
             }
           ]
         }
@@ -132,7 +136,7 @@
     },
     "telnet": {
       "status": "tested",
-      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u2014 session-only, re-run after reboot.",
+      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.",
       "standalone": true,
       "run_script": "telnet_enable.sh",
       "script_dir": "/scripts/Telnet",
