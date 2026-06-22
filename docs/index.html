@@ -1073,17 +1073,18 @@ async function tkRenderModules() {
     const disabled = (mod.status === 'planned' || mod.status === 'alpha') ? ' disabled' : '';
     const opacity = (mod.status === 'planned' || mod.status === 'alpha') ? '0.5' : '1';
 
-    // Options dropdown (for lte-setup)
+    // Options dropdowns (render all options for each module)
     let dropdown = '';
-    if (mod.options && (mod.options['lte-mode'] || mod.options['adapter'])) {
-      const opt = mod.options['lte-mode'] || mod.options['adapter'];
-      dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
-        + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">' + opt.label + '</div>'
-        + '<select id="tk-opt-' + id + '" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">';
-      for (const v of opt.values) {
-        dropdown += '<option value="' + v.value + '">' + v.label + '</option>';
+    if (mod.options) {
+      for (const [optKey, opt] of Object.entries(mod.options)) {
+        dropdown += '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
+          + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">' + opt.label + '</div>'
+          + '<select id="tk-opt-' + id + '-' + optKey + '" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">';
+        for (const v of opt.values) {
+          dropdown += '<option value="' + v.value + '">' + v.label + '</option>';
+        }
+        dropdown += '</select></div>';
       }
-      dropdown += '</select></div>';
     }
 
     html += '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' + opacity + '">'
@@ -1138,15 +1139,21 @@ function tkGenerateRunSh(selected, manifest) {
     if (!mod || !mod.run_script) continue;
     lines.push('# --- Module: ' + modName + ' ---');
     lines.push('if [ -f "${USBROOT}/scripts/' + mod.run_script + '" ]; then');
-    // Check for module options (adapter dropdown, lte-mode, etc.)
+    // Check for module options and pass as script arguments
     let extraArgs = '';
-    const optEl = document.getElementById('tk-opt-' + modName);
-    if (optEl) {
-      const optVal = optEl.value;
-      if (modName === 'lte-setup') {
-        extraArgs = ' "dhcp" "' + optVal + '"';  // LTE_MODE + ADAPTER_PID
-      } else {
-        extraArgs = ' "' + optVal + '"';
+    if (modName === 'lte-setup') {
+      const modeEl = document.getElementById('tk-opt-' + modName + '-lte-mode');
+      const adapterEl = document.getElementById('tk-opt-' + modName + '-adapter');
+      const mode = modeEl ? modeEl.value : 'dhcp';
+      const adapter = adapterEl ? adapterEl.value : 'auto';
+      extraArgs = ' "' + mode + '" "' + adapter + '"';
+    } else {
+      // Generic: pass first option value found
+      if (mod.options) {
+        for (const optKey of Object.keys(mod.options)) {
+          const el = document.getElementById('tk-opt-' + modName + '-' + optKey);
+          if (el) { extraArgs += ' "' + el.value + '"'; }
+        }
       }
     }
     lines.push('    ksh "${USBROOT}/scripts/' + mod.run_script + '" "${USBROOT}"' + extraArgs);
