@@ -1,6 +1,6 @@
 {
     "name": "lte-setup",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces.",
     "author": "dspl1236",
     "status": "tested",
@@ -15,17 +15,9 @@
             "type": "select",
             "default": "dhcp",
             "values": [
-                {"value": "dhcp", "label": "DHCP \u2014 Auto (recommended)"},
-                {"value": "static", "label": "Static 172.16.42.1 \u2014 Direct connection"}
-            ]
-        },
-        "adapter": {
-            "label": "USB Ethernet Adapter",
-            "type": "select",
-            "default": "auto",
-            "values": [
-                {"value": "auto", "label": "Auto-detect (AX88772/772A)"},
-                {"value": "772B", "label": "AX88772B (PID 0x772B \u2014 override)"}
+                {"value": "dhcp", "label": "DHCP \u2014 Auto (AX88772/772A)"},
+                {"value": "static", "label": "Static 172.16.42.1 \u2014 Direct connection"},
+                {"value": "dhcp-772b", "label": "DHCP \u2014 AX88772B Override"}
             ]
         }
     }

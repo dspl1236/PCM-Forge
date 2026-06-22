@@ -1140,21 +1140,12 @@ function tkGenerateRunSh(selected, manifest) {
     if (!mod || !mod.run_script) continue;
     lines.push('# --- Module: ' + modName + ' ---');
     lines.push('if [ -f "${USBROOT}/scripts/' + mod.run_script + '" ]; then');
-    // Check for module options and pass as script arguments
+    // Pass module options as script arguments
     let extraArgs = '';
-    if (modName === 'lte-setup') {
-      const modeEl = document.getElementById('tk-opt-' + modName + '-lte-mode');
-      const adapterEl = document.getElementById('tk-opt-' + modName + '-adapter');
-      const mode = modeEl ? modeEl.value : 'dhcp';
-      const adapter = adapterEl ? adapterEl.value : 'auto';
-      extraArgs = ' "' + mode + '" "' + adapter + '"';
-    } else {
-      // Generic: pass first option value found
-      if (mod.options) {
-        for (const optKey of Object.keys(mod.options)) {
-          const el = document.getElementById('tk-opt-' + modName + '-' + optKey);
-          if (el) { extraArgs += ' "' + el.value + '"'; }
-        }
+    if (mod.options) {
+      for (const optKey of Object.keys(mod.options)) {
+        const el = document.getElementById('tk-opt-' + modName + '-' + optKey);
+        if (el) { extraArgs += ' "' + el.value + '"'; }
       }
     }
     lines.push('    ksh "${USBROOT}/scripts/' + mod.run_script + '" "${USBROOT}"' + extraArgs);

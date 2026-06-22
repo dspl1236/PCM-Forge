@@ -4,19 +4,22 @@
 
 USBROOT="${1:-/fs/usb0}"
 LTE_MODE="${2:-dhcp}"
-ADAPTER_PID="${3:-auto}"
+
+# Parse combined mode (dhcp / static / dhcp-772b)
+ASIX_ARGS=""
+case "$LTE_MODE" in
+    dhcp-772b)
+        LTE_MODE="dhcp"
+        ASIX_ARGS="did=0x772B,vid=0x0B95"
+        ;;
+esac
 
 echo "======== LTE Setup ========"
 echo "Config: $LTE_MODE"
-echo "Adapter: $ADAPTER_PID"
-echo "Detecting network stack..."
-
-# Build ASIX driver args (did= override for non-standard adapters)
-ASIX_ARGS=""
-if [ "$ADAPTER_PID" != "auto" ] && [ -n "$ADAPTER_PID" ]; then
-    ASIX_ARGS="did=0x${ADAPTER_PID},vid=0x0B95"
-    echo "[INFO] Using adapter override: $ASIX_ARGS"
+if [ -n "$ASIX_ARGS" ]; then
+    echo "Adapter override: $ASIX_ARGS"
 fi
+echo "Detecting network stack..."
 
 NETOK=0
 # Try io-net first (PCM3.1 Cayenne uses io-net from boot)
