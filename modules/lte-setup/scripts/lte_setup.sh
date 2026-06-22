@@ -4,23 +4,40 @@
 
 USBROOT="${1:-/fs/usb0}"
 LTE_MODE="${2:-dhcp}"
+ADAPTER_PID="${3:-auto}"
 
 echo "======== LTE Setup ========"
 echo "Config: $LTE_MODE"
+echo "Adapter: $ADAPTER_PID"
 echo "Detecting network stack..."
+
+# Build ASIX driver args (did= override for non-standard adapters)
+ASIX_ARGS=""
+if [ "$ADAPTER_PID" != "auto" ] && [ -n "$ADAPTER_PID" ]; then
+    ASIX_ARGS="did=0x${ADAPTER_PID},vid=0x0B95"
+    echo "[INFO] Using adapter override: $ASIX_ARGS"
+fi
 
 NETOK=0
 # Try io-net first (PCM3.1 Cayenne uses io-net from boot)
 if [ -e /dev/io-net ]; then
     echo "[OK] io-net running — mounting ASIX driver"
-    mount -T io-net /lib/dll/devn-asix.so 2>&1
+    if [ -n "$ASIX_ARGS" ]; then
+        mount -T io-net "/lib/dll/devn-asix.so ${ASIX_ARGS}" 2>&1
+    else
+        mount -T io-net /lib/dll/devn-asix.so 2>&1
+    fi
     NETOK=1
 else
     echo "[INFO] io-net not found, trying io-pkt-v4-hc..."
     for cmd in /sbin/io-pkt-v4-hc /usr/sbin/io-pkt-v4-hc; do
         if [ -x "$cmd" ]; then
             echo "[OK] Found: $cmd"
-            $cmd -d asix verbose &
+            if [ -n "$ASIX_ARGS" ]; then
+                $cmd -d /lib/dll/devn-asix.so $ASIX_ARGS &
+            else
+                $cmd -d asix verbose &
+            fi
             NETOK=1
             break
         fi

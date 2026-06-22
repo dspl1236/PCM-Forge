@@ -1039,7 +1039,7 @@ async function tkFetchManifest() {
     tkManifest = { modules: {
       'sysinfo': { status: 'ready', description: 'Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
       'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
-      'lte-setup': { status: 'tested', description: 'Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] },
+      'lte-setup': { status: 'tested', description: 'Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', options: {}, files: [] , options: { 'adapter': { label: 'USB Ethernet Adapter', values: [{ value: 'auto', label: 'Auto-detect (AX88772/772A — standard)' },{ value: '772B', label: 'AX88772B (PID 0x772B — override)' },{ value: '772D', label: 'AX88772D (PID 0x772D — override)' }] } } },
       'service-reset': { status: 'alpha', description: 'Coming soon — Oil service reset via BAP protocol (CAN 0x490, FKT 0x03, LSG 0x11). All parameters extracted, awaiting BAP channel confirmation.', run_script: 'service_reset_run.sh', script_dir: '/scripts/ServiceReset', files: [] },
       'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe + BAP cluster discovery. Maps /dev/ipc/ioc channels, scans for BAP cluster on CAN 0x490/0x491, tests showScreen slay+restart. Read-only, safe.', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'bin/bap_a0.bin'},{path:'scripts/ch6_capture.sh'}] },
     }, raw_url_base: TK_RAW_BASE };
@@ -1075,8 +1075,8 @@ async function tkRenderModules() {
 
     // Options dropdown (for lte-setup)
     let dropdown = '';
-    if (mod.options && mod.options['lte-mode']) {
-      const opt = mod.options['lte-mode'];
+    if (mod.options && (mod.options['lte-mode'] || mod.options['adapter'])) {
+      const opt = mod.options['lte-mode'] || mod.options['adapter'];
       dropdown = '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
         + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">' + opt.label + '</div>'
         + '<select id="tk-opt-' + id + '" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">';
@@ -1138,7 +1138,18 @@ function tkGenerateRunSh(selected, manifest) {
     if (!mod || !mod.run_script) continue;
     lines.push('# --- Module: ' + modName + ' ---');
     lines.push('if [ -f "${USBROOT}/scripts/' + mod.run_script + '" ]; then');
-    lines.push('    ksh "${USBROOT}/scripts/' + mod.run_script + '" "${USBROOT}"');
+    // Check for module options (adapter dropdown, lte-mode, etc.)
+    let extraArgs = '';
+    const optEl = document.getElementById('tk-opt-' + modName);
+    if (optEl) {
+      const optVal = optEl.value;
+      if (modName === 'lte-setup') {
+        extraArgs = ' "dhcp" "' + optVal + '"';  // LTE_MODE + ADAPTER_PID
+      } else {
+        extraArgs = ' "' + optVal + '"';
+      }
+    }
+    lines.push('    ksh "${USBROOT}/scripts/' + mod.run_script + '" "${USBROOT}"' + extraArgs);
     lines.push('    echo "[OK] ' + modName + ' completed"');
     lines.push('else');
     lines.push('    echo "[WARN] ' + mod.run_script + ' not found"');
