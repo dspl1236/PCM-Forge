@@ -87,6 +87,23 @@ the *backend* — hence the `activateUseFakeVin.sh` spoof script.
 The RCC defaults to **`en0 = 172.16.250.247/24`** (DHCP optional) on the OABR/diagnostic
 Ethernet; `inetd` is started at boot (`srv-starter.cfg`).
 
+### Diagnostic (OBD) coding — a no-root route
+`diag_server.elf` (the DSI diagnostic system) has **`SystemDiagModuleThread::handleUpdateCoding`**
+— it applies coding bytes received over **UDS/SDIS** (the ODIS/OBD channel). **SFD is NOT
+enforced** on this 2018 build (no SFD lock/token strings — the MY2020+ protection doesn't
+apply). So the standard OBD variant-coding route (OBDeleven/VCDS/VCP-style) is the cleanest
+delivery for the ~32 `VIPCmd ee vc` features — **no root, no SD card**. The exact
+SecurityAccess gating is a bench/OBD-tool item. Nav (FSID) + FEC-licensed features still
+need GEM/root or a real FreischaltCode.
+
+**Three deployment tiers (none require forging crypto):**
+
+| Route | Root? | Hardware | Best for |
+|-------|-------|----------|----------|
+| OBD diagnostic coding | No | OBD dongle | variant-coded features (pre-SFD) |
+| SD-card SWDL (CVE-2020-28656) | No | SD card | broad changes / scripts |
+| Root shell (telnet/qconn/serial) | Yes | bench/adapter | everything, full control |
+
 ---
 
 ## 5. SD-card delivery — CVE-2020-28656 (confirmed on this firmware)
@@ -106,6 +123,13 @@ Confirmed here: identical metainfo layout; carved verifier (`metainfo_verify.elf
 assembler (`FUN_0020ab04`) matches the disclosed logic exactly. Picking the live target
 script and confirming the customer-mode apply flow are bench-validation items.
 
+**Affected range (verified against a newer build):** a later firmware
+(`MH2p_ER_POG35_K9829`, Cayenne, Dec 2018) **replaced this design** with JSON manifests +
+a **detached signature over the whole checksum file** (`main.mnf_cks_S.sig` →
+`SignedFile = "main.mnf.cks"`) — closing the append gap. So this vector is specific to the
+older inline-`[Signature]` design. The activation/coding mechanism, Tegra/QNX platform, and
+RSA-1024 crypto carry over to the newer build. See [`FIRMWARE_COMPARISON.md`](FIRMWARE_COMPARISON.md).
+
 ---
 
 ## 6. Reusable artifacts produced
@@ -124,5 +148,13 @@ per-feature commands, the crypto (unforgeable), all access vectors, the SD-card 
 vector.
 
 **Needs a bench unit:** live telnet/qconn confirmation; the exact SD-card target script +
-customer-mode apply flow; online-services VIN behavior; whether the ExceptionList MD5
-whitelist (`[SupportedFSC]`, guarded by MD5) is a viable no-shell route.
+customer-mode apply flow; online-services VIN behavior; whether the `ExceptionList.txt`
+`[SupportedFSC]` whitelist is a viable no-shell route — note its 8×16-byte trailer is an
+**RSA-1024 signature** (same format as the FEC/update sigs), *not* an MD5 hash, so it
+cannot be regenerated offline.
+
+**Firmware B (Cayenne MMX2P) — also needs a bench unit / new tooling:** the RCC moved to
+DRA74x with a different IFS container (our LZO walker doesn't apply) and `mifs-stage2`
+moved to LZ4, so RCC root-vector confirmation and GEM script-library enumeration on that
+build are not statically reachable with the current tools. See
+[`FIRMWARE_COMPARISON.md`](FIRMWARE_COMPARISON.md).

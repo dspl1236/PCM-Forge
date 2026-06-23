@@ -1157,7 +1157,89 @@ Everything derivable from the firmware is done. Remaining unknowns are **hardwar
 (insert SD + observe root exec; live telnet/qconn; online-VIN behavior) or require **other
 firmware versions** for a vulnerable-range comparison.
 
+## Session 15 Findings: diagnostic (OBD) coding path — a third, no-root deployment tier
+
+Explored whether features are codeable over the diagnostic interface (the ODIS/OBD route)
+without root.
+
+### Confirmed
+- `diag_server.elf` (carved @0x1DBD0000, the DSI diagnostic system) contains
+  **`SystemDiagModuleThread::handleUpdateCoding`** which applies coding bytes
+  (`(*coding)[%u] == 0x%X`) received via **UDS/SDIS** — i.e. the official OBD coding
+  channel. Also present: `RoutineControl` (`requestRoutine`), actuator test,
+  `handleRoutineFormatPartition`.
+- **SFD is NOT enforced** on this 2018 build: the 66 "SFD" byte-hits are all inside
+  compressed regions; there are zero SFD lock/token/status strings. (SFD = VW's MY2020+
+  diagnostic-protection that token-gates coding.) So modern protection does not apply here.
+
+### Not determinable from static RE (⇒ bench / OBD-tool)
+The exact security gate on the variant-coding write couldn't be pinned: ARM PIC hides the
+log-string references (only `error unlocking`, a shared mutex string, resolved), and the
+C++ method bodies are unnamed (only vtables/imports are symboled). Proving the write is
+open vs. SecurityAccess-gated (and whether the pre-SFD key algorithm applies) needs a unit
++ an OBD tool. Domain note: the MIB2/VAG community already codes these features over OBD
+with OBDeleven/VCDS/VCP/ODIS on pre-SFD units via exactly this path.
+
+### Net: three deployment tiers (none require forging crypto)
+1. **OBD diagnostic coding** (OBDeleven/VCDS-style) — no root, no SD — for the ~32
+   variant-coded (`VIPCmd ee vc`) features; SFD-free on this build.
+2. **SD-card SWDL** (CVE-2020-28656) — no root — broad changes/scripts.
+3. **Root shell** (telnet/qconn/serial) — full control, runs the GEM scripts.
+Nav (FSID flag) + FEC-licensed features may need GEM/root or a real FreischaltCode.
+
+### Firmware-side analysis status
+Diagnostic-coding existence + SFD-absence are confirmed; deeper coding mechanics are now
+hardware-gated. The remaining purely-firmware item is `mifs-stage2.img` (48MB `LZOZ`,
+the un-extracted MMX second-stage FS — now crackable with the LZO tooling).
+
+## Session 16 Findings: Firmware B (Cayenne MMX2P) deep-dig — packaging changes, then park
+
+Ran our own unpackers directly against Firmware B
+(`MH2p_ER_POG35_K9829_9Y0919360B`, Cayenne 9Y0, MMX2P, 2018-12) to confirm what
+generalizes. Driver scripts: `run_efs_new.py`, `run_ifs_new.py` (re-point
+`efs_extract.py` / `ifs_extract.py` at the new images via in-memory `re.sub`).
+
+**EFS/F3S format generalizes (confirmed).** `MMX2P.efs-system` (`_CLU24_` variant, 2 MB,
+`QSSL_F3S`) extracted cleanly with `efs_extract.py`: `boot_info@0xC0 unit_total=16
+align_pow2=6 root=(logi=1,idx=3)`, root dirent `/mnt/system`, **143 files / 8 dirs /
+854,651 bytes**, 0 compressed. So this image is the MMX **/mnt/system config partition**
+(`etc/config/*.conf`, `etc/eso/presets/*.json`, `etc/db`) — not the RCC keys partition the
+old firmware kept keys in. ⇒ our EFS tooling works across both generations.
+
+**FEC presets are logging-only.** `etc/eso/presets/fec.json` and
+`component_protection.json` only set trace levels (`"FEC":"info"/"debug"`); no keys / FSID
+tables / policy. Activation state still lives at runtime in `efs-persist`.
+
+**FEC keys are no longer loose files.** Whole-`Data/` search for
+`*_public_signed.bin` / `FECKey` / `*key*.bin` = **0 hits**. Firmware A kept them as loose
+`efs-system/backup/Keys/…` blobs; Firmware B packs them with the `FecManager`
+verifier in MMX `app.img`. Crypto format (288-byte `n|e|sig`, `e=3`, RSA-1024) is a
+VAG-platform constant and the update signatures stay RSA-1024 — but the loose-file
+key-dump route doesn't apply to Firmware B.
+
+**New RCC IFS uses a different container (DRA74x).** `ifs-dra74x-vayu-evm.bin` (9.4 MB)
+fails `ifs_extract.py` (`imagefs decompressed empty`). Startup is uncompressed ARM
+(`0cc08fe2 00f09ce5…`). Raw string scan: telnetd/qconn/inetd/shadow/172.16.250 all **x0**
+(body is compressed). The only `\x89LZO`-like marker is ~6.4 MB deep with a **non-standard
+signature** `89 4C 5A 4F 00 0D 0A A9 1A` (vs QNX standard `89 4C 5A 4F 0D 0A 1A 0A`), and a
+brute-force over framings (LE/BE × 16/32-bit length × sig offsets 6–20) produced **no valid
+LZO1X block**. ⇒ the DRA74x build toolchain repacks the IFS with a newer/different codec.
+Confirming RCC root vectors (telnet/qconn) on Firmware B now needs a bench unit or a port
+of the new container. This is a tooling gap, **not** a regression — the GEM bypass runs on
+MMX, whose `app.img` (with `dumb_persistence_writer` + engdefs) is confirmed present.
+
+**`mifs-stage2` → LZ4.** `main_stage2.img` carries an `LZ4_` magic (vs Firmware A's LZOZ),
+so dumping the GEM *script library* on Firmware B would need an LZ4 decoder; the binary +
+engdefs path are still in `app.img`, so this only blocks bulk enumeration.
+
+**Conclusion / parked.** Mechanism, platform, and crypto carry across both generations
+(see `docs/FIRMWARE_COMPARISON.md`). What changed is **packaging, not protection**: RCC →
+DRA74x with a new IFS container, FEC keys moved into packed images, `mifs-stage2` → LZ4.
+All remaining open items are bench-gated. Research parked here.
+
 ## Files Saved
+- newfw_efs/ — MMX2P `/mnt/system` config partition (143 files, Firmware B) — Session 16
+- run_efs_new.py / run_ifs_new.py — Firmware B extraction drivers — Session 16
 - feature_scripts.txt — full plaintext of ~90 feature/FEC GEM scripts
 - engdefs_dump.txt — index of all 568 script names + 215 ESD labels
 - binaries/dumb_persistence_writer.elf, binaries/dumb_persistence_reader.elf — Session 5
