@@ -30,6 +30,23 @@ Full detail in **[docs/FINDINGS.md](docs/FINDINGS.md)**.
 
 ---
 
+## Firmware analyzed
+
+| | |
+|---|---|
+| **Release** | `MHI2_ER_POG24_K5137_MU1417_971919360T` |
+| **Part number** | `971919360T` (Porsche **Panamera 971**) |
+| **MU (software) version** | `1417` |
+| **Variant** | `FM2-P-N-EU-PO-MLE` (Premium · Navigation · Europe · Porsche) |
+| **Vendor / platform** | Harman (HAD) · MIB2 High |
+| **Approx. date** | 2018 (image timestamps Apr–Sep 2018) |
+
+> **Findings are specific to this build.** Versions matter: the SD-card metainfo bypass
+> (CVE-2020-28656) was **fixed in later firmware**, so newer MU versions may differ. Treat
+> the coding map / paths / offsets as accurate for this release and verify against your own.
+
+---
+
 ## Repository layout
 
 ```
