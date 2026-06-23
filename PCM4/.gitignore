@@ -1,0 +1,54 @@
+# ============================================================
+# PCM4 / MIB2 research repo — keep proprietary + generated out
+# ============================================================
+
+# --- Proprietary firmware & anything extracted from it (NEVER publish) ---
+binaries/
+rcc_efs/
+rcc_rootfs/
+*.elf
+*.bin
+*.der
+*.pem
+*.img
+rcc_ifs-root_imagefs.bin
+
+# ...but DO publish the per-OEM FEC/Data/Metainfo PUBLIC keys
+!keys/
+!keys/**
+
+# Extracted Harman/VAG script & string content (proprietary)
+feature_scripts.txt
+engdefs_dump.txt
+fsid_all.txt
+gem_scripts.txt
+key_scripts.txt
+*_report.txt
+*_dump.txt
+rcc_analysis.txt
+rcc_hdr.txt
+
+# --- Third-party reference material (don't re-host) ---
+ref/
+
+# --- Ghidra: projects/output contain decompiled proprietary code ---
+ghidra_proj/
+ghidra_out/
+*.gpr
+*.rep
+*.lock
+*.log
+
+# --- Internal / session working files (not for publication) ---
+CLAUDE.md
+handoff/CLAUDE_CODE_PRIMER.md
+wheels/
+
+# --- Local scratch scripts at repo root (curated copies live in tools/) ---
+/*.py
+!setup.py
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.swp
