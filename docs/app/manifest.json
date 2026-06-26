@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-08",
+  "generated": "2026-06-26",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -12,7 +12,7 @@
   "modules": {
     "ioc-probe": {
       "status": "ready",
-      "description": "IOC CAN channel probe — maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
+      "description": "IOC CAN channel probe \u00e2\u20ac\u201d maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
       "standalone": true,
       "run_script": "ioc_probe_run.sh",
       "script_dir": "/scripts/IocProbe",
@@ -24,29 +24,29 @@
       "files": [
         {
           "path": "module.json",
-          "size": 403
-        },
-        {
-          "path": "scripts/ch6_capture.sh",
-          "size": 3009
-        },
-        {
-          "path": "scripts/ioc_probe.sh",
-          "size": 4479
-        },
-        {
-          "path": "scripts/ioc_probe_run.sh",
-          "size": 417
+          "size": 414
         },
         {
           "path": "bin/bap_a0.bin",
           "size": 6
+        },
+        {
+          "path": "scripts/ch6_capture.sh",
+          "size": 3103
+        },
+        {
+          "path": "scripts/ioc_probe.sh",
+          "size": 4616
+        },
+        {
+          "path": "scripts/ioc_probe_run.sh",
+          "size": 434
         }
       ]
     },
     "lte-setup": {
-      "status": "tested",
-      "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces.",
+      "status": "deprecated",
+      "description": "[DEPRECATED \u2014 use the 'usb-net' module] LTE/router connectivity over USB ethernet. Superseded by usb-net, which ships the universal ASIX driver (incl. AX88772B/C) and an 'lte' mode that does the same DNS setup. The old 'AX88772B Override' never worked on io-net and has been removed.",
       "standalone": true,
       "run_script": "lte_setup.sh",
       "script_dir": "/scripts/LTE",
@@ -62,15 +62,11 @@
           "values": [
             {
               "value": "dhcp",
-              "label": "DHCP — Auto (AX88772/772A)"
+              "label": "DHCP \u2014 Auto (AX88772/772A)"
             },
             {
               "value": "static",
-              "label": "Static 172.16.42.1 — Direct connection"
-            },
-            {
-              "value": "dhcp-772b",
-              "label": "DHCP — AX88772B Override"
+              "label": "Static 172.16.42.1 \u2014 Direct connection"
             }
           ]
         }
@@ -78,11 +74,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 781
+          "size": 991
         },
         {
           "path": "scripts/lte_setup.sh",
-          "size": 2705
+          "size": 3133
         }
       ]
     },
@@ -100,11 +96,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 450
+          "size": 463
         },
         {
           "path": "scripts/service_reset_run.sh",
-          "size": 334
+          "size": 341
         }
       ]
     },
@@ -122,21 +118,21 @@
       "files": [
         {
           "path": "module.json",
-          "size": 456
+          "size": 468
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 4668
+          "size": 4824
         },
         {
           "path": "scripts/sysinfo_run.sh",
-          "size": 271
+          "size": 282
         }
       ]
     },
     "telnet": {
       "status": "tested",
-      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.",
+      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u00e2\u20ac\u201d session-only, re-run after reboot.",
       "standalone": true,
       "run_script": "telnet_enable.sh",
       "script_dir": "/scripts/Telnet",
@@ -148,11 +144,63 @@
       "files": [
         {
           "path": "module.json",
-          "size": 401
+          "size": 413
         },
         {
           "path": "scripts/telnet_enable.sh",
-          "size": 1377
+          "size": 1426
+        }
+      ]
+    },
+    "usb-net": {
+      "status": "tested",
+      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or static), and enables telnet. Loads from USB only \u00e2\u20ac\u201d never modifies the read-only firmware.",
+      "standalone": true,
+      "run_script": "usb_net_run.sh",
+      "script_dir": "/scripts/USBNet",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1",
+        "MMI3G+",
+        "RNS850"
+      ],
+      "options": {
+        "mode": {
+          "label": "Addressing",
+          "type": "select",
+          "default": "dhcp",
+          "values": [
+            {
+              "value": "dhcp",
+              "label": "DHCP \u00e2\u20ac\u201d from your router/switch"
+            },
+            {
+              "value": "static",
+              "label": "Static 172.16.42.1 \u00e2\u20ac\u201d direct cable to a PC"
+            },
+            {
+              "value": "lte",
+              "label": "LTE/internet \u00e2\u20ac\u201d DHCP + DNS (replaces lte-setup)"
+            }
+          ]
+        }
+      },
+      "files": [
+        {
+          "path": "README.md",
+          "size": 3301
+        },
+        {
+          "path": "module.json",
+          "size": 1204
+        },
+        {
+          "path": "bin/devn-asix-universal.so",
+          "size": 75540
+        },
+        {
+          "path": "scripts/usb_net_run.sh",
+          "size": 4595
         }
       ]
     }

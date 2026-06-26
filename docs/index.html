@@ -1039,7 +1039,8 @@ async function tkFetchManifest() {
     tkManifest = { modules: {
       'sysinfo': { status: 'ready', description: 'Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
       'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
-      'lte-setup': { status: 'tested', description: 'Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces. Requires ASIX AX88772A adapter.', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', files: [] },
+      'usb-net': { status: 'tested', description: 'Universal ASIX USB-Ethernet (AX88772 / 772A / 772B / 772C) + telnet. Loads from USB, never touches the read-only flash. Modes: dhcp / static / lte.', run_script: 'usb_net_run.sh', script_dir: '/scripts/USBNet', files: [{path:'scripts/usb_net_run.sh'},{path:'bin/devn-asix-universal.so'}] },
+      'lte-setup': { status: 'deprecated', description: 'DEPRECATED — use usb-net (it ships the universal driver incl. AX88772B/C and an lte mode that does this same DNS setup).', run_script: 'lte_setup.sh', script_dir: '/scripts/LTE', files: [] },
 
       'service-reset': { status: 'alpha', description: 'Coming soon — Oil service reset via BAP protocol (CAN 0x490, FKT 0x03, LSG 0x11). All parameters extracted, awaiting BAP channel confirmation.', run_script: 'service_reset_run.sh', script_dir: '/scripts/ServiceReset', files: [] },
       'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe + BAP cluster discovery. Maps /dev/ipc/ioc channels, scans for BAP cluster on CAN 0x490/0x491, tests showScreen slay+restart. Read-only, safe.', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'bin/bap_a0.bin'},{path:'scripts/ch6_capture.sh'}] },
@@ -1050,10 +1051,12 @@ async function tkFetchManifest() {
 
 const TK_ICONS = {
   'sysinfo': '\u{1F4C4}', 'telnet': '\u{1F5A5}', 'lte-setup': '\u{1F4E1}',
+  'usb-net': '\u{1F310}',
   'service-reset': '\u{1F527}', 'ioc-probe': '\u{1F50D}', 'time-fix': '\u23F0'
 };
 const TK_NAMES = {
   'sysinfo': 'System Info', 'telnet': 'Telnet Enabler', 'lte-setup': 'LTE Setup',
+  'usb-net': 'USB Ethernet',
   'service-reset': 'Service Reset', 'ioc-probe': 'IOC Probe', 'time-fix': 'Time Fix'
 };
 

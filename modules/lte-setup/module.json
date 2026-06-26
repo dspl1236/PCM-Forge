@@ -1,9 +1,10 @@
 {
     "name": "lte-setup",
-    "version": "1.3.0",
-    "description": "Configure DHCP on USB ethernet for LTE router connectivity. Sets DNS (8.8.8.8). Restarts inetd on all interfaces.",
+    "version": "1.4.0",
+    "description": "[DEPRECATED \u2014 use the 'usb-net' module] LTE/router connectivity over USB ethernet. Superseded by usb-net, which ships the universal ASIX driver (incl. AX88772B/C) and an 'lte' mode that does the same DNS setup. The old 'AX88772B Override' never worked on io-net and has been removed.",
     "author": "dspl1236",
-    "status": "tested",
+    "status": "deprecated",
+    "deprecated_by": "usb-net",
     "compatible": ["PCM3.1"],
     "standalone": true,
     "run_script": "lte_setup.sh",
@@ -16,8 +17,7 @@
             "default": "dhcp",
             "values": [
                 {"value": "dhcp", "label": "DHCP \u2014 Auto (AX88772/772A)"},
-                {"value": "static", "label": "Static 172.16.42.1 \u2014 Direct connection"},
-                {"value": "dhcp-772b", "label": "DHCP \u2014 AX88772B Override"}
+                {"value": "static", "label": "Static 172.16.42.1 \u2014 Direct connection"}
             ]
         }
     }

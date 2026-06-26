@@ -5,42 +5,29 @@
 USBROOT="${1:-/fs/usb0}"
 LTE_MODE="${2:-dhcp}"
 
-# Parse combined mode (dhcp / static / dhcp-772b)
-ASIX_ARGS=""
-case "$LTE_MODE" in
-    dhcp-772b)
-        LTE_MODE="dhcp"
-        ASIX_ARGS="did=0x772B,vid=0x0B95"
-        ;;
-esac
+# -- DEPRECATED: superseded by the 'usb-net' module --------------------------
+# usb-net ships the universal ASIX driver (incl. AX88772B/C) + an 'lte' mode
+# that does this same DNS setup. The old 'dhcp-772b' override never worked on
+# io-net (did= is io-pkt-only) and has been removed. Use usb-net for any
+# AX88772B/C adapter.
+# ---------------------------------------------------------------------------
 
-echo "======== LTE Setup ========"
+echo "==== LTE Setup (DEPRECATED -> use usb-net) ===="
 echo "Config: $LTE_MODE"
-if [ -n "$ASIX_ARGS" ]; then
-    echo "Adapter override: $ASIX_ARGS"
-fi
 echo "Detecting network stack..."
 
 NETOK=0
 # Try io-net first (PCM3.1 Cayenne uses io-net from boot)
 if [ -e /dev/io-net ]; then
     echo "[OK] io-net running — mounting ASIX driver"
-    if [ -n "$ASIX_ARGS" ]; then
-        mount -T io-net "/lib/dll/devn-asix.so ${ASIX_ARGS}" 2>&1
-    else
-        mount -T io-net /lib/dll/devn-asix.so 2>&1
-    fi
+    mount -T io-net /lib/dll/devn-asix.so 2>&1
     NETOK=1
 else
     echo "[INFO] io-net not found, trying io-pkt-v4-hc..."
     for cmd in /sbin/io-pkt-v4-hc /usr/sbin/io-pkt-v4-hc; do
         if [ -x "$cmd" ]; then
             echo "[OK] Found: $cmd"
-            if [ -n "$ASIX_ARGS" ]; then
-                $cmd -d /lib/dll/devn-asix.so $ASIX_ARGS &
-            else
-                $cmd -d asix verbose &
-            fi
+            $cmd -d asix verbose &
             NETOK=1
             break
         fi

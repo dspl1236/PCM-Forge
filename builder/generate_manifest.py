@@ -38,7 +38,7 @@ def walk_module(mod_dir):
     for root, _, fnames in os.walk(mod_dir):
         for fname in sorted(fnames):
             fpath = os.path.join(root, fname)
-            rel = os.path.relpath(fpath, mod_dir)
+            rel = os.path.relpath(fpath, mod_dir).replace(os.sep, '/')  # POSIX paths for raw URLs
             files.append({'path': rel, 'size': os.path.getsize(fpath)})
     return files
 

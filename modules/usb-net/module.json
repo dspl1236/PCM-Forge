@@ -1,0 +1,28 @@
+{
+    "name": "usb-net",
+    "version": "1.0.0",
+    "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or static), and enables telnet. Loads from USB only — never modifies the read-only firmware.",
+    "author": "dspl1236",
+    "status": "tested",
+    "compatible": ["PCM3.1", "MMI3G+", "RNS850"],
+    "standalone": true,
+    "run_script": "usb_net_run.sh",
+    "script_dir": "/scripts/USBNet",
+    "installs_to_flash": false,
+    "files": [
+        {"path": "scripts/usb_net_run.sh"},
+        {"path": "bin/devn-asix-universal.so"}
+    ],
+    "options": {
+        "mode": {
+            "label": "Addressing",
+            "type": "select",
+            "default": "dhcp",
+            "values": [
+                {"value": "dhcp", "label": "DHCP — from your router/switch"},
+                {"value": "static", "label": "Static 172.16.42.1 — direct cable to a PC"},
+                {"value": "lte", "label": "LTE/internet — DHCP + DNS (replaces lte-setup)"}
+            ]
+        }
+    }
+}

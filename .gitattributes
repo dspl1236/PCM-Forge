@@ -1,0 +1,8 @@
+# Shell scripts run on QNX — MUST stay LF (the web app serves these raw to the head unit).
+*.sh    text eol=lf
+# Firmware/driver/image binaries — never line-ending-convert (autocrlf would corrupt them).
+*.so    binary
+*.bin   binary
+*.elf   binary
+*.png   binary
+*.zip   binary
