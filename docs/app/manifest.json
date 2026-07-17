@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-26",
+  "generated": "2026-07-17",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -10,6 +10,60 @@
     "lib_activating_done_png": "core/lib/activating-done.png"
   },
   "modules": {
+    "bt-aux-fix": {
+      "status": "experimental",
+      "description": "Stops the PCM defaulting to FM radio at startup and routes a connected phone to Bluetooth (A2DP) instead - no FM blast, no manual AUX-to-BT toggle. A single self-locating byte patch to the live PCM3Root, found by a unique signature so it works on every region/model/version (v2.00+). Fail-safe and brick-safe: a runtime /proc patch that reverts on reboot and never touches the read-only flash. Runtime = one-shot; Persistent = re-applies each boot via a /HBpersistence hook (reversible). Builds on WillCoder's PCM_31_AUX-BT research.",
+      "standalone": true,
+      "run_script": "bt_fix_run.sh",
+      "script_dir": "/scripts/BtAuxFix",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {
+        "mode": {
+          "label": "Mode",
+          "type": "select",
+          "default": "runtime",
+          "values": [
+            {
+              "value": "runtime",
+              "label": "Runtime - applies now, reverts on reboot"
+            },
+            {
+              "value": "persist",
+              "label": "Persistent - re-applies every boot (reversible)"
+            }
+          ]
+        }
+      },
+      "files": [
+        {
+          "path": "README.md",
+          "size": 2881
+        },
+        {
+          "path": "module.json",
+          "size": 1196
+        },
+        {
+          "path": "bin/bt_fix",
+          "size": 67172
+        },
+        {
+          "path": "scripts/bt_boot.sh",
+          "size": 845
+        },
+        {
+          "path": "scripts/bt_fix_run.sh",
+          "size": 2983
+        },
+        {
+          "path": "scripts/bt_hook_uninstall.sh",
+          "size": 753
+        }
+      ]
+    },
     "ioc-probe": {
       "status": "ready",
       "description": "IOC CAN channel probe \u00e2\u20ac\u201d maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
@@ -32,15 +86,15 @@
         },
         {
           "path": "scripts/ch6_capture.sh",
-          "size": 3103
+          "size": 3009
         },
         {
           "path": "scripts/ioc_probe.sh",
-          "size": 4616
+          "size": 4479
         },
         {
           "path": "scripts/ioc_probe_run.sh",
-          "size": 434
+          "size": 417
         }
       ]
     },
@@ -100,7 +154,7 @@
         },
         {
           "path": "scripts/service_reset_run.sh",
-          "size": 341
+          "size": 334
         }
       ]
     },
@@ -122,11 +176,11 @@
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 4824
+          "size": 4668
         },
         {
           "path": "scripts/sysinfo_run.sh",
-          "size": 282
+          "size": 271
         }
       ]
     },
@@ -148,7 +202,7 @@
         },
         {
           "path": "scripts/telnet_enable.sh",
-          "size": 1426
+          "size": 1377
         }
       ]
     },
@@ -188,11 +242,11 @@
       "files": [
         {
           "path": "README.md",
-          "size": 3301
+          "size": 3362
         },
         {
           "path": "module.json",
-          "size": 1204
+          "size": 1232
         },
         {
           "path": "bin/devn-asix-universal.so",
