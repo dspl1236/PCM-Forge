@@ -1,0 +1,3 @@
+*.raw
+PCM3Root*
+__pycache__/

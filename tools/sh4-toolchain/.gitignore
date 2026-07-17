@@ -1,0 +1,13 @@
+stub/
+*.o
+# compiled QNX SH4 binaries -- rebuild with ./build.sh <source.c>
+app_oil
+app_forge
+bt_fix
+ch8read
+chread
+dsi_client
+dsi_probe
+lmgr_probe
+lmgr_draw
+lmgr_overlay_safe
