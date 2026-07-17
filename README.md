@@ -183,13 +183,14 @@ PCM-Forge/
 - **V850 IOC** reverse engineered (CMX-RTX RTOS, CAN gateway)
 - **LTE restoration path** confirmed — `devn-asix.so` driver present in firmware
 - **AX88772D workaround** — QNX driver supports USB device ID override
-- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM, working across every region/model/firmware (v2.00+)
+- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM, working across every region/model/firmware (v2.00+). Builds on [WillCoder's research](https://github.com/WillCoder/PCM_31_AUX-BT); full writeup in [research/BT_AUX_BOOT_FIX.md](research/BT_AUX_BOOT_FIX.md)
 - **PCM 3.0 vs 3.1** — different hardware generations, tools are PCM 3.1 only
 
 ## Related Projects
 
 - **[MMI3G-Toolkit](https://github.com/dspl1236/MMI3G-Toolkit)** — Sister project for Audi MMI 3G/3G+ and VW RNS-850. Same Harman Becker platform, SD card delivery. Includes Google Earth restoration, 20+ modules, complete firmware reverse engineering.
 - **[DrGER2/MMI3GP-LAN-Setup](https://github.com/DrGER2/MMI3GP-LAN-Setup)** — Original Audi LTE setup method (same adapter works on PCM 3.1)
+- **[WillCoder/PCM_31_AUX-BT](https://github.com/WillCoder/PCM_31_AUX-BT)** — Found the BT/AUX boot fix and the `/proc/as` runtime-patch method that the **BT / AUX Fix** module builds on
 
 ## Disclaimer
 
