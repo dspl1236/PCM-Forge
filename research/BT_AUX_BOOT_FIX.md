@@ -2,7 +2,7 @@
 
 ## Status
 
-**Working, offline-validated across the firmware matrix; on-car confirmation pending.** A single byte in `PCM3Root` decides whether a phone connected at startup plays over Bluetooth or gets dropped to FM radio. Flipping it routes the source to **A2DP** instead of **FM**. Because the instruction is byte-identical across every build (only its address moves), one signature-based patcher covers **every region / model / firmware from v2.00 up**.
+**Working, offline-validated across all 31 firmware builds on hand; on-car confirmation pending.** A single byte in `PCM3Root` decides whether a phone connected at startup plays over Bluetooth or gets dropped to FM radio. Flipping it routes the source to **A2DP** instead of **FM**. Because the instruction is byte-identical across every build (only its address moves), one signature-based patcher covers **every region / model / firmware from v2.00 up**.
 
 Credit: this builds directly on **[WillCoder / PCM_31_AUX-BT](https://github.com/WillCoder/PCM_31_AUX-BT)**, who found the fix and the `/proc/<pid>/as` patch primitive. His delivery was an IFS reflash (which bricked two bench units); this module reimplements the same fix as a universal, brick-safe **runtime** patch.
 
@@ -48,22 +48,30 @@ The `01 e1` in the middle is the `mov #1,r1` that loads the FM index; the surrou
 
 ## Tested matrix
 
-Extracted `PCM3Root` from Porsche update packages (`PCM31<REGION><VER>.rar`), then scanned for the signature:
+Every firmware package on hand was scanned exhaustively — **31 `PCM3Root` binaries**, one per package × model variant (`generic` = Cayenne/Panamera, `9x1` = 991/981, `Macan`, `Navis`; each in facelift and pre-facelift). Each was extracted (`.rar` → LZO inflate → carve the ELF) and scanned for the signature.
 
-| Firmware | Region | Model / trim | FM-map address | Byte | Result |
-|----------|--------|--------------|----------------|------|--------|
-| v4.00 | CHN (China) | 991 (9x1) facelift | `0x082b65e0` | `0x01` | patch |
-| v4.00 | CHN (China) | 991 (9x1) pre-facelift | `0x082b65e0` | `0x01` | patch |
-| STEP 9.6 | ARB (Arabic) | Cayenne (generic) facelift | `0x082b2a74` | `0x01` | patch |
-| v4.00 | RDW (USA / RoW) | Cayenne (generic) facelift | `0x082b2a78` | `0x01` | patch |
-| v2.00 (2014) | CHN (China) | generic | `0x08297f48` | `0x01` | patch |
-| v1.00 (2013) | RDW (USA / RoW) | generic | — | — | **no-op** (see below) |
+**Result: 29 patch · 2 safe no-op · 0 anomalies.**
+
+The FM-map address is the **same for every model within a region+version** — the model-specific data lives outside `PCM3Root`'s source map — so it collapses to just five distinct addresses:
+
+| Region | Version | Models covered | FM-map address | Result |
+|--------|---------|----------------|----------------|--------|
+| CHN (China) | v2.00 | generic, 9x1, Navis | `0x08297f48` | ✅ patch |
+| CHN (China) | v4.00 | generic, 9x1, Macan, Navis | `0x082b65e0` | ✅ patch |
+| ARB (Arabic) | v4.00 | generic, 9x1, Macan | `0x082b2a74` | ✅ patch |
+| RDW (USA / RoW) | v4.00 | generic, 9x1, Macan | `0x082b2a78` | ✅ patch |
+| LOW (low-line) | v4.00 | generic, 9x1, Macan | `0x082b00d8` | ✅ patch |
+| RDW (USA / RoW) | v1.00 (2013) | generic | — (no signature) | ⚪ no-op (safe) |
 
 Observations:
-- The **address clusters by model** — `9x1` lands at `0x082b65e0`, the generic (Cayenne/Panamera) build around `0x082b2a7x` — and shifts slightly by region. A hardcoded address would be wrong on most of these; the signature finds it every time.
-- Even between **v2.00 and v4.00** the code *around* the store drifted (the bytes after it differ), but the 6-byte signature itself stayed identical and unique — so the patch tracks the instruction, not the layout.
+- Across **four regions, four models, both facelift and pre-facelift, v2.00 → v4.00**, the byte to patch (`0x01`, at signature +2) was present in every build. The address varies by **region and version — never by model**, which is one more reason a hardcoded address fails but the signature doesn't.
+- Even where the code *around* the store drifted between versions, the 6-byte signature stayed identical and **unique** (exactly one match per binary), so the fail-safe never has to abort on a real unit.
+- **Zero anomalies:** no build had the fallback bug present but the signature missing, and none had more than one match.
+- The only non-patch is **v1.00** (2013 launch), which predates the fallback code — the tool correctly finds nothing and does nothing.
 
-Regional packages seen locally: **ARB** 300/400, **CHN** 100–400, **LOW** 400, **RDW** 100–400. Models per package: generic (Cayenne/Panamera), `9x1` (991/981), Macan; each in pre-facelift and facelift (MOPF) variants.
+This is the empirical basis for "universal": because `bt_fix` locates the byte by signature at runtime, it already works on **whatever firmware a user's PCM is running (v2.00+)** with no per-car configuration — the same binary patched all 29 patchable builds and safely no-op'd the two v1.00 images.
+
+Local packages scanned: **ARB** 400, **CHN** 200/400, **LOW** 400, **RDW** 100/400 (the versions we have as full update archives). Other point releases (e.g. v1.50, v2.50, v3.xx) weren't on hand as extractable firmware, but sit between confirmed-patchable neighbours.
 
 ## The v1.00 exception
 

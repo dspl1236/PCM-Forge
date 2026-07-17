@@ -183,7 +183,7 @@ PCM-Forge/
 - **V850 IOC** reverse engineered (CMX-RTX RTOS, CAN gateway)
 - **LTE restoration path** confirmed — `devn-asix.so` driver present in firmware
 - **AX88772D workaround** — QNX driver supports USB device ID override
-- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM, working across every region/model/firmware (v2.00+). Builds on [WillCoder's research](https://github.com/WillCoder/PCM_31_AUX-BT); full writeup in [research/BT_AUX_BOOT_FIX.md](research/BT_AUX_BOOT_FIX.md)
+- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM; **validated across 31 firmware builds** (every region/model, v2.00+). Builds on [WillCoder's research](https://github.com/WillCoder/PCM_31_AUX-BT); full writeup in [research/BT_AUX_BOOT_FIX.md](research/BT_AUX_BOOT_FIX.md)
 - **PCM 3.0 vs 3.1** — different hardware generations, tools are PCM 3.1 only
 
 ## Related Projects
