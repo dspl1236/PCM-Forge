@@ -40,7 +40,7 @@ Check your version: press **INFO** → **Option** → **Show System Version**.
 
 ## Web App
 
-The web app at [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/) has three tabs:
+The web app at [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/) has four tabs:
 
 ### Tab 1: Activation Codes
 Enter your VIN → generates all 26 activation codes instantly. No server, no account, runs entirely in your browser.
@@ -50,17 +50,21 @@ Builds a ready-to-use USB stick with activation codes and optional diagnostic pr
 
 Includes an enhanced diagnostic mode that dumps 29+ system tests to the USB stick without modifying the car.
 
-### Tab 3: Toolkit (NEW)
-Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules, build a USB stick:
+### Tab 3: Toolkit
+Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules and build a USB stick — each module is fetched from `modules/` at build time, so the list stays in sync with the repo:
 
 | Module | Status | Description |
 |--------|--------|-------------|
 | **System Info** | ✅ Ready | Full PCM dump: version, VIN, mounts, processes, network, partitions, IPC, engineering screens |
-| **Telnet Enabler** | 🧪 Alpha | Start io-pkt + telnetd on en5 (172.16.42.1) via USB ethernet. Non-persistent |
-| **LTE Setup** | 🧪 Alpha | Configure DHCP on USB ethernet for LTE router connectivity |
-| **Password Dump** | 📐 Planned | Dump stored WiFi, Bluetooth, and connectivity credentials |
-| **Persistence Dump** | 📐 Planned | Export CVALUE files, screensaver config, HBpersistence contents |
-| **CAN / IOC Probe** | 📐 Planned | Scan IPC devices, DSP, MOST bus, CAN interfaces, V850 IOC state |
+| **Telnet Enabler** | ✅ Tested | Root shell — telnet (port 23) + raw ksh (2323). Session-only, re-run after reboot |
+| **USB Ethernet** | ✅ Tested | Universal ASIX driver (AX88772 / 772A / 772B / 772C) with DHCP / static / LTE. Loads from USB, never touches flash |
+| **IOC Probe** | ✅ Ready | Map IPC/CAN channels and discover the BAP instrument-cluster interface. Read-only |
+| **BT / AUX Fix** | 🧪 Experimental | Stops the PCM defaulting to FM at startup — routes a connected phone to Bluetooth (A2DP). Self-locating runtime patch, reboot-reverts |
+| **Service Reset** | 🧪 Alpha | Oil / service interval reset via UDS/BAP CAN. No PIWIS needed |
+| **LTE Setup** | ⚠️ Deprecated | Superseded by USB Ethernet (which includes an LTE mode) |
+
+### Tab 4: Backup
+Upload the `PagSWAct_backup.002` that Diagnostic mode pulls off the PCM to see exactly what's currently activated, then add features on top and download a **merged** `PagSWAct.002` — so you keep every existing activation instead of overwriting them.
 
 ## Data Connectivity & LTE Restoration
 
@@ -138,8 +142,8 @@ PCM 3.1 shares the Harman Becker HN+ platform with Audi MMI3G+ and VW RNS-850:
 | Component | Details |
 |-----------|---------|
 | CPU | Renesas SH4A (SH7786/SH7785) |
-| OS | QNX 6.3.0 SP1 |
-| Application | `PCM3Root` (native C++ binary, 5.8MB) |
+| OS | QNX 6.3.2 (PSP3) |
+| Application | `PCM3Root` (native C++ binary, ~6MB) |
 | IOC | Renesas V850 with CMX-RTX RTOS |
 | Display | 7" touchscreen, 800×480 |
 | Storage | Internal SATA HDD |
@@ -147,22 +151,27 @@ PCM 3.1 shares the Harman Becker HN+ platform with Audi MMI3G+ and VW RNS-850:
 | USB ethernet | `devn-asix.so` (ASIX AX88772) in firmware |
 | Autorun | `proc_scriptlauncher` + `copie_scr.sh` via USB |
 
-Note: Unlike Audi MMI3G+ which uses Java/J9 for the UI, PCM 3.1 uses a native C++ application (`PCM3Root`). The IFS also uses a Harman custom format (`hbcifs`) rather than standard QNX IFS.
+Note: Unlike Audi MMI3G+ which uses Java/J9 for the UI, PCM 3.1 uses a native C++ application (`PCM3Root`). The IFS images use LZO1X compression inside Harman's `hbcifs` container — decompressible back to a standard QNX IFS with the repo's tooling.
 
 ## Project Structure
 
 ```
 PCM-Forge/
-├── docs/index.html              # Web app (Codes, USB Stick, Manage Backup, Toolkit)
-├── research/                    # 30+ reverse engineering docs
-│   ├── ALGORITHM_CRACKED.md     # RSA-64 key recovery
-│   ├── FEATURE_REFERENCE.md     # All 26 features explained
-│   ├── DISCOVERY_NARRATIVE.md   # Full RE story
-│   ├── PCM31_CONNECTIVITY.md    # LTE restoration guide
-│   └── firmware/                # Ghidra output, bootscreen format, ISO analysis
-├── tools/                       # Firmware analysis & service reset tools
-├── core/                        # Python code generation core
-├── generate_codes.py            # CLI code generator
+├── docs/                        # GitHub Pages site
+│   ├── index.html               #   Web app (Activation, USB Stick, Toolkit, Backup)
+│   └── app/manifest.json        #   Auto-generated module index (built from modules/)
+├── modules/                     # Toolkit modules — each a self-contained USB tool
+│   ├── bt-aux-fix/              #   FM->A2DP boot fix (module.json + scripts/ + bin/)
+│   ├── usb-net/                 #   universal ASIX USB-ethernet
+│   └── sysinfo/ telnet/ ioc-probe/ service-reset/ lte-setup/
+├── builder/generate_manifest.py # Regenerates docs/app/manifest.json from modules/
+├── core/                        # Shared assets (copie_scr.sh, showScreen, status PNGs)
+├── research/                    # 30+ reverse engineering docs (+ firmware/ Ghidra output)
+│   ├── ALGORITHM_CRACKED.md     #   RSA-64 key recovery
+│   ├── DISCOVERY_NARRATIVE.md   #   Full RE story
+│   └── PCM31_CONNECTIVITY.md    #   LTE restoration guide
+├── tools/                       # Firmware analysis utilities
+├── generate_codes.py            # CLI activation-code generator
 └── FEATURES.md                  # Feature quick reference
 ```
 
@@ -174,6 +183,7 @@ PCM-Forge/
 - **V850 IOC** reverse engineered (CMX-RTX RTOS, CAN gateway)
 - **LTE restoration path** confirmed — `devn-asix.so` driver present in firmware
 - **AX88772D workaround** — QNX driver supports USB device ID override
+- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM, working across every region/model/firmware (v2.00+)
 - **PCM 3.0 vs 3.1** — different hardware generations, tools are PCM 3.1 only
 
 ## Related Projects
@@ -183,7 +193,7 @@ PCM-Forge/
 
 ## Disclaimer
 
-This tool modifies activation files on your PCM 3.1 head unit. While all changes are reversible (the original `PagSWAct.002` is backed up automatically), **use at your own risk**. This project is not affiliated with Porsche, Volkswagen Group, or Harman Becker.
+PCM-Forge modifies your PCM 3.1 head unit. The activation tool rewrites `PagSWAct.002` (the original is backed up automatically). The toolkit modules go further — for example **BT / AUX Fix** patches the running `PCM3Root` in memory, **Telnet** opens a root shell, and **USB Ethernet** loads a network driver. All of it is designed to be **brick-safe**: everything runs from USB or a live `/proc` / `/HBpersistence` patch, nothing modifies the read-only firmware, and a reboot reverts runtime changes. Still, **use at your own risk**. This project is not affiliated with Porsche, Volkswagen Group, or Harman Becker.
 
 ## License
 
