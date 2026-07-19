@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-17",
+  "generated": "2026-07-19",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -12,7 +12,7 @@
   "modules": {
     "bt-aux-fix": {
       "status": "experimental",
-      "description": "Stops the PCM defaulting to FM radio at startup and routes a connected phone to Bluetooth (A2DP) instead - no FM blast, no manual AUX-to-BT toggle. A single self-locating byte patch to the live PCM3Root, found by a unique signature so it works on every region/model/version (v2.00+). Fail-safe and brick-safe: a runtime /proc patch that reverts on reboot and never touches the read-only flash. Runtime = one-shot; Persistent = re-applies each boot via a /HBpersistence hook (reversible). Builds on WillCoder's PCM_31_AUX-BT research.",
+      "description": "Stops the PCM defaulting to FM radio at startup and routes a connected phone to Bluetooth (A2DP) instead - no FM blast, no manual AUX-to-BT toggle. A single self-locating byte patch to the live PCM3Root, found by a unique signature so it works on every region/model/version (v2.00+). Fail-safe and brick-safe: a runtime /proc patch that reverts on reboot and never touches the read-only flash. Runtime = one-shot; Persistent = re-applies each boot via a /HBpersistence hook (reversible); Revert = fully removes the fix and the boot hook (back to stock). Builds on WillCoder's PCM_31_AUX-BT research.",
       "standalone": true,
       "run_script": "bt_fix_run.sh",
       "script_dir": "/scripts/BtAuxFix",
@@ -33,6 +33,10 @@
             {
               "value": "persist",
               "label": "Persistent - re-applies every boot (reversible)"
+            },
+            {
+              "value": "revert",
+              "label": "Revert to stock - remove the fix and boot hook"
             }
           ]
         }
@@ -44,7 +48,7 @@
         },
         {
           "path": "module.json",
-          "size": 1196
+          "size": 1358
         },
         {
           "path": "bin/bt_fix",
@@ -56,7 +60,7 @@
         },
         {
           "path": "scripts/bt_fix_run.sh",
-          "size": 2983
+          "size": 4177
         },
         {
           "path": "scripts/bt_hook_uninstall.sh",

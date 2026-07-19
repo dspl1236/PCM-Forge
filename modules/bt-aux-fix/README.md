@@ -21,19 +21,20 @@ Verified across region (CHN / ARB / RDW-USA), model (991 / Cayenne / Macan) and 
 
 - **Runtime patch** — writes live memory; a reboot restores the stock flash image. Flash is never touched.
 - **Fail-safe** — patches **only** on exactly one signature match with the byte currently `0x01`. Zero or multiple matches → no write.
-- **Reversible** — Runtime mode reverts on reboot; Persistent mode reverts via `scripts/bt_hook_uninstall.sh`.
+- **Reversible** — Runtime mode reverts on reboot; Persistent mode reverts via the **Revert to stock** option (or `scripts/bt_hook_uninstall.sh` over SSH).
 
 ## Usage (via the PCM-Forge toolkit)
 
-Pick **BT / AUX Fix** on the [web toolkit](https://dspl1236.github.io/PCM-Forge/), choose **Runtime** or **Persistent**, build the USB, insert after the PCM has booted. Result is logged to `bt_fix.txt` on the stick.
+Pick **BT / AUX Fix** on the [web toolkit](https://dspl1236.github.io/PCM-Forge/), choose a mode, build the USB, insert after the PCM has booted. Result is logged to `bt_fix.txt` on the stick.
 
 - **Runtime** — applies once; reverts on the next reboot.
-- **Persistent** — installs a `/HBpersistence` boot hook that re-applies every boot (reversible).
+- **Persistent** — installs a `/HBpersistence` boot hook that re-applies every boot.
+- **Revert to stock** — strips the boot hook, removes the staged `/HBpersistence` files, and undoes the live patch (`07 → 01`), putting the unit fully back to stock in one run. Use this to cleanly roll back a Persistent install.
 
 ## Files
 
 ```
-module.json                    manifest (mode: runtime | persist)
+module.json                    manifest (mode: runtime | persist | revert)
 scripts/bt_fix_run.sh          run_script — $1=USBROOT $2=mode
 scripts/bt_boot.sh             boot-hook body (persist mode)
 scripts/bt_hook_uninstall.sh   revert the persistent hook

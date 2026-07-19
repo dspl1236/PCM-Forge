@@ -2,7 +2,7 @@
 # ============================================================
 # PCM-Forge  bt-aux-fix  —  universal FM->A2DP boot fix
 # ------------------------------------------------------------
-# Args (from the toolkit run.sh):  $1 = USBROOT   $2 = mode (runtime|persist)
+# Args (from the toolkit run.sh):  $1 = USBROOT   $2 = mode (runtime|persist|revert)
 #
 # Finds the FM source-map instruction in the LIVE PCM3Root by a unique
 # signature (version/region/model independent) and flips the FM index (01)
@@ -47,7 +47,29 @@ if [ "$MODE" = "persist" ]; then
     PID=$(find_pid)
     if [ -n "$PID" ]; then echo "[..] applying now to pid=$PID" >> "$LOG"; "$HP/bt_fix" "$PID" --apply >> "$LOG" 2>&1
     else echo "[..] PCM3Root not up yet; hook will apply on next boot" >> "$LOG"; fi
-    echo "[i] revert: run scripts/bt_hook_uninstall.sh, or delete the marked block in $DBG" >> "$LOG"
+    echo "[i] to undo later: run this module again in 'revert' mode" >> "$LOG"
+elif [ "$MODE" = "revert" ]; then
+    # ---- full revert to stock: strip hook, remove staged files, undo live patch ----
+    HP=/HBpersistence; DBG="$HP/debugTools.sh"; MARK="PCM-Forge bt_fix boot hook"
+    if [ -f "$DBG" ]; then
+        awk -v m="$MARK" 'index($0, ">>> " m " >>>"){skip=1;next} index($0, "<<< " m " <<<"){skip=0;next} skip!=1{print}' "$DBG" > "$DBG.tmp" \
+            && mv -f "$DBG.tmp" "$DBG" && chmod +x "$DBG" \
+            && echo "[OK] stripped boot hook from $DBG" >> "$LOG"
+    else
+        echo "[i] $DBG not present (nothing to strip)" >> "$LOG"
+    fi
+    rm -f "$HP/bt_boot.sh" "$HP/bt_boot.log" "$HP/bt_fix"
+    echo "[OK] removed $HP/bt_boot.sh + $HP/bt_fix (persistence gone)" >> "$LOG"
+    # undo the live patch now (07 -> 01) so this session is stock immediately
+    cp "$BF" "$TMPD/bt_fix" && chmod +x "$TMPD/bt_fix"
+    PID=$(find_pid)
+    if [ -n "$PID" ]; then
+        echo "[..] reverting live PCM3Root pid=$PID (07 -> 01)" >> "$LOG"
+        "$TMPD/bt_fix" "$PID" --revert >> "$LOG" 2>&1
+    else
+        echo "[i] PCM3Root not up; live memory reverts on reboot anyway" >> "$LOG"
+    fi
+    echo "[OK] REVERTED TO STOCK -- fix removed, will not apply at boot" >> "$LOG"
 else
     cp "$BF" "$TMPD/bt_fix" && chmod +x "$TMPD/bt_fix"
     PID=$(find_pid)

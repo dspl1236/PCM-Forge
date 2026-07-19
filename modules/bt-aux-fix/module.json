@@ -1,7 +1,7 @@
 {
     "name": "bt-aux-fix",
     "version": "1.0.0",
-    "description": "Stops the PCM defaulting to FM radio at startup and routes a connected phone to Bluetooth (A2DP) instead - no FM blast, no manual AUX-to-BT toggle. A single self-locating byte patch to the live PCM3Root, found by a unique signature so it works on every region/model/version (v2.00+). Fail-safe and brick-safe: a runtime /proc patch that reverts on reboot and never touches the read-only flash. Runtime = one-shot; Persistent = re-applies each boot via a /HBpersistence hook (reversible). Builds on WillCoder's PCM_31_AUX-BT research.",
+    "description": "Stops the PCM defaulting to FM radio at startup and routes a connected phone to Bluetooth (A2DP) instead - no FM blast, no manual AUX-to-BT toggle. A single self-locating byte patch to the live PCM3Root, found by a unique signature so it works on every region/model/version (v2.00+). Fail-safe and brick-safe: a runtime /proc patch that reverts on reboot and never touches the read-only flash. Runtime = one-shot; Persistent = re-applies each boot via a /HBpersistence hook (reversible); Revert = fully removes the fix and the boot hook (back to stock). Builds on WillCoder's PCM_31_AUX-BT research.",
     "author": "dspl1236",
     "status": "experimental",
     "compatible": ["PCM3.1"],
@@ -16,7 +16,8 @@
             "default": "runtime",
             "values": [
                 {"value": "runtime", "label": "Runtime - applies now, reverts on reboot"},
-                {"value": "persist", "label": "Persistent - re-applies every boot (reversible)"}
+                {"value": "persist", "label": "Persistent - re-applies every boot (reversible)"},
+                {"value": "revert", "label": "Revert to stock - remove the fix and boot hook"}
             ]
         }
     }
