@@ -43,9 +43,10 @@ clean slate.
 |------|---------|
 | `crt.S` | minimal SH4 `_start` runtime |
 | `stub_libc.c` | SONAME stub for `libc.so.2` (open/read/write/devctl/IPC…) |
-| `stub_libgf.c` | SONAME stub for `libgf.so.1` (the `gf_*` graphics API) |
+| `stub_libgf.c` | SONAME stub for `libgf.so.1` (the `gf_*` graphics API, incl. surface‑attach + blit) |
 | `build.sh` | one-command cross-build + deploy hint |
 | `font8x16.h` | self-shipped 8×16 bitmap font (text from `gf_draw_rect`) |
+| `make_img.py` | host-side baker: PNG → raw `PFIM` blob for `showimg` (Pillow) |
 
 **Probes & runtime tools**
 | file | purpose |
@@ -63,6 +64,7 @@ clean slate.
 | `lmgr_overlay_safe.c` | small cooperative overlay + **clean teardown** (the anti-snow lifecycle) |
 | `app_oil.c` | first real on-glass UI — an "oil service" screen drawn entirely from `gf_draw_rect` + the bitmap font |
 | `app_forge.c` | multi-page toolkit shell (home/oil/info), Show-once + UpdateVfb page switching |
+| `showimg.c` | display a raw image (PNG→`PFIM` blob) on the glass via `gf_surface_attach` + `gf_draw_blit2` — the Porsche-native `showScreen` replacement (`research/SHOWSCREEN_PORSCHE_COMPAT.md`) |
 
 ## Safety notes
 

@@ -11,3 +11,4 @@ dsi_probe
 lmgr_probe
 lmgr_draw
 lmgr_overlay_safe
+showimg
