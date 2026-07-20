@@ -1,5 +1,11 @@
 # bt-aux-fix — PCM 3.1 BT / AUX Boot Fix
 
+> ## ⏸️ PAUSED — do not use to apply the fix
+>
+> On-car testing (ours and WillCoder's) showed this byte-flip is **inert at boot**. The byte it flips lives in the **LastMode persistence handler**, but the boot source decision is made in a different function (`CPOnOffPresCtrl`) that is never reached that way at startup — at boot Bluetooth isn't connected yet, so the unit correctly falls to FM, and **nothing re-evaluates the source when the phone connects a few seconds later**. That's why it reverts to FM / lands on silent AUX.
+>
+> **The fix has to ride the *connect* event, not patch the boot decision.** A brick-safe replacement — a user-space DSI client that re-selects the source once Bluetooth connects — is in development. Until then this module is greyed out in the web toolkit and offers **only "Revert to stock"**, so anyone who already applied the old fix can cleanly roll it back.
+
 Stops a Porsche **PCM 3.1** defaulting to **FM radio** at startup and routes a connected phone to **Bluetooth (A2DP)** instead — no FM blast, no manual AUX→BT toggle.
 
 It's a **single self-locating byte patch** to the *live* `PCM3Root` process (`/proc/<pid>/as`). No flashing, no IFS repack — a reboot fully reverts it, so it **cannot brick** the unit.
@@ -25,11 +31,11 @@ Verified across region (CHN / ARB / RDW-USA), model (991 / Cayenne / Macan) and 
 
 ## Usage (via the PCM-Forge toolkit)
 
-Pick **BT / AUX Fix** on the [web toolkit](https://dspl1236.github.io/PCM-Forge/), choose a mode, build the USB, insert after the PCM has booted. Result is logged to `bt_fix.txt` on the stick.
+The module is **paused**: the web toolkit shows it greyed and offers only **Revert to stock**. Pick **BT / AUX Fix**, build the USB, insert after the PCM has booted. Result is logged to `bt_fix.txt` on the stick.
 
-- **Runtime** — applies once; reverts on the next reboot.
-- **Persistent** — installs a `/HBpersistence` boot hook that re-applies every boot.
-- **Revert to stock** — strips the boot hook, removes the staged `/HBpersistence` files, and undoes the live patch (`07 → 01`), putting the unit fully back to stock in one run. Use this to cleanly roll back a Persistent install.
+- **Revert to stock** — strips the `/HBpersistence` boot hook, removes the staged files, and undoes the live patch (`07 → 01`), putting the unit fully back to stock in one run. Use this to cleanly roll back a previous Runtime or Persistent install.
+
+The **Runtime** and **Persistent** apply-modes still exist in `bt_fix_run.sh` (`$2 = runtime|persist|revert`) for reference and manual use, but are no longer offered in the builder because they don't reliably fix the boot source (see the paused note above).
 
 ## Files
 

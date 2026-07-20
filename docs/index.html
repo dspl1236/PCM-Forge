@@ -1066,8 +1066,8 @@ async function tkRenderModules() {
   tkRendered = true;
   const manifest = await tkFetchManifest();
   const container = document.getElementById('tk-modules');
-  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--text2)', experimental: 'var(--accent)', planned: 'var(--text2)' };
-  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Coming Soon', experimental: 'Experimental', planned: 'Planned' };
+  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--text2)', experimental: 'var(--accent)', planned: 'var(--text2)', paused: 'var(--red)', deprecated: 'var(--red)' };
+  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Coming Soon', experimental: 'Experimental', planned: 'Planned', paused: 'Paused', deprecated: 'Deprecated' };
 
   let html = '';
   for (const [id, mod] of Object.entries(manifest.modules)) {
@@ -1076,7 +1076,9 @@ async function tkRenderModules() {
     const color = statusColors[mod.status] || 'var(--text2)';
     const label = statusLabels[mod.status] || mod.status;
     const disabled = (mod.status === 'planned' || mod.status === 'alpha') ? ' disabled' : '';
-    const opacity = (mod.status === 'planned' || mod.status === 'alpha') ? '0.5' : '1';
+    // 'paused'/'deprecated' stay selectable (so a stuck user can still build Revert) but render greyed
+    const opacity = (mod.status === 'planned' || mod.status === 'alpha') ? '0.5'
+                  : (mod.status === 'paused' || mod.status === 'deprecated') ? '0.6' : '1';
 
     // Options dropdowns (render all options for each module)
     let dropdown = '';
