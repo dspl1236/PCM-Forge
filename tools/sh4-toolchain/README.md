@@ -46,7 +46,8 @@ clean slate.
 | `stub_libgf.c` | SONAME stub for `libgf.so.1` (the `gf_*` graphics API, incl. surface‑attach + blit) |
 | `build.sh` | one-command cross-build + deploy hint |
 | `font8x16.h` | self-shipped 8×16 bitmap font (text from `gf_draw_rect`) |
-| `make_img.py` | host-side baker: PNG → raw `PFIM` blob for `showimg` (Pillow) |
+| `make_img.py` | host-side baker: PNG → raw `PFIM` blob for `showimg` (Pillow, CLI) |
+| `pfim_tool.py` | desktop **GUI** (Tkinter + Pillow) to view *and* create `PFIM` blobs — see below |
 
 **Probes & runtime tools**
 | file | purpose |
@@ -65,6 +66,28 @@ clean slate.
 | `app_oil.c` | first real on-glass UI — an "oil service" screen drawn entirely from `gf_draw_rect` + the bitmap font |
 | `app_forge.c` | multi-page toolkit shell (home/oil/info), Show-once + UpdateVfb page switching |
 | `showimg.c` | display a raw image (PNG→`PFIM` blob) on the glass via `gf_surface_attach` + `gf_draw_blit2` — the Porsche-native `showScreen` replacement (`research/SHOWSCREEN_PORSCHE_COMPAT.md`) |
+
+## Images — the PFIM blob tool
+
+`showimg` displays a raw **PFIM** blob: a 24-byte little-endian header
+(`magic 'PFIM' | W | H | gf_format | stride | bpp`) then raw pixels. `make_img.py`
+bakes one from the command line; **`pfim_tool.py`** is a small desktop GUI for the
+same job, plus inspection:
+
+```sh
+python pfim_tool.py          # needs: pip install pillow  (Tkinter ships with Python)
+```
+
+- **Create** — open a PNG, set the size (default 480×240) and channel order, get a
+  live WYSIWYG preview (the bytes decoded back, so it shows exactly what you write),
+  then **Save .bin**. *Save all 4* writes every 8888 order at once.
+- **Inspect** — open a `.bin` to read its header and render it. **Compare all
+  formats** shows the same bytes under every channel order at once: if the car
+  shows swapped colors, whichever panel looks right is the `--format` you need, and
+  **Save-as** re-bakes to it with no original PNG required.
+
+Because `gf_format` travels *in the header*, trying another order is a re-bake, not
+a recompile — and `pfim_tool.py`'s output is byte-identical to `make_img.py`.
 
 ## Safety notes
 

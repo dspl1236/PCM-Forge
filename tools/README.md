@@ -17,7 +17,10 @@ cross-compiler — no QNX SDK.** SONAME stub libs + a bare `crt.S` let you link
 against the unit's real (symbol-stripped) `libc.so.2` / `libgf.so.1`. Includes
 the layermanager probes, the `bt_fix` patcher source, the DSI input clients, and
 the custom on-glass UI apps (`app_oil`, `app_forge`). One command:
-`./build.sh app_oil.c`.
+`./build.sh app_oil.c`. For on-glass images, `make_img.py` (CLI) and
+`pfim_tool.py` (desktop GUI) bake a PNG into the raw `PFIM` blob that `showimg`
+displays — the GUI also inspects a blob and compares channel orders to fix a
+color swap.
 
 ## Firmware extraction & analysis — [`firmware-re/`](firmware-re/)
 
