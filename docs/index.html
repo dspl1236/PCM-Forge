@@ -1124,16 +1124,17 @@ function tkGenerateRunSh(selected, manifest) {
     '',
     'USBROOT="${1:-/fs/usb0}"',
     'export PATH="/sbin:/usr/sbin:/bin:/usr/bin:/HBbin:/mnt/data/tools:$PATH"',
+    'TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs',
     '',
-    '# Show running status',
-    'SS=""; for s in "${USBROOT}/bin/showScreen" /usr/bin/showScreen; do [ -f "$s" ] && SS="$s" && break; done',
-    'SHOW_OK=0',
-    'if [ -n "$SS" ]; then',
-    '    TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs',
-    '    cp "$SS" "$TMPD/showScreen" 2>/dev/null; chmod +x "$TMPD/showScreen" 2>/dev/null',
-    '    # Wait for layer manager (not available during early boot)',
+    '# --- status splash: RUNNING (forge_splash draws natively on the Porsche',
+    '#     screen and restores the OEM screen when we finish -- replaces the',
+    '#     Audi showScreen that fails on Porsche V1) ---',
+    'FS_FLAG="${TMPD}/forge_done"; rm -f "$FS_FLAG"; FS_PID=""',
+    'if [ -f "${USBROOT}/bin/forge_splash" ] && [ -f "${USBROOT}/lib/running.bin" ]; then',
     '    waitfor /dev/layermanager 15 2>/dev/null',
-    '    "$TMPD/showScreen" -s "${USBROOT}/lib/running.png" >>"${USBROOT}/showscreen.log" 2>&1 && SHOW_OK=1',
+    '    cp "${USBROOT}/bin/forge_splash" "${TMPD}/forge_splash" 2>/dev/null && chmod +x "${TMPD}/forge_splash"',
+    '    "${TMPD}/forge_splash" "${USBROOT}/lib/running.bin" "${USBROOT}/lib/done.bin" "$FS_FLAG" 600 4 >>"${USBROOT}/splash.log" 2>&1 &',
+    '    FS_PID=$!',
     'fi',
     '',
     'echo "PCM-Forge Toolkit: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"',
@@ -1165,8 +1166,9 @@ function tkGenerateRunSh(selected, manifest) {
 
   lines.push('echo "PCM-Forge Toolkit done" >> "${USBROOT}/pcm_ran.txt"');
   lines.push('');
-  lines.push('# Show done status');
-  lines.push('if [ $SHOW_OK -eq 1 ] && [ -x "$TMPD/showScreen" ]; then "$TMPD/showScreen" "${USBROOT}/lib/done.png" >>"${USBROOT}/showscreen.log" 2>&1 & fi');
+  lines.push('# --- status splash: flip to DONE, then restore the OEM screen ---');
+  lines.push('touch "$FS_FLAG"');
+  lines.push('[ -n "$FS_PID" ] && wait "$FS_PID" 2>/dev/null');
 
   return lines.join('\n') + '\n';
 }
@@ -1234,18 +1236,23 @@ async function tkBuild() {
     }
   }
 
-  // Fetch core assets
+  // Fetch core assets: forge_splash status app + its RUNNING/DONE image blobs
+  // (native Porsche display + OEM restore; replaces the Audi showScreen path).
+  try {
+    const fsBin = await tkFetchBinary(rawBase + 'core/bin/forge_splash');
+    files.push({ path: 'bin/forge_splash', bytes: fsBin });
+  } catch(e) {}
+  for (const blob of ['running.bin', 'done.bin']) {
+    try {
+      const bytes = await tkFetchBinary(rawBase + 'core/lib/' + blob);
+      files.push({ path: 'lib/' + blob, bytes });
+    } catch(e) {}
+  }
+  // showScreen kept as a fallback for any legacy module script that calls it.
   try {
     const showScreen = await tkFetchBinary(rawBase + 'core/bin/showScreen');
     files.push({ path: 'bin/showScreen', bytes: showScreen });
   } catch(e) {}
-
-  for (const png of ['running.png', 'done.png', 'activating.png', 'activating-done.png']) {
-    try {
-      const bytes = await tkFetchBinary(rawBase + 'core/lib/' + png);
-      files.push({ path: 'lib/' + png, bytes });
-    } catch(e) {}
-  }
 
   // Generate run.sh
   const runSh = tkGenerateRunSh(selected, manifest);

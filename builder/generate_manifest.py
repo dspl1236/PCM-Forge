@@ -24,6 +24,9 @@ OUT_FILE = os.path.join(OUT_DIR, 'manifest.json')
 RAW_BASE = 'https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/'
 CORE_FILES = {
     'copie_scr_sh': 'core/copie_scr.sh',
+    'forge_splash': 'core/bin/forge_splash',
+    'lib_running_bin': 'core/lib/running.bin',
+    'lib_done_bin': 'core/lib/done.bin',
     'showScreen': 'core/bin/showScreen',
     'lib_running_png': 'core/lib/running.png',
     'lib_done_png': 'core/lib/done.png',
