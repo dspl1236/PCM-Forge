@@ -152,5 +152,23 @@ echo "--- 12. hybrid.bin ---" >> "$LOG"
 }
 echo "" >> "$LOG"
 
+# === 13. BT/AUX FIX STATE + AUDIO SOURCE (support diagnosis) ===
+echo "--- 13. BT/AUX Fix State + Audio Source ---" >> "$LOG"
+echo "  [boot hook] /HBpersistence/debugTools.sh" >> "$LOG"
+echo "  A 'PCM-Forge bt_fix' block below = the patch RE-APPLIES every boot" >> "$LOG"
+echo "  (Revert did not fully take -- this alone explains a stuck AUX/no-BT):" >> "$LOG"
+echo "  .................................................................." >> "$LOG"
+cat /HBpersistence/debugTools.sh >> "$LOG" 2>&1
+echo "  .................................................................." >> "$LOG"
+echo "  [fix files] should ALL be absent after a clean Revert:" >> "$LOG"
+ls -la /HBpersistence/bt_boot.sh /HBpersistence/bt_fix /HBpersistence/bt_boot.log >> "$LOG" 2>&1
+[ -f /HBpersistence/debugTools.sh ] && cp /HBpersistence/debugTools.sh "$DUMPDIR/" 2>/dev/null
+[ -f /HBpersistence/bt_boot.log ]  && cp /HBpersistence/bt_boot.log  "$DUMPDIR/" 2>/dev/null
+echo "" >> "$LOG"
+echo "  [audio / source / bluetooth persistence]:" >> "$LOG"
+ls -la /HBpersistence/*ource* /HBpersistence/*udio* /HBpersistence/*luetooth* /HBpersistence/*Mode* /HBpersistence/*edia* /HBpersistence/*uner* >> "$LOG" 2>&1
+echo "  (Normal/EarlyPersistencyFiles already copied to sysinfo_dump/ for offline decode of last-source + pairing state)" >> "$LOG"
+echo "" >> "$LOG"
+
 echo "=== System Info complete ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1

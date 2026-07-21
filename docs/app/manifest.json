@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-20",
+  "generated": "2026-07-21",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -156,7 +156,7 @@
     },
     "sysinfo": {
       "status": "ready",
-      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory. Read-only, no changes to car.",
+      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory, BT/AUX-fix + audio-source state. Read-only, no changes to car.",
       "standalone": true,
       "run_script": "sysinfo_dump.sh",
       "script_dir": "/scripts/SysInfo",
@@ -168,11 +168,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 468
+          "size": 501
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 4824
+          "size": 6172
         },
         {
           "path": "scripts/sysinfo_run.sh",
