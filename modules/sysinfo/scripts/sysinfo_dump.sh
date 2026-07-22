@@ -170,5 +170,74 @@ ls -la /HBpersistence/*ource* /HBpersistence/*udio* /HBpersistence/*luetooth* /H
 echo "  (Normal/EarlyPersistencyFiles already copied to sysinfo_dump/ for offline decode of last-source + pairing state)" >> "$LOG"
 echo "" >> "$LOG"
 
+# === 14. HARDWARE / IPC / CAN / DSI PROBE ===
+# (folded in from the standalone "Enhanced Diagnostic + CAN Probe" so sysinfo is
+#  the single comprehensive diag. The /dev/ipc, /dev/dsi, /dev/name and /srv
+#  nodes below are what the SPHKeyInput / SPHSound DSI work maps against.)
+echo "--- 14. Hardware / IPC / CAN / DSI Probe ---" >> "$LOG"
+echo "" >> "$LOG"
+echo "  [mount points]" >> "$LOG"
+mount >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/dev/ipc/  (IOC / CAN channels)]" >> "$LOG"
+ls -laR /dev/ipc/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/dev/dspipc/]" >> "$LOG"
+ls -laR /dev/dspipc/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/dev/dsi/  (DSI service bus)]" >> "$LOG"
+ls -laR /dev/dsi/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/dev/name/  (registered service names)]" >> "$LOG"
+ls -laR /dev/name/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/srv/  (service broker)]" >> "$LOG"
+ls -la /srv/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [full /dev listing]" >> "$LOG"
+ls /dev/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [device nodes: ser/can/spi/i2c/hd/fs]" >> "$LOG"
+ls /dev/ser* /dev/can* /dev/spi* /dev/i2c* /dev/hd* /dev/fs* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [sysregs / FPGA]" >> "$LOG"
+ls -la /dev/sysregs/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [MOST]" >> "$LOG"
+ls -la /dev/most* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [io-display / pv]" >> "$LOG"
+ls -la /dev/io-display/ /dev/pv/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [flash / HDD partitions]" >> "$LOG"
+ls -la /dev/fs0* /dev/hd0* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [/hbsystem/]" >> "$LOG"
+ls -laR /hbsystem/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [IFS/EFS mount paths]" >> "$LOG"
+ls -d /mnt/ifs1/ /mnt/flash/ /mnt/efs-system/ /mnt/efs-extended/ /mnt/data/ /mnt/share/ /mnt/nav/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [engineering ESD / engdefs]" >> "$LOG"
+ls /mnt/flash/efs1/engdefs/ /HBpersistence/engdefs/ /mnt/ifs1/engdefs/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [FSC files]" >> "$LOG"
+ls -la /HBpersistence/FSC/ /mnt/efs-persist/FSC/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [screensaver.conf]" >> "$LOG"
+cat /HBpersistence/screensaver.conf >> "$LOG" 2>&1
+[ -f /HBpersistence/screensaver.conf ] && cp /HBpersistence/screensaver.conf "$DUMPDIR/" 2>/dev/null
+echo "" >> "$LOG"
+echo "  [test.html / test1.html]" >> "$LOG"
+cat /HBpersistence/test.html  >> "$LOG" 2>&1
+cat /HBpersistence/test1.html >> "$LOG" 2>&1
+[ -f /HBpersistence/test.html ]  && cp /HBpersistence/test.html  "$DUMPDIR/" 2>/dev/null
+[ -f /HBpersistence/test1.html ] && cp /HBpersistence/test1.html "$DUMPDIR/" 2>/dev/null
+echo "" >> "$LOG"
+echo "  [vin + PagSWAct.002 copied to dump]" >> "$LOG"
+cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null
+[ -f /HBpersistence/PagSWAct.002 ] && cp /HBpersistence/PagSWAct.002 "$DUMPDIR/PagSWAct.002.bak" 2>/dev/null
+echo "" >> "$LOG"
+
 echo "=== System Info complete ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1

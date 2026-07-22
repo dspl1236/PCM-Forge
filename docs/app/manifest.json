@@ -159,7 +159,7 @@
     },
     "sysinfo": {
       "status": "ready",
-      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory, BT/AUX-fix + audio-source state. Read-only, no changes to car.",
+      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, CVALUE/FSC, persistence backup, dev tools inventory, BT/AUX-fix + audio-source state, and a full hardware/IPC/CAN/DSI + service-broker device-tree probe. Read-only, no changes to car.",
       "standalone": true,
       "run_script": "sysinfo_dump.sh",
       "script_dir": "/scripts/SysInfo",
@@ -171,11 +171,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 501
+          "size": 541
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 6172
+          "size": 9066
         },
         {
           "path": "scripts/sysinfo_run.sh",

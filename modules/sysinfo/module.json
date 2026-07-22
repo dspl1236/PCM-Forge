@@ -1,7 +1,7 @@
 {
     "name": "sysinfo",
-    "version": "2.0.0",
-    "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/FSC, persistence backup, CAN/IOC probe, dev tools inventory, BT/AUX-fix + audio-source state. Read-only, no changes to car.",
+    "version": "2.1.0",
+    "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, CVALUE/FSC, persistence backup, dev tools inventory, BT/AUX-fix + audio-source state, and a full hardware/IPC/CAN/DSI + service-broker device-tree probe. Read-only, no changes to car.",
     "author": "dspl1236",
     "status": "ready",
     "compatible": ["PCM3.1"],
