@@ -7,7 +7,7 @@
 USB="/fs/usb0"
 LOG="$USB/sysinfo.log"
 DUMPDIR="$USB/sysinfo_dump"
-mkdir -p "$DUMPDIR" 2>/dev/null
+rm -rf "$DUMPDIR" 2>/dev/null; mkdir -p "$DUMPDIR" 2>/dev/null
 
 echo "=== PCM-Forge System Info ===" > "$LOG"
 echo "Date: $(date 2>/dev/null || echo unknown)" >> "$LOG"
@@ -39,7 +39,7 @@ echo "  Image codecs:" >> "$LOG"
 cat /etc/system/config/img.conf >> "$LOG" 2>&1
 for cfg in /etc/system/config/carmine*.conf; do
     [ -f "$cfg" ] && {
-        echo "  === $(basename $cfg) ===" >> "$LOG"
+        echo "  === ${cfg##*/} ===" >> "$LOG"
         cat "$cfg" >> "$LOG" 2>&1
         cp "$cfg" "$DUMPDIR/" 2>/dev/null
     }
@@ -69,12 +69,13 @@ for p in /mnt/data/tools/persdump2 /mnt/ifs1/HBbin/persdump2; do
 done
 if [ -n "$PERSDUMP" ]; then
     echo "  persdump2: $PERSDUMP" >> "$LOG"
-    "$PERSDUMP" >> "$LOG" 2>&1
+    # < /dev/null so an unknown no-arg behavior can never block on the console-less autorun
+    "$PERSDUMP" < /dev/null >> "$LOG" 2>&1
     # Verbose dump first CVALUE file
     for cv in /HBpersistence/CVALUE*.CVA; do
         if [ -f "$cv" ]; then
-            echo "  Test: $PERSDUMP $(basename $cv) v" >> "$LOG"
-            "$PERSDUMP" "$cv" v >> "$LOG" 2>&1
+            echo "  Test: $PERSDUMP ${cv##*/} v" >> "$LOG"
+            "$PERSDUMP" "$cv" v < /dev/null >> "$LOG" 2>&1
             break
         fi
     done
@@ -85,7 +86,7 @@ echo "" >> "$LOG"
 echo "  CVALUE files:" >> "$LOG"
 COUNT=0
 for f in /HBpersistence/CVALUE*.CVA; do
-    [ -f "$f" ] && { cp "$f" "$DUMPDIR/" 2>/dev/null; COUNT=$((COUNT + 1)); }
+    [ -f "$f" ] && cp "$f" "$DUMPDIR/" 2>/dev/null && COUNT=$((COUNT + 1))
 done
 echo "  Copied $COUNT CVALUE files" >> "$LOG"
 echo "" >> "$LOG"
@@ -104,22 +105,19 @@ done
 for f in /HBpersistence/NormalPersistencyFiles/*; do
     [ -f "$f" ] && cp "$f" "$DUMPDIR/Normal/" 2>/dev/null
 done
-echo "  Copied EarlyPersistencyFiles + NormalPersistencyFiles" >> "$LOG"
+NE=$(ls "$DUMPDIR/Early/" 2>/dev/null | grep -c "^")
+NN=$(ls "$DUMPDIR/Normal/" 2>/dev/null | grep -c "^")
+echo "  Copied $NE Early + $NN Normal persistence files" >> "$LOG"
 echo "" >> "$LOG"
 
 # === 9. DEBUG TOOLS ===
+# NB: the PCM autorun shell has NO awk/head/find on PATH, so the old
+# `find /mnt ... | head -1` + `awk '{print $5}'` produced nothing. Scan the
+# known tool dirs directly and print the `ls -la` line (already shows size).
 echo "--- 9. Debug Tools ---" >> "$LOG"
-for t in taco persdump2 showScreen mmecli vi ping qdbc qconn sqlite_console find; do
-    LOC=$(find /mnt -name "$t" -type f 2>/dev/null | head -1)
-    [ -n "$LOC" ] && {
-        SIZE=$(ls -la "$LOC" | awk '{print $5}')
-        echo "  $t: $LOC ($SIZE bytes)" >> "$LOG"
-    }
-done
-# Also check /proc/boot and /HBbin
-for t in taco qdbc qconn; do
-    for d in /usr/sbin /usr/bin /HBbin /proc/boot; do
-        [ -x "$d/$t" ] && echo "  $t: $d/$t" >> "$LOG"
+for t in taco persdump2 showScreen mmecli mmexplore vi ping qdbc qconn sqlite_console find fdisk dinit hbhogs ipgrabber which cksum; do
+    for d in /mnt/data/tools /mnt/ifs1/HBbin /HBbin /usr/sbin /usr/bin /proc/boot /HBpersistence/QNXTools; do
+        [ -f "$d/$t" ] && ls -la "$d/$t" >> "$LOG" 2>&1
     done
 done
 echo "" >> "$LOG"
@@ -167,7 +165,12 @@ ls -la /HBpersistence/bt_boot.sh /HBpersistence/bt_fix /HBpersistence/bt_boot.lo
 echo "" >> "$LOG"
 echo "  [audio / source / bluetooth persistence]:" >> "$LOG"
 ls -la /HBpersistence/*ource* /HBpersistence/*udio* /HBpersistence/*luetooth* /HBpersistence/*Mode* /HBpersistence/*edia* /HBpersistence/*uner* >> "$LOG" 2>&1
-echo "  (Normal/EarlyPersistencyFiles already copied to sysinfo_dump/ for offline decode of last-source + pairing state)" >> "$LOG"
+echo "" >> "$LOG"
+echo "  [SOURCE-PERSISTENCE blobs -- the suspected STALE last-source root cause a Revert does NOT touch]:" >> "$LOG"
+ls -la /HBpersistence/NormalPersistencyFiles/*SoundPresCtrl* /HBpersistence/NormalPersistencyFiles/*MediaPresCtrl* /HBpersistence/NormalPersistencyFiles/*AuxIn* /HBpersistence/NormalPersistencyFiles/*Tuner* >> "$LOG" 2>&1
+echo "  [any lingering PCM-Forge / bt-fix artifact by name (catches earlier-version filenames too)]:" >> "$LOG"
+ls -la /HBpersistence/*bt_* /HBpersistence/*fix* /HBpersistence/*orge* >> "$LOG" 2>&1
+echo "  (full Normal/EarlyPersistencyFiles copied to sysinfo_dump/ for offline decode of last-source + pairing state)" >> "$LOG"
 echo "" >> "$LOG"
 
 # === 14. HARDWARE / IPC / CAN / DSI PROBE ===
@@ -239,5 +242,42 @@ cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null
 [ -f /HBpersistence/PagSWAct.002 ] && cp /HBpersistence/PagSWAct.002 "$DUMPDIR/PagSWAct.002.bak" 2>/dev/null
 echo "" >> "$LOG"
 
+# === 15. FULL /HBpersistence BACKUP (recovery snapshot) ===
+# Complete, restorable copy of /HBpersistence so the owner can roll back ANY
+# change (amp/audio config, CVALUE coding, BT pairings, nav, VIN, flags). It
+# lives on YOUR stick only -- nothing is uploaded. It DOES contain personal data
+# (nav destinations, phone pairings, VIN) -- and so does sysinfo.log -- so keep
+# BOTH private and redact the VIN before sharing for support. No tar/gzip/sync on
+# the unit, so this is a plain recursive copy (~4MB; fine even on a tiny stick).
+echo "--- 15. Full /HBpersistence backup ---" >> "$LOG"
+BK="$USB/HBpersistence_backup"
+rm -rf "$BK" 2>/dev/null
+# FAT can't store symlinks -> cp -R exits non-zero but STILL copies the target
+# files; capture the warnings instead of treating them as a failure. (Redirect
+# to a temp on $USB first because $BK does not exist until cp creates it.)
+cp -R /HBpersistence "$BK" 2>"$USB/hbpers_cp_warn.txt"
+mv "$USB/hbpers_cp_warn.txt" "$BK/_cp_warnings.txt" 2>/dev/null
+# list every symlink + target FAT dropped (the targets themselves ARE copied)
+ls -laR /HBpersistence 2>/dev/null | grep " -> " > "$BK/_SYMLINKS.txt" 2>/dev/null
+# REAL truncation check: count REGULAR files only (grep "^-" ignores dir headers,
+# blank lines, symlinks and FAT cluster inflation). On success DST = SRC + the two
+# report files written above; DST < SRC means cp ran out of space mid-copy.
+SRC=$(ls -laR /HBpersistence 2>/dev/null | grep -c "^-")
+DST=$(ls -laR "$BK" 2>/dev/null | grep -c "^-")
+echo "  /HBpersistence -> $BK" >> "$LOG"
+if [ "$DST" -lt "$SRC" ] 2>/dev/null; then
+    echo "  *** BACKUP INCOMPLETE: only $DST of ~$SRC files copied -- USB likely FULL. ***" >> "$LOG"
+    cat "$BK/_cp_warnings.txt" >> "$LOG" 2>&1
+    echo "  *** removing partial backup so it is not mistaken for a good one. ***" >> "$LOG"
+    rm -rf "$BK" 2>/dev/null; BK=""
+else
+    echo "  backup OK: $DST files (source $SRC + 2 report files)." >> "$LOG"
+    echo "  dropped symlinks recorded in $BK/_SYMLINKS.txt (targets ARE in the backup)" >> "$LOG"
+fi
+echo "  PRIVACY: this backup AND sysinfo.log both hold your VIN + a full persistence" >> "$LOG"
+echo "           listing -- keep them private; redact the VIN before sharing." >> "$LOG"
+echo "" >> "$LOG"
+
 echo "=== System Info complete ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1
+[ -n "$BK" ] && echo "  (full recovery backup: $USB/HBpersistence_backup/)" >> "$LOG"
