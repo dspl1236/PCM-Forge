@@ -51,6 +51,7 @@ Source, build scripts, and engineering-definition files behind the matching
 | tool | purpose |
 |------|---------|
 | `pcm_shell.py` | telnet shell client to the unit (`--host …`) |
+| `cvalue_tool.py` | decode Harman `CVALUE*.CVA` coding-value files (read-only) — `python cvalue_tool.py FILE.CVA` |
 | `asix_universal_patch.py` | patch the ASIX USB-Ethernet driver for clone/unsupported chips |
 | `diff_fw.py` | diff two firmware images |
 | `verify.py` | integrity/verification helper |
