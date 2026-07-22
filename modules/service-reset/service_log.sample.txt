@@ -1,0 +1,6 @@
+# PCM-Forge service log  --  SAMPLE rows (the test run seeds these if the stick
+# has no service_log.txt yet; delete them once you record real services).
+# format:  <date>   <mileage> mi   <OIL|INSPECTION>   <note>
+2019-05-01   32000 mi   OIL          (sample)
+2021-08-15   44500 mi   OIL          (sample)
+2023-06-20   56000 mi   INSPECTION   (sample)

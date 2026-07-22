@@ -1,13 +1,13 @@
 {
     "name": "service-reset",
-    "version": "1.0.0",
-    "description": "Oil service and inspection interval reset via UDS CAN. Sends WriteDataByIdentifier to instrument cluster. No PIWIS needed.",
+    "version": "2.0.0",
+    "description": "Service interval TEST (read-only / dry-run): reads VIN + odometer (km & miles) from the logbook, shows service history, and SIMULATES the oil/inspection UDS reset -- logs the exact frames but SENDS NOTHING. Ships no sender binary, so it cannot touch the cluster. Safe for anyone. The armed reset stays in tools/ until Autel-confirmed.",
     "author": "dspl1236",
-    "status": "alpha",
+    "status": "beta",
     "compatible": ["PCM3.1"],
     "standalone": true,
-    "run_script": "service_run.sh",
+    "run_script": "service_reset_run.sh",
     "script_dir": "/scripts/ServiceReset",
     "installs_to_flash": false,
-    "bin_files": ["bin/uds_send"]
+    "bin_files": []
 }
