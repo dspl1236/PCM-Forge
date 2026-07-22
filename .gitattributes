@@ -6,3 +6,9 @@
 *.elf   binary
 *.png   binary
 *.zip   binary
+
+# Extensionless SH4/QNX executables live in bin/ dirs -- protect by PATH (git NUL
+# auto-detect is not guaranteed across commit environments; a single munged byte in
+# a memory-patch binary bricks the head unit). Belt-and-suspenders over the ext rules.
+**/bin/*    binary
+*.o         binary

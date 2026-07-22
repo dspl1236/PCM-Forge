@@ -52,9 +52,11 @@ elif [ "$MODE" = "revert" ]; then
     # ---- full revert to stock: strip hook, remove staged files, undo live patch ----
     HP=/HBpersistence; DBG="$HP/debugTools.sh"; MARK="PCM-Forge bt_fix boot hook"
     if [ -f "$DBG" ]; then
-        awk -v m="$MARK" 'index($0, ">>> " m " >>>"){skip=1;next} index($0, "<<< " m " <<<"){skip=0;next} skip!=1{print}' "$DBG" > "$DBG.tmp" \
-            && mv -f "$DBG.tmp" "$DBG" && chmod +x "$DBG" \
-            && echo "[OK] stripped boot hook from $DBG" >> "$LOG"
+        # shell-safe strip (the PCM ksh has NO awk/head; awk here silently left the
+        # hook line behind -> revert looked done but debugTools.sh still carried it).
+        grep -v "$MARK" "$DBG" | grep -v 'bt_boot.sh' > "$DBG.tmp" \
+            && cp "$DBG.tmp" "$DBG" && rm -f "$DBG.tmp" && chmod 777 "$DBG" \
+            && echo "[OK] stripped boot hook from $DBG (shell-safe)" >> "$LOG"
     else
         echo "[i] $DBG not present (nothing to strip)" >> "$LOG"
     fi
