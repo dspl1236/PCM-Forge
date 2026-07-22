@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-21",
+  "generated": "2026-07-22",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -55,11 +55,11 @@
         },
         {
           "path": "scripts/bt_fix_run.sh",
-          "size": 4177
+          "size": 4303
         },
         {
           "path": "scripts/bt_hook_uninstall.sh",
-          "size": 753
+          "size": 835
         }
       ]
     },
@@ -136,10 +136,10 @@
       ]
     },
     "service-reset": {
-      "status": "alpha",
-      "description": "Oil service and inspection interval reset via UDS CAN. Sends WriteDataByIdentifier to instrument cluster. No PIWIS needed.",
+      "status": "beta",
+      "description": "Service interval TEST (read-only / dry-run): reads VIN + odometer (km & miles) from the logbook, shows service history, and SIMULATES the oil/inspection UDS reset -- logs the exact frames but SENDS NOTHING. Ships no sender binary, so it cannot touch the cluster. Safe for anyone. The armed reset stays in tools/ until Autel-confirmed.",
       "standalone": true,
-      "run_script": "service_run.sh",
+      "run_script": "service_reset_run.sh",
       "script_dir": "/scripts/ServiceReset",
       "installs_to_flash": false,
       "compatible": [
@@ -149,17 +149,21 @@
       "files": [
         {
           "path": "module.json",
-          "size": 463
+          "size": 653
+        },
+        {
+          "path": "service_log.sample.txt",
+          "size": 353
         },
         {
           "path": "scripts/service_reset_run.sh",
-          "size": 341
+          "size": 4335
         }
       ]
     },
     "sysinfo": {
       "status": "ready",
-      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, CVALUE/FSC, persistence backup, dev tools inventory, BT/AUX-fix + audio-source state, and a full hardware/IPC/CAN/DSI + service-broker device-tree probe. Read-only, no changes to car.",
+      "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, CVALUE/FSC, a full restorable /HBpersistence backup, dev tools inventory, BT/AUX-fix + audio-source state, and a full hardware/IPC/CAN/DSI + service-broker device-tree probe. Read-only, no changes to car.",
       "standalone": true,
       "run_script": "sysinfo_dump.sh",
       "script_dir": "/scripts/SysInfo",
@@ -171,11 +175,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 541
+          "size": 550
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 9066
+          "size": 12306
         },
         {
           "path": "scripts/sysinfo_run.sh",
