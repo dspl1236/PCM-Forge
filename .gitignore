@@ -1,0 +1,3 @@
+# Python bytecode (from builder/generate_manifest.py)
+__pycache__/
+*.pyc
