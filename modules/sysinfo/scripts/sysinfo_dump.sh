@@ -259,6 +259,13 @@ cp -R /HBpersistence "$BK" 2>"$USB/hbpers_cp_warn.txt"
 mv "$USB/hbpers_cp_warn.txt" "$BK/_cp_warnings.txt" 2>/dev/null
 # list every symlink + target FAT dropped (the targets themselves ARE copied)
 ls -laR /HBpersistence 2>/dev/null | grep " -> " > "$BK/_SYMLINKS.txt" 2>/dev/null
+# cp -R aborts the sss/ subtree on FAT (its symlinks can't be created there) and
+# drops sss/config with it -- copy that DSP-config dir explicitly so the backup is
+# complete and the regular-file count below does not false-trip "INCOMPLETE".
+if [ -d /HBpersistence/sss/config ]; then
+    mkdir -p "$BK/sss" 2>/dev/null
+    cp -R /HBpersistence/sss/config "$BK/sss/config" 2>>"$BK/_cp_warnings.txt"
+fi
 # REAL truncation check: count REGULAR files only (grep "^-" ignores dir headers,
 # blank lines, symlinks and FAT cluster inflation). On success DST = SRC + the two
 # report files written above; DST < SRC means cp ran out of space mid-copy.
