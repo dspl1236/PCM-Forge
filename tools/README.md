@@ -52,6 +52,7 @@ Source, build scripts, and engineering-definition files behind the matching
 |------|---------|
 | `pcm_shell.py` | telnet shell client to the unit (`--host …`) |
 | `cvalue_tool.py` | decode Harman `CVALUE*.CVA` coding-value files (read-only) — `python cvalue_tool.py FILE.CVA` |
+| `hdd_tool.py` | open a PCM/MMI **HDD image** and browse its partitions + directory tree (read-only). GUI: `python hdd_tool.py`; CLI: `python hdd_tool.py <image> [parts\|tree P2\|hex 0x…]` |
 | `asix_universal_patch.py` | patch the ASIX USB-Ethernet driver for clone/unsupported chips |
 | `diff_fw.py` | diff two firmware images |
 | `verify.py` | integrity/verification helper |
