@@ -215,6 +215,40 @@ echo "" >> "$LOG"
 echo "  [flash / HDD partitions]" >> "$LOG"
 ls -la /dev/fs0* /dev/hd0* >> "$LOG" 2>&1
 echo "" >> "$LOG"
+
+# --- STORAGE MAP (read-only) --------------------------------------------
+# The full picture of every block device and its partition table. This is what
+# a drive upgrade has to be designed against: which partition holds the jukebox,
+# how big each one is, and how much slack exists. Everything here is a query --
+# nothing is written to any disk.
+echo "  [storage: all block devices]" >> "$LOG"
+ls -la /dev/hd* /dev/fs* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [storage: external / USB-attached (umass)]" >> "$LOG"
+ls -laR /dev/umass* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [storage: free space]" >> "$LOG"
+df -k >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [storage: partition tables -- read-only fdisk queries]" >> "$LOG"
+FDISK=""
+for c in /tools/fdisk /mnt/data/tools/fdisk /mnt/ifs1/tools/fdisk; do
+    [ -x "$c" ] && FDISK="$c" && break
+done
+if [ -n "$FDISK" ]; then
+    echo "    using $FDISK" >> "$LOG"
+    for dev in /dev/hd0 /dev/hd1 /dev/hd2 /dev/umass0 /dev/umass1; do
+        [ -e "$dev" ] || continue
+        echo "    --- $dev ---" >> "$LOG"
+        echo "    total cylinders:" >> "$LOG"
+        "$FDISK" "$dev" query -T < /dev/null >> "$LOG" 2>&1
+        echo "    partition table:" >> "$LOG"
+        "$FDISK" "$dev" show < /dev/null >> "$LOG" 2>&1
+    done
+else
+    echo "    (fdisk not found; partition tables unavailable)" >> "$LOG"
+fi
+echo "" >> "$LOG"
 echo "  [/hbsystem/]" >> "$LOG"
 ls -laR /hbsystem/ >> "$LOG" 2>&1
 echo "" >> "$LOG"
