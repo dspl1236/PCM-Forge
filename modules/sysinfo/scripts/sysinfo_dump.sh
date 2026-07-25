@@ -10,7 +10,22 @@ DUMPDIR="$USB/sysinfo_dump"
 rm -rf "$DUMPDIR" 2>/dev/null; mkdir -p "$DUMPDIR" 2>/dev/null
 
 echo "=== PCM-Forge System Info ===" > "$LOG"
-echo "Date: $(date 2>/dev/null || echo unknown)" >> "$LOG"
+# There is no date(1) on this shell, so stamp a file and read its mtime back --
+# that is "now" by the unit's own clock. Without it every mtime in this report is
+# uninterpretable, and telling "written this boot" from "written months ago" is
+# the whole game for amp/persistence questions.
+TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs
+echo x > "$TMPD/.forge_now" 2>/dev/null
+echo "Now (unit clock):" >> "$LOG"
+ls -la "$TMPD/.forge_now" >> "$LOG" 2>&1
+rm -f "$TMPD/.forge_now" 2>/dev/null
+# Kernel release, CPU, free memory and BOOT TIME. Boot time vs now = uptime,
+# which is how a reset loop shows itself.
+echo "System:" >> "$LOG"
+pidin info < /dev/null >> "$LOG" 2>&1
+echo "Hardware variant marker:" >> "$LOG"
+cat /etc/pcm31* >> "$LOG" 2>&1
+ls -la /etc/pcm31* >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 1. FIRMWARE VERSION ===
@@ -126,6 +141,11 @@ echo "" >> "$LOG"
 echo "--- 10. Network ---" >> "$LOG"
 ifconfig -a >> "$LOG" 2>&1
 echo "" >> "$LOG"
+echo "  [interface counters -- Ierrs/Oerrs/Coll reveal a bad link]" >> "$LOG"
+netstat -in >> "$LOG" 2>&1
+echo "  [routes]" >> "$LOG"
+netstat -rn >> "$LOG" 2>&1
+echo "" >> "$LOG"
 cat /etc/inetd.conf >> "$LOG" 2>&1
 echo "" >> "$LOG"
 cat /etc/hosts >> "$LOG" 2>&1
@@ -136,8 +156,17 @@ echo "--- 11. VIN & Activation ---" >> "$LOG"
 echo "  VIN:" >> "$LOG"
 cat /HBpersistence/vin >> "$LOG" 2>&1
 echo "" >> "$LOG"
-echo "  PagSWAct.002:" >> "$LOG"
+echo "  PagSWAct.002 (activation records, 28 bytes each):" >> "$LOG"
 ls -la /HBpersistence/PagSWAct.002 >> "$LOG" 2>&1
+# The 16-char activation codes are plain hex text inside the record table, so
+# grep alone recovers them -- no decoder needed on-car.
+echo "  [unlock codes present]:" >> "$LOG"
+grep -aoE "[0-9a-f]{16}" /HBpersistence/PagSWAct.002 >> "$LOG" 2>&1
+echo "  [other activation artefacts]:" >> "$LOG"
+ls -la /HBpersistence/PagSWAct* /HBpersistence/diskid.txt /HBpersistence/CsiConfig1.csi /HBpersistence/PDL.dat >> "$LOG" 2>&1
+for f in /HBpersistence/PagSWAct.csv /HBpersistence/diskid.txt; do
+    [ -f "$f" ] && cp "$f" "$DUMPDIR/" 2>/dev/null
+done
 echo "  DBGModeActive:" >> "$LOG"
 ls -la /HBpersistence/DBGModeActive >> "$LOG" 2>&1
 echo "" >> "$LOG"
@@ -242,12 +271,19 @@ if [ -n "$FDISK" ]; then
         echo "    --- $dev ---" >> "$LOG"
         echo "    total cylinders:" >> "$LOG"
         "$FDISK" "$dev" query -T < /dev/null >> "$LOG" 2>&1
+        echo "    geometry (heads / sectors-per-track):" >> "$LOG"
+        "$FDISK" "$dev" info < /dev/null >> "$LOG" 2>&1
         echo "    partition table:" >> "$LOG"
         "$FDISK" "$dev" show < /dev/null >> "$LOG" 2>&1
     done
 else
     echo "    (fdisk not found; partition tables unavailable)" >> "$LOG"
 fi
+echo "" >> "$LOG"
+# Drive model/serial as the EIDE driver saw it at boot. Capacity in sectors is
+# cylinders x heads x sectors-per-track from the fdisk output above.
+echo "  [storage: drive identity from the EIDE driver]" >> "$LOG"
+sloginfo 2>/dev/null | grep -iE "eide_display_devices|eide_init_devices|devb-eide|MK[0-9]|SSD|ATA" >> "$LOG" 2>&1
 echo "" >> "$LOG"
 echo "  [/hbsystem/]" >> "$LOG"
 ls -laR /hbsystem/ >> "$LOG" 2>&1
@@ -274,6 +310,188 @@ echo "" >> "$LOG"
 echo "  [vin + PagSWAct.002 copied to dump]" >> "$LOG"
 cp /HBpersistence/vin "$DUMPDIR/vin" 2>/dev/null
 [ -f /HBpersistence/PagSWAct.002 ] && cp /HBpersistence/PagSWAct.002 "$DUMPDIR/PagSWAct.002.bak" 2>/dev/null
+echo "" >> "$LOG"
+
+# === 16. SYSTEM LOG (sloginfo) ===
+# The single richest diagnostic on the unit: the whole boot sequence, every
+# service that started or failed, amplifier detection, watchdog events. It is
+# RAM-resident and cleared on every reboot, so this is the only chance to keep
+# it. Saved whole as its own file, with the highlights inlined here.
+echo "--- 16. System log ---" >> "$LOG"
+# sloginfo reads a RAM ring buffer that keeps rolling, so capture it ONCE to a
+# file and grep that file. Reading the ring repeatedly gives views of different
+# instants, and a reboot mid-script would empty it between reads.
+SLOG="$DUMPDIR/sloginfo.txt"
+sloginfo < /dev/null > "$SLOG" 2>&1
+echo "  full log -> sysinfo_dump/sloginfo.txt ($(grep -c '^' "$SLOG" 2>/dev/null) lines)" >> "$LOG"
+sloginfo -s 3 < /dev/null > "$DUMPDIR/sloginfo-errors.txt" 2>&1
+echo "  severity-filtered (the system's own rating, not our keyword guess) ->" >> "$LOG"
+echo "    sysinfo_dump/sloginfo-errors.txt ($(grep -c '^' "$DUMPDIR/sloginfo-errors.txt" 2>/dev/null) lines)" >> "$LOG"
+echo "" >> "$LOG"
+echo "  [boot sequence: packages, processes, terminations]" >> "$LOG"
+grep -E "Package \[|Process\[|PSState|startProcess|terminated|restarted|POST_STARTING" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [boot gates: interfaces the starter waits on -- a MISSING one names the hang]" >> "$LOG"
+grep -E "Interface \[|AVAIL|waitfor" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [errors / warnings / watchdog / resets]" >> "$LOG"
+grep -iE "error|fail|watchdog|reset|abnormal|corrupt|denied|timeout|panic|assert" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [amplifier detection + audio routing]" >> "$LOG"
+grep -iE "amptype|amplifier|MOSTDevice|storeAmp|setExtAmp|copyConfig|Burmest|SGTLAM|SoundPres|audio connection" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [hardware enumeration: drives, USB, FPGA, tuner, GPS, MOST]" >> "$LOG"
+grep -iE "eide_|devb-|hbfpga|FPGA|io-usb|umass|tuner|flexgps|MOST|mops|hddmounter|MOUNT" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [vehicle identity as the software saw it]" >> "$LOG"
+grep -iE "VIN|HardwareType|serial|variant|voltage|NavDB|language|metric" "$SLOG" >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# === 16b. CRASH RECORD ===
+# The SOP starter runs two `dumper` instances -- one to /mnt/data/log and an
+# early-boot one to /HBpersistence (before the HDD mounts) -- plus libbacktrace
+# and libmalloc text dumps. Empty on a healthy unit; when not, this is the answer.
+echo "--- 16b. Crash record ---" >> "$LOG"
+mkdir -p "$DUMPDIR/crash" 2>/dev/null
+for d in /mnt/data/log /HBpersistence /dev/shmem; do
+    echo "  [$d]" >> "$LOG"
+    ls -la "$d" 2>/dev/null | grep -iE "core|dump|backtrace|malloc|watchdog" >> "$LOG" 2>&1
+done
+# Copy the small text artefacts only; raw .core files can be hundreds of KB each.
+for f in /mnt/data/log/*backtrace* /mnt/data/log/*malloc* /mnt/data/log/*.txt \
+         /HBpersistence/*backtrace* /HBpersistence/*malloc*; do
+    [ -f "$f" ] && cp "$f" "$DUMPDIR/crash/" 2>/dev/null
+done
+echo "  (text artefacts -> sysinfo_dump/crash/; raw cores listed, not copied)" >> "$LOG"
+echo "" >> "$LOG"
+
+# === 17. AUDIO / AMPLIFIER STATE ===
+# Which amplifier profile the unit resolved to, and the files that decide it.
+# Checksums rather than contents: the mixer files are several KB each and only
+# their identity matters for comparing one car against another.
+echo "--- 17. Audio / amplifier ---" >> "$LOG"
+CKSUM=""
+for c in /HBpersistence/QNXTools/cksum /mnt/data/tools/cksum /usr/bin/cksum; do
+    [ -x "$c" ] && CKSUM="$c" && break
+done
+echo "  [amp type flag -- existence IS the setting]" >> "$LOG"
+ls -la /HBpersistence/audioAmp* >> "$LOG" 2>&1
+echo "  [active + per-type mixer files]" >> "$LOG"
+ls -la /HBpersistence/audiomixer*.txt >> "$LOG" 2>&1
+if [ -n "$CKSUM" ]; then
+    echo "  [checksums -- active file should match one of the per-type files]" >> "$LOG"
+    "$CKSUM" /HBpersistence/audiomixer.txt /HBpersistence/audiomixer-ann-levels.txt \
+             /HBpersistence/audiomixer_*.txt /HBpersistence/audiomixer-ann-levels_*.txt >> "$LOG" 2>&1
+fi
+# The decisive question for the amp feature: the flag file says one thing, the
+# ACTIVE mixer content says another. cmp tells us which per-type profile the live
+# file was actually copied from -- and whether a per-type SOURCE has been swapped.
+echo "  [RESOLUTION: which profile is really live]" >> "$LOG"
+FLAG="(none)"
+for t in BOSE BURMESTER ASK; do
+    [ -e "/HBpersistence/audioAmp$t" ] && FLAG="$t"
+done
+echo "    flag file says      : $FLAG" >> "$LOG"
+MATCH="(matches no per-type file -- content has been modified)"
+for t in BOSE BURMESTER ASK; do
+    if cmp -s /HBpersistence/audiomixer.txt "/HBpersistence/audiomixer_$t.txt" 2>/dev/null; then
+        MATCH="$t"
+    fi
+done
+echo "    active mixer matches: $MATCH" >> "$LOG"
+if [ "$FLAG" != "$MATCH" ]; then
+    echo "    *** MISMATCH: the flag and the live audio profile disagree." >> "$LOG"
+    echo "        Either a per-type source file was overwritten, or the flag was" >> "$LOG"
+    echo "        changed without the mixer being re-copied." >> "$LOG"
+fi
+echo "    [are the per-type sources still distinct from each other?]" >> "$LOG"
+if cmp -s /HBpersistence/audiomixer_BOSE.txt /HBpersistence/audiomixer_BURMESTER.txt 2>/dev/null; then
+    echo "    NOTE: audiomixer_BOSE.txt and audiomixer_BURMESTER.txt are IDENTICAL" >> "$LOG"
+    echo "          -- one has been overwritten with the other's content." >> "$LOG"
+else
+    echo "    BOSE and BURMESTER sources differ (stock)." >> "$LOG"
+fi
+echo "" >> "$LOG"
+echo "  [sss DSP config -- the addon symlink encodes the selected profile]" >> "$LOG"
+ls -la /HBpersistence/sss/ >> "$LOG" 2>&1
+ls -la /HBpersistence/sss/config/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# === 18. VEHICLE DATA (odometer / logbook) ===
+# Odometer lives in the driver's-logbook database in 0.1 km units.
+# Queried on a COPY so the live database is never locked or touched.
+echo "--- 18. Vehicle data ---" >> "$LOG"
+LB=/HBpersistence/logbook/LogBookSql.db
+ls -la /HBpersistence/logbook/ >> "$LOG" 2>&1
+if [ -f "$LB" ]; then
+    TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs
+    cp "$LB" "$TMPD/lb_ro.db" 2>/dev/null
+    SQL=""
+    for c in /mnt/data/tools/sqlite_console /tools/sqlite_console /usr/bin/sqlite3; do
+        [ -x "$c" ] && SQL="$c" && break
+    done
+    if [ -n "$SQL" ]; then
+        echo "  [odometer -- raw value is 0.1 km units; miles = raw / 16.0934]" >> "$LOG"
+        "$SQL" "$TMPD/lb_ro.db" "SELECT MAX(DestMileage) FROM trips;" < /dev/null >> "$LOG" 2>&1
+        echo "  [trip count]" >> "$LOG"
+        "$SQL" "$TMPD/lb_ro.db" "SELECT count(*) FROM trips;" < /dev/null >> "$LOG" 2>&1
+    else
+        echo "  (no sqlite tool found; LogBookSql.db is in the backup for offline reading)" >> "$LOG"
+    fi
+    rm -f "$TMPD/lb_ro.db" 2>/dev/null
+fi
+echo "" >> "$LOG"
+
+# === 19. SERVICE MANAGER + LISTENING PORTS ===
+echo "--- 19. Service manager / open ports ---" >> "$LOG"
+echo "  [SOP process manager]" >> "$LOG"
+ls -la /dev/starter/ >> "$LOG" 2>&1
+cat /dev/starter/version /dev/starter/variant /dev/starter/packages /dev/starter/status >> "$LOG" 2>&1
+echo "  NOTE: /dev/starter/start is a CONTROL node -- writing to it stops/starts" >> "$LOG"
+echo "        packages. This script only ever reads." >> "$LOG"
+echo "" >> "$LOG"
+echo "  [listening sockets -- qconn 8000, MonitorService 2021, telnet 23, ksh 2323]" >> "$LOG"
+netstat -an >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# === 20. SOFTWARE IDENTITY / UPDATE HISTORY ===
+# /UpdateHistory is a flash partition holding the unit's reflash record: which
+# software and nav packages were written, when, and with what result. version.txt
+# says what it runs now; this says how it got there.
+echo "--- 20. Software identity / update history ---" >> "$LOG"
+echo "  [/UpdateHistory]" >> "$LOG"
+ls -laR /UpdateHistory/ >> "$LOG" 2>&1
+for f in /UpdateHistory/release.cfg /UpdateHistory/upd_filename /UpdateHistory/upd_hwids /UpdateHistory/versioninfolist; do
+    [ -f "$f" ] && { echo "  --- ${f##*/} ---" >> "$LOG"; cat "$f" >> "$LOG" 2>&1; cp "$f" "$DUMPDIR/" 2>/dev/null; }
+done
+echo "" >> "$LOG"
+echo "  [nav / speech / media package identity]" >> "$LOG"
+cat /mnt/nav/MasterHDD.info >> "$LOG" 2>&1
+cat /HBdata/sss-version.txt >> "$LOG" 2>&1
+cat /mnt/ifs_app/etc/mme.version >> "$LOG" 2>&1
+ls /mnt/nav/pkgdb/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [IFS / boot image inventory -- stock builds share one timestamp;" >> "$LOG"
+echo "   an odd date or size is the cheap 80% of an integrity check]" >> "$LOG"
+ls -la /proc/boot/ >> "$LOG" 2>&1
+ls -la /mnt/ifs1/HBproject/ /mnt/ifs_app/HBproject/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [stray executables in writable areas -- where third-party mods land]" >> "$LOG"
+ls -la /HBpersistence/ /HBpersistence/QNXTools/ /tools/ /mnt/data/tools/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
+# === 21. PERSONAL DATA IN THIS DUMP ===
+# Say plainly what leaves the car, so the owner can decide what to share.
+echo "--- 21. Personal data notice ---" >> "$LOG"
+echo "  This dump contains personal information. Before sharing it publicly:" >> "$LOG"
+echo "    - vin                          your VIN" >> "$LOG"
+echo "    - PagSWAct.002 / .csv          activation codes tied to your VIN" >> "$LOG"
+echo "    - logbook/LogBookSql.db        trips: streets, towns, GPS, odometer" >> "$LOG"
+echo "    - Normal/*NavAppCtrl*          saved destinations and last routes" >> "$LOG"
+echo "    - Normal/*CommunicationPres*   paired phones and call history" >> "$LOG"
+echo "    - Normal/*PHTelephone*         phonebook data" >> "$LOG"
+echo "    - sysinfo.log itself           contains the VIN (above)" >> "$LOG"
+echo "  For support, sysinfo.log alone is usually enough -- redact the VIN line." >> "$LOG"
 echo "" >> "$LOG"
 
 # === 15. FULL /HBpersistence BACKUP (recovery snapshot) ===

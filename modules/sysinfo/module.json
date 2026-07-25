@@ -1,7 +1,7 @@
 {
     "name": "sysinfo",
-    "version": "2.4.0",
-    "description": "Complete PCM 3.1 diagnostic: version, VIN, processes, network, CVALUE/FSC, a full restorable /HBpersistence backup, a storage map (block devices, partition tables, free space, USB-attached drives), dev tools inventory, BT/AUX-fix + audio-source state, and a full hardware/IPC/CAN/DSI + service-broker device-tree probe. Read-only, no changes to car.",
+    "version": "3.0.0",
+    "description": "Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified.",
     "author": "dspl1236",
     "status": "ready",
     "compatible": [
