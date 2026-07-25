@@ -400,29 +400,35 @@ fi
 # ACTIVE mixer content says another. cmp tells us which per-type profile the live
 # file was actually copied from -- and whether a per-type SOURCE has been swapped.
 echo "  [RESOLUTION: which profile is really live]" >> "$LOG"
+# Compare by CHECKSUM, not cmp. On this shell `cmp -s` returns non-zero even for
+# identical files, which silently inverted every verdict here -- caught only
+# because the checksums above disagreed with the conclusion. ${v%% *} keeps just
+# the leading checksum and needs no external tool at all.
+ck() { [ -n "$CKSUM" ] && [ -f "$1" ] && { v=$("$CKSUM" "$1" 2>/dev/null); echo "${v%% *}"; }; }
 FLAG="(none)"
 for t in BOSE BURMESTER ASK; do
     [ -e "/HBpersistence/audioAmp$t" ] && FLAG="$t"
 done
 echo "    flag file says      : $FLAG" >> "$LOG"
-MATCH="(matches no per-type file -- content has been modified)"
+ACTIVE=$(ck /HBpersistence/audiomixer.txt)
+MATCH=""
 for t in BOSE BURMESTER ASK; do
-    if cmp -s /HBpersistence/audiomixer.txt "/HBpersistence/audiomixer_$t.txt" 2>/dev/null; then
-        MATCH="$t"
-    fi
+    [ -n "$ACTIVE" ] && [ "$ACTIVE" = "$(ck /HBpersistence/audiomixer_$t.txt)" ] && MATCH="$MATCH $t"
 done
-echo "    active mixer matches: $MATCH" >> "$LOG"
-if [ "$FLAG" != "$MATCH" ]; then
-    echo "    *** MISMATCH: the flag and the live audio profile disagree." >> "$LOG"
-    echo "        Either a per-type source file was overwritten, or the flag was" >> "$LOG"
-    echo "        changed without the mixer being re-copied." >> "$LOG"
-fi
-echo "    [are the per-type sources still distinct from each other?]" >> "$LOG"
-if cmp -s /HBpersistence/audiomixer_BOSE.txt /HBpersistence/audiomixer_BURMESTER.txt 2>/dev/null; then
-    echo "    NOTE: audiomixer_BOSE.txt and audiomixer_BURMESTER.txt are IDENTICAL" >> "$LOG"
-    echo "          -- one has been overwritten with the other's content." >> "$LOG"
+[ -z "$MATCH" ] && MATCH=" (none -- the live file matches no per-type source)"
+echo "    active mixer matches:$MATCH" >> "$LOG"
+case "$MATCH" in
+    *"$FLAG"*) echo "    -> consistent: the live audio matches the flag." >> "$LOG" ;;
+    *) echo "    *** MISMATCH: the flag and the live audio profile disagree." >> "$LOG" ;;
+esac
+CB=$(ck /HBpersistence/audiomixer_BOSE.txt)
+CU=$(ck /HBpersistence/audiomixer_BURMESTER.txt)
+if [ -n "$CB" ] && [ "$CB" = "$CU" ]; then
+    echo "    NOTE: the BOSE and BURMESTER source files are IDENTICAL -- one has been" >> "$LOG"
+    echo "          overwritten with the other's content, so whichever type the unit" >> "$LOG"
+    echo "          resolves to on a cold boot, the same audio profile is loaded." >> "$LOG"
 else
-    echo "    BOSE and BURMESTER sources differ (stock)." >> "$LOG"
+    echo "    per-type sources are distinct (stock)." >> "$LOG"
 fi
 echo "" >> "$LOG"
 echo "  [sss DSP config -- the addon symlink encodes the selected profile]" >> "$LOG"
