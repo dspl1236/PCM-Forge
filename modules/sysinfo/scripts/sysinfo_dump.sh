@@ -28,6 +28,12 @@ cat /etc/pcm31* >> "$LOG" 2>&1
 ls -la /etc/pcm31* >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
+# The system log is a RAM ring buffer that a reboot empties and that keeps
+# rolling while we work. Grab it FIRST -- section 16 analyses the file. If this
+# script dies partway, this is the artefact we would most regret losing.
+sloginfo < /dev/null > "$DUMPDIR/sloginfo.txt" 2>&1
+sloginfo -s 3 < /dev/null > "$DUMPDIR/sloginfo-errors.txt" 2>&1
+
 # === 1. FIRMWARE VERSION ===
 echo "--- 1. Firmware ---" >> "$LOG"
 cat /mnt/ifs1/HBproject/version.txt >> "$LOG" 2>&1
@@ -232,8 +238,12 @@ echo "" >> "$LOG"
 echo "  [device nodes: ser/can/spi/i2c/hd/fs]" >> "$LOG"
 ls /dev/ser* /dev/can* /dev/spi* /dev/i2c* /dev/hd* /dev/fs* >> "$LOG" 2>&1
 echo "" >> "$LOG"
-echo "  [sysregs / FPGA]" >> "$LOG"
+echo "  [sysregs / FPGA -- VALUES, not just node names. These are the audio muxes," >> "$LOG"
+echo "   amp enables and reset lines; the driver returns each field as 0x%04X.]" >> "$LOG"
 ls -la /dev/sysregs/ >> "$LOG" 2>&1
+for r in $(ls /dev/sysregs/ 2>/dev/null); do
+    echo "    $r = $(cat /dev/sysregs/$r 2>/dev/null)" >> "$LOG"
+done
 echo "" >> "$LOG"
 echo "  [MOST]" >> "$LOG"
 ls -la /dev/most* >> "$LOG" 2>&1
@@ -322,14 +332,12 @@ echo "--- 16. System log ---" >> "$LOG"
 # file and grep that file. Reading the ring repeatedly gives views of different
 # instants, and a reboot mid-script would empty it between reads.
 SLOG="$DUMPDIR/sloginfo.txt"
-sloginfo < /dev/null > "$SLOG" 2>&1
 echo "  full log -> sysinfo_dump/sloginfo.txt ($(grep -c '^' "$SLOG" 2>/dev/null) lines)" >> "$LOG"
-sloginfo -s 3 < /dev/null > "$DUMPDIR/sloginfo-errors.txt" 2>&1
 echo "  severity-filtered (the system's own rating, not our keyword guess) ->" >> "$LOG"
 echo "    sysinfo_dump/sloginfo-errors.txt ($(grep -c '^' "$DUMPDIR/sloginfo-errors.txt" 2>/dev/null) lines)" >> "$LOG"
 echo "" >> "$LOG"
 echo "  [boot sequence: packages, processes, terminations]" >> "$LOG"
-grep -E "Package \[|Process\[|PSState|startProcess|terminated|restarted|POST_STARTING" "$SLOG" >> "$LOG" 2>&1
+grep -E "Package ?\[|Process ?\[|PSState|startProcess|terminated|restarted|Shut down System|POST_STARTING" "$SLOG" >> "$LOG" 2>&1
 echo "" >> "$LOG"
 echo "  [boot gates: interfaces the starter waits on -- a MISSING one names the hang]" >> "$LOG"
 grep -E "Interface \[|AVAIL|waitfor" "$SLOG" >> "$LOG" 2>&1
@@ -338,6 +346,8 @@ echo "  [errors / warnings / watchdog / resets]" >> "$LOG"
 grep -iE "error|fail|watchdog|reset|abnormal|corrupt|denied|timeout|panic|assert" "$SLOG" >> "$LOG" 2>&1
 echo "" >> "$LOG"
 echo "  [amplifier detection + audio routing]" >> "$LOG"
+echo "   NOTE: no matches here is itself a result -- it means no detection ran this" >> "$LOG"
+echo "   boot and the existing audioAmp* flag was simply honored." >> "$LOG"
 grep -iE "amptype|amplifier|MOSTDevice|storeAmp|setExtAmp|copyConfig|Burmest|SGTLAM|SoundPres|audio connection" "$SLOG" >> "$LOG" 2>&1
 echo "" >> "$LOG"
 echo "  [hardware enumeration: drives, USB, FPGA, tuner, GPS, MOST]" >> "$LOG"
@@ -353,6 +363,9 @@ echo "" >> "$LOG"
 # and libmalloc text dumps. Empty on a healthy unit; when not, this is the answer.
 echo "--- 16b. Crash record ---" >> "$LOG"
 mkdir -p "$DUMPDIR/crash" 2>/dev/null
+echo "  [is the dumper attached? if /proc/dumper is absent no core is EVER written," >> "$LOG"
+echo "   and an empty dump directory below proves nothing]" >> "$LOG"
+ls -la /proc/dumper >> "$LOG" 2>&1
 for d in /mnt/data/log /HBpersistence /dev/shmem; do
     echo "  [$d]" >> "$LOG"
     ls -la "$d" 2>/dev/null | grep -iE "core|dump|backtrace|malloc|watchdog" >> "$LOG" 2>&1
@@ -537,6 +550,33 @@ echo "  PRIVACY: this backup AND sysinfo.log both hold your VIN + a full persist
 echo "           listing -- keep them private; redact the VIN before sharing." >> "$LOG"
 echo "" >> "$LOG"
 
+# === 22. DRIVE HEALTH ===
+# A failing 2.5" drive is the most common hardware fault on these units, and the
+# reason most people end up replacing one. Best-effort: the tool is not on every
+# build.
+echo "--- 22. Drive health ---" >> "$LOG"
+SMART=""
+for c in /tools/readsmart /mnt/data/tools/readsmart /usr/sbin/readsmart /proc/boot/readsmart; do
+    [ -x "$c" ] && SMART="$c" && break
+done
+if [ -n "$SMART" ]; then
+    for dev in /dev/hd0 /dev/hd1; do
+        [ -e "$dev" ] && { echo "  --- $dev ---" >> "$LOG"; "$SMART" "$dev" < /dev/null >> "$LOG" 2>&1; }
+    done
+else
+    echo "  (no readsmart on this build; drive model/geometry is in section 14)" >> "$LOG"
+fi
+ls -la /HBpersistence/HBProdSMARTData*.txt >> "$LOG" 2>&1
+for f in /HBpersistence/HBProdSMARTData*.txt; do
+    [ -f "$f" ] && cp "$f" "$DUMPDIR/" 2>/dev/null
+done
+echo "" >> "$LOG"
+
 echo "=== System Info complete ===" >> "$LOG"
 ls -la "$DUMPDIR"/ >> "$LOG" 2>&1
 [ -n "$BK" ] && echo "  (full recovery backup: $USB/HBpersistence_backup/)" >> "$LOG"
+
+# A run that stops early still leaves a plausible-looking log, so mark the end.
+# If this line is missing the report is TRUNCATED and must not be read as complete.
+echo "" >> "$LOG"
+echo "=== END OF REPORT -- if you do not see this line, the run was cut short ===" >> "$LOG"

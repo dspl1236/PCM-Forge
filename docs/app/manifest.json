@@ -179,7 +179,7 @@
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 25503
+          "size": 27528
         },
         {
           "path": "scripts/sysinfo_run.sh",
