@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-24",
+  "generated": "2026-07-29",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -163,7 +163,7 @@
     },
     "sysinfo": {
       "status": "ready",
-      "description": "Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified.",
+      "description": "Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified. Also dumps the DSI service registry from /srv/servicebroker -- the broker's entire live list of registered interfaces and their versions, which no devctl can enumerate -- and the Bluetooth bring-up chain (serfpga, phone-db gate, scp_pss, address-book size, boot-hook and trace-profile presence), which is what determines whether the unit can pick Bluetooth at startup at all.",
       "standalone": true,
       "run_script": "sysinfo_dump.sh",
       "script_dir": "/scripts/SysInfo",
@@ -175,11 +175,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 866
+          "size": 1256
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 27938
+          "size": 31197
         },
         {
           "path": "scripts/sysinfo_run.sh",

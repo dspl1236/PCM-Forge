@@ -473,6 +473,71 @@ echo "  [listening sockets -- qconn 8000, MonitorService 2021, telnet 23, ksh 23
 netstat -an >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
+# === 19b. DSI SERVICE REGISTRY ===
+# Reading /srv/servicebroker prints the broker's ENTIRE live registry: pid,
+# server id, interface name and version, for everything currently registered.
+# There is no devctl that enumerates it -- earlier work concluded the registry
+# could not be dumped at all, which was true of devctl and wrong of the read
+# path. Whatever appears here is directly usable: the same name and major.minor
+# that an attach has to match, so no version guessing.
+#
+# The question this answers: are the *.SPH* presentation interfaces (SPHSound,
+# SPHKeyInput) globally registered, or only ever resolved inside the process?
+# Everything about a brick-safe source switch or touch-input client depends on
+# the answer, and it costs one read.
+echo "--- 19b. DSI service registry ---" >> "$LOG"
+if [ -e /srv/servicebroker ]; then
+    echo "  [/srv/servicebroker -- live registry]" >> "$LOG"
+    cat /srv/servicebroker >> "$LOG" 2>&1
+    cat /srv/servicebroker > "$DUMPDIR/servicebroker.txt" 2>/dev/null
+    echo "" >> "$LOG"
+    echo "  NOTE: if SoundPresCtrl.SPHSound appears above, note its version --" >> "$LOG"
+    echo "        an attach must match the major exactly. If it does not appear," >> "$LOG"
+    echo "        re-read this AFTER the phone connects and after opening the" >> "$LOG"
+    echo "        audio-source screen; registration may be lazy." >> "$LOG"
+else
+    echo "  (/srv/servicebroker absent -- broker not running?)" >> "$LOG"
+fi
+echo "" >> "$LOG"
+
+# === 19c. BLUETOOTH BRING-UP CHAIN ===
+# The unit boots to FM because the audio source is chosen before A2DP exists.
+# The chain is serfpga -> phone db -> PSSBSSProcess (/dev/scp_pss) -> mediabt,
+# and package 20 PHONE_AND_BLUETOOTH ships RequestState=STOP, so none of it
+# starts on its own. These are the states that say how far it got and when.
+echo "--- 19c. Bluetooth bring-up chain ---" >> "$LOG"
+for n in /dev/serfpga4 /tmp/phone_db_ready /dev/scp_pss /tmp/graphicready /fs/tmpfs; do
+    if [ -e "$n" ]; then
+        echo "  PRESENT  $n" >> "$LOG"
+        ls -la "$n" >> "$LOG" 2>&1
+    else
+        echo "  absent   $n" >> "$LOG"
+    fi
+done
+echo "" >> "$LOG"
+echo "  [address-book database -- the phone-db step copies this before the BT" >> "$LOG"
+echo "   stack may start, so its size is on the critical path]" >> "$LOG"
+ls -la /HBpersistence/addressbookSql.db* >> "$LOG" 2>&1
+ls -la /fs/tmpfs/addressbookSql.db* >> "$LOG" 2>&1
+echo "" >> "$LOG"
+echo "  [boot hooks: debugTools.sh sits behind a STOPped package and does not" >> "$LOG"
+echo "   run at boot; hdd_ready.sh is in a RUN package and does. CHECK BEFORE" >> "$LOG"
+echo "   WRITING EITHER -- an existing one must be appended to, not replaced.]" >> "$LOG"
+for h in /HBpersistence/debugTools.sh /HBpersistence/hdd_ready.sh; do
+    if [ -f "$h" ]; then
+        echo "  EXISTS   $h" >> "$LOG"
+        ls -la "$h" >> "$LOG" 2>&1
+    else
+        echo "  absent   $h" >> "$LOG"
+    fi
+done
+echo "" >> "$LOG"
+echo "  [trace profiles -- Porsche ships ready-made ones incl. A2DP_Traces.hbtc;" >> "$LOG"
+echo "   enabling one makes the HMI log its own state transitions]" >> "$LOG"
+ls -la /HBpersistence/TraceProfiles/ >> "$LOG" 2>&1
+ls -la /HBpersistence/TraceProfiles/Specific/ >> "$LOG" 2>&1
+echo "" >> "$LOG"
+
 # === 20. SOFTWARE IDENTITY / UPDATE HISTORY ===
 # /UpdateHistory is a flash partition holding the unit's reflash record: which
 # software and nav packages were written, when, and with what result. version.txt

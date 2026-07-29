@@ -1,7 +1,7 @@
 {
     "name": "sysinfo",
-    "version": "3.1.1",
-    "description": "Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified.",
+    "version": "3.2.0",
+    "description": "Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified. Also dumps the DSI service registry from /srv/servicebroker -- the broker's entire live list of registered interfaces and their versions, which no devctl can enumerate -- and the Bluetooth bring-up chain (serfpga, phone-db gate, scp_pss, address-book size, boot-hook and trace-profile presence), which is what determines whether the unit can pick Bluetooth at startup at all.",
     "author": "dspl1236",
     "status": "ready",
     "compatible": [
