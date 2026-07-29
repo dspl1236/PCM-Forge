@@ -183,7 +183,9 @@ PCM-Forge/
 - **V850 IOC** reverse engineered (CMX-RTX RTOS, CAN gateway)
 - **LTE restoration path** confirmed — `devn-asix.so` driver present in firmware
 - **AX88772D workaround** — QNX driver supports USB device ID override
-- **Universal BT/AUX boot fix** — a single signature-located byte patch to live `PCM3Root` routes Bluetooth to A2DP instead of FM; **validated across 31 firmware builds** (every region/model, v2.00+). Builds on [WillCoder's research](https://github.com/WillCoder/PCM_31_AUX-BT); full writeup in [research/BT_AUX_BOOT_FIX.md](research/BT_AUX_BOOT_FIX.md)
+- **Why the unit boots to FM** — not because Bluetooth is slow, but because package 20 `PHONE_AND_BLUETOOTH` ships `RequestState=STOP` and is demand-started. **No Harman platform of this era starts Bluetooth at boot** (the Audi MMI does the same), so A2DP genuinely does not exist when the source is chosen. Which means every decision-layer patch is inert — including [the byte patch we shipped](research/BT_AUX_BOOT_FIX.md), now measured dead on a car and paused. The fix has to ride the connect event. Also explains why `debugTools.sh` does not run at boot: [research/BOOT_ORDER_AND_STARTER.md](research/BOOT_ORDER_AND_STARTER.md)
+- **Update discs decoded** — the version ceilings are a dispatch table keyed on hardware ID, not a check; modules are **RSA-1024 signed**, so custom firmware cannot be installed by the OEM updater; and an official update *wipes* amplifier-profile edits and custom bootscreens: [research/UPDATE_DISC_FORMAT.md](research/UPDATE_DISC_FORMAT.md)
+- **The HMI is data, not code** — 34 `HBM5` `.mmi` files hold every screen and **44,100 strings in ten languages**; the compressed payloads are stock **LZRW2**; screens resolve to real geometry on an 800×480 display: [research/HMI_MMI_FORMAT.md](research/HMI_MMI_FORMAT.md)
 - **PCM 3.0 vs 3.1** — different hardware generations, tools are PCM 3.1 only
 
 ## Related Projects
