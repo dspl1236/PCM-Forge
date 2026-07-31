@@ -1,274 +1,313 @@
 /*
- * PCM-Forge Bench Dongle v0.1.0
- * Arduino Nano + MCP2515 CAN controller
- * 
- * Wakes a Porsche PCM 3.1 on the bench by sending periodic CAN frames.
- * The V850 IOC monitors the infotainment CAN bus for activity before
- * powering on the SH4 main board.
+ * PCM-Forge Bench Dongle v2.0.0
+ * Arduino Nano + MCP2515 -- a CAN bench instrument for the PCM 3.1
  *
- * Hardware:
- *   Arduino Nano
- *   MCP2515 CAN module (with TJA1050 transceiver)
- *   120Ω termination resistor across CAN-H / CAN-L
- *   12V bench power supply
+ * v1 put everything behind #defines, which meant a reflash for every
+ * experiment: change bitrate, reflash; try listen-only, reflash; send a
+ * different frame, reflash. On a bench where the bitrate is not yet known and
+ * the interesting work is "does this frame change the unit's behaviour", that
+ * loop is the whole cost. Everything here is a runtime command instead.
  *
- * Wiring (Nano → MCP2515):
- *   D10 → CS        D11 → MOSI (SI)
- *   D12 → MISO (SO) D13 → SCK
- *   D2  → INT        5V → VCC
- *   GND → GND
+ * The two settings people get wrong, and why they are commands now:
  *
- * Wiring (MCP2515 → PCM Quadlock):
- *   CAN-H → Pin 9    CAN-L → Pin 11
- *   (+120Ω resistor between CAN-H and CAN-L)
+ *   CRYSTAL. Modules ship with 8 MHz or 16 MHz and look identical. Get it
+ *   wrong and every bitrate is wrong by 2x -- which presents as "CAN is dead",
+ *   not as a clock error. If nothing is heard, try the other one before
+ *   suspecting wiring.
  *
- * PCM Power (bench supply → Quadlock):
- *   +12V → Pin 4     GND → Pin 8
+ *   LISTEN-ONLY. A wrong bitrate in normal mode floods the bus with error
+ *   frames and can stop a working node from transmitting. Silent mode cannot,
+ *   so discovery always starts there. But note the converse: a lone
+ *   transmitter with nobody to ACK retries forever and goes error-passive, so
+ *   if you want the PCM to talk, something has to answer it -- leave
+ *   listen-only once the bitrate is confirmed.
  *
- * Serial monitor: 115200 baud for debug output
+ * Hardware
+ *   Nano D10 CS, D11 MOSI, D12 MISO, D13 SCK, D2 INT, 5V, GND
+ *   MCP2515 CAN-H -> Quadlock pin 9, CAN-L -> pin 11
+ *   120 ohm across CAN-H/CAN-L. On a two-node bench you usually need to add
+ *   this yourself; an under-terminated bus fails intermittently and looks
+ *   like a software problem.
+ *   PCM power: +12V -> Quadlock pin 4, GND -> pin 8
+ *
+ * Serial 115200. Send "?" for help.
+ *
+ * Frame output is one line per frame, easy to parse:
+ *   R <millis> <id-hex> <len> <data-hex>
  *
  * https://github.com/dspl1236/PCM-Forge
  */
 
-#include <mcp_can.h>
 #include <SPI.h>
+#include <mcp_can.h>
 
-// ============================================================
-// Configuration — edit these for your setup
-// ============================================================
+#define CS_PIN     10
+#define INT_PIN     2
+#define LED_PIN     9        // D13 is SCK on a Nano, so status LED lives here
 
-// CAN bus speed: infotainment CAN is likely 100kbps.
-// If PCM doesn't wake, try CAN_500KBPS.
-#define CAN_SPEED       CAN_100KBPS
+MCP_CAN CAN(CS_PIN);
 
-// MCP2515 crystal frequency: check your board!
-// Common modules: 8MHz (MCP_8MHZ) or 16MHz (MCP_16MHZ)
-#define CAN_CRYSTAL     MCP_8MHZ
+// ---- runtime configuration -------------------------------------------
+const uint8_t  BITRATES[]   = {CAN_100KBPS, CAN_125KBPS, CAN_250KBPS,
+                               CAN_500KBPS, CAN_1000KBPS, CAN_50KBPS,
+                               CAN_83K3BPS, CAN_33KBPS};
+const uint16_t BITRATE_KBPS[] = {100, 125, 250, 500, 1000, 50, 83, 33};
+#define N_BITRATES (sizeof(BITRATES) / sizeof(BITRATES[0]))
 
-// CS pin for MCP2515
-#define CAN_CS_PIN      10
+uint8_t  cfgRate    = 3;      // default 500k -- VAG infotainment is usually this
+uint8_t  cfgCrystal = 8;      // 8 or 16 MHz
+bool     cfgListen  = true;   // start silent: cannot disturb a live bus
+bool     opened     = false;
+bool     echoFrames = true;
 
-// INT pin from MCP2515 (for receiving)
-#define CAN_INT_PIN     2
+// ---- periodic transmit slots -----------------------------------------
+#define MAX_REPEAT 4
+struct Repeat {
+  unsigned long id;
+  uint8_t  len, data[8];
+  uint16_t period;
+  unsigned long last;
+  bool     active;
+} repeats[MAX_REPEAT];
 
-// Wake frame interval (ms)
-#define WAKE_INTERVAL   1000
+// ---- seen-ID map (bounded: the Nano has 2 KB of RAM) ------------------
+#define MAX_IDS 40
+unsigned long seenId[MAX_IDS];
+uint16_t      seenCount[MAX_IDS];
+uint8_t       seenLen[MAX_IDS];
+uint8_t       nSeen = 0;
 
-// Gateway CAN ID (used for wake frame)
-#define CAN_ID_GATEWAY  0x710
+unsigned long rxTotal = 0, txTotal = 0;
+char line[64];
+uint8_t lineLen = 0;
 
-// Enable VIN spoof — sends a fake gateway VIN on CAN
-// Set to 1 and edit SPOOF_VIN below to enable
-#define ENABLE_VIN_SPOOF  0
-#define SPOOF_VIN         "WP0AA2A70BL000000"
+// ======================================================================
 
-// Enable CAN sniffer — prints all received frames to serial
-#define ENABLE_SNIFFER    1
+void applyConfig() {
+  uint8_t xtal = (cfgCrystal == 16) ? MCP_16MHZ : MCP_8MHZ;
+  Serial.print(F("# open "));
+  Serial.print(BITRATE_KBPS[cfgRate]);
+  Serial.print(F("k xtal="));
+  Serial.print(cfgCrystal);
+  Serial.print(F("MHz mode="));
+  Serial.println(cfgListen ? F("listen-only") : F("normal"));
 
-// Status LED (use D9 since D13 is SPI SCK on Nano)
-#define STATUS_LED        9
+  if (CAN.begin(MCP_ANY, BITRATES[cfgRate], xtal) == CAN_OK) {
+    CAN.setMode(cfgListen ? MCP_LISTENONLY : MCP_NORMAL);
+    opened = true;
+    Serial.println(F("# ok"));
+  } else {
+    opened = false;
+    Serial.println(F("# FAILED -- check wiring, and try the other crystal (x 8 / x 16)"));
+  }
+}
 
-// ============================================================
-// Globals
-// ============================================================
+void noteId(unsigned long id, uint8_t len) {
+  for (uint8_t i = 0; i < nSeen; i++) {
+    if (seenId[i] == id) { if (seenCount[i] < 65535) seenCount[i]++; return; }
+  }
+  if (nSeen < MAX_IDS) {
+    seenId[nSeen] = id; seenCount[nSeen] = 1; seenLen[nSeen] = len; nSeen++;
+  }
+}
 
-MCP_CAN CAN(CAN_CS_PIN);
+void printMap() {
+  Serial.print(F("# ids seen: ")); Serial.println(nSeen);
+  for (uint8_t i = 0; i < nSeen; i++) {
+    Serial.print(F("M "));
+    Serial.print(seenId[i], HEX);
+    Serial.print(' '); Serial.print(seenLen[i]);
+    Serial.print(' '); Serial.println(seenCount[i]);
+  }
+  if (nSeen >= MAX_IDS) Serial.println(F("# (id table full -- more may exist)"));
+}
 
-unsigned long lastWake = 0;
-unsigned long lastBlink = 0;
-unsigned long frameCount = 0;
-unsigned long rxCount = 0;
-bool ledState = false;
+/* Listen on each bitrate in turn and count frames. The right one is the one
+ * that yields frames at all; a wrong one yields none or a trickle of errors.
+ * Silent throughout, so a live bus is never disturbed by the guessing. */
+void scanBitrates(uint16_t dwellMs) {
+  bool wasListen = cfgListen;
+  cfgListen = true;
+  Serial.println(F("# scanning bitrates, listen-only"));
+  for (uint8_t i = 0; i < N_BITRATES; i++) {
+    cfgRate = i;
+    applyConfig();
+    if (!opened) continue;
+    unsigned long t0 = millis(); unsigned long n = 0;
+    unsigned long id; uint8_t len; uint8_t buf[8];
+    while (millis() - t0 < dwellMs) {
+      if (CAN.checkReceive() == CAN_MSGAVAIL) {
+        CAN.readMsgBuf(&id, &len, buf);
+        n++;
+      }
+    }
+    Serial.print(F("S ")); Serial.print(BITRATE_KBPS[i]);
+    Serial.print(F("k frames=")); Serial.println(n);
+  }
+  cfgListen = wasListen;
+  Serial.println(F("# scan done -- pick with 'b <index>' then 'o'"));
+}
 
-// ============================================================
-// Setup
-// ============================================================
+uint8_t hexNyb(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return 0xFF;
+}
+
+/* "t 710 0102ab" -> id 0x710, 3 bytes. Returns len, or 255 on parse error. */
+uint8_t parseFrame(char *s, unsigned long *id, uint8_t *data) {
+  while (*s == ' ') s++;
+  *id = strtoul(s, &s, 16);
+  while (*s == ' ') s++;
+  uint8_t n = 0;
+  while (*s && n < 8) {
+    uint8_t hi = hexNyb(*s++);
+    if (hi == 0xFF) break;
+    uint8_t lo = hexNyb(*s++);
+    if (lo == 0xFF) return 255;
+    data[n++] = (hi << 4) | lo;
+  }
+  return n;
+}
+
+void sendFrame(unsigned long id, uint8_t len, uint8_t *data) {
+  if (!opened) { Serial.println(F("# not open (use 'o')")); return; }
+  if (cfgListen) {
+    Serial.println(F("# listen-only: nothing sent. 'l 0' to enable transmit"));
+    return;
+  }
+  byte r = CAN.sendMsgBuf(id, 0, len, data);
+  txTotal++;
+  Serial.print(r == CAN_OK ? F("T ok ") : F("T ERR "));
+  Serial.println(id, HEX);
+}
+
+void help() {
+  Serial.println(F("# PCM-Forge bench dongle v2"));
+  Serial.println(F("#  ?            this help + status"));
+  Serial.println(F("#  s [ms]       scan bitrates, listen-only (default 1500ms each)"));
+  Serial.println(F("#  b <0-7>      bitrate: 0=100k 1=125k 2=250k 3=500k 4=1M 5=50k 6=83k 7=33k"));
+  Serial.println(F("#  x <8|16>     MCP2515 crystal MHz -- wrong value = every rate wrong"));
+  Serial.println(F("#  l <0|1>      listen-only off/on"));
+  Serial.println(F("#  o            (re)open with current settings"));
+  Serial.println(F("#  e <0|1>      echo received frames"));
+  Serial.println(F("#  m            print the seen-ID map"));
+  Serial.println(F("#  z            zero counters and the ID map"));
+  Serial.println(F("#  t <id> <hex> transmit once,  e.g. t 710 0102030405060708"));
+  Serial.println(F("#  r <slot> <ms> <id> <hex>   repeat every ms (slot 0-3)"));
+  Serial.println(F("#  q            stop all repeats"));
+  Serial.print(F("# state: "));
+  Serial.print(opened ? F("open ") : F("closed "));
+  Serial.print(BITRATE_KBPS[cfgRate]); Serial.print(F("k xtal="));
+  Serial.print(cfgCrystal); Serial.print(F(" "));
+  Serial.print(cfgListen ? F("listen-only") : F("normal"));
+  Serial.print(F(" rx=")); Serial.print(rxTotal);
+  Serial.print(F(" tx=")); Serial.println(txTotal);
+}
+
+void handle(char *s) {
+  while (*s == ' ') s++;
+  char c = *s++;
+  switch (c) {
+    case '?': case 'h': help(); break;
+    case 's': scanBitrates(atoi(s) > 0 ? atoi(s) : 1500); break;
+    case 'b': { int v = atoi(s); if (v >= 0 && v < (int)N_BITRATES) { cfgRate = v;
+                Serial.print(F("# bitrate ")); Serial.print(BITRATE_KBPS[v]);
+                Serial.println(F("k (use 'o' to apply)")); }
+                else Serial.println(F("# range 0-7")); } break;
+    case 'x': { int v = atoi(s); if (v == 8 || v == 16) { cfgCrystal = v;
+                Serial.println(F("# crystal set (use 'o' to apply)")); }
+                else Serial.println(F("# 8 or 16")); } break;
+    case 'l': cfgListen = (atoi(s) != 0);
+              Serial.println(F("# (use 'o' to apply)")); break;
+    case 'o': applyConfig(); break;
+    case 'e': echoFrames = (atoi(s) != 0); Serial.println(F("# ok")); break;
+    case 'm': printMap(); break;
+    case 'z': nSeen = 0; rxTotal = txTotal = 0; Serial.println(F("# cleared")); break;
+    case 't': { unsigned long id; uint8_t d[8];
+                uint8_t n = parseFrame(s, &id, d);
+                if (n == 255) Serial.println(F("# bad hex"));
+                else sendFrame(id, n, d); } break;
+    case 'r': { int slot = atoi(s);
+                while (*s == ' ') s++; while (*s && *s != ' ') s++;
+                int ms = atoi(s);
+                while (*s == ' ') s++; while (*s && *s != ' ') s++;
+                unsigned long id; uint8_t d[8];
+                uint8_t n = parseFrame(s, &id, d);
+                if (slot < 0 || slot >= MAX_REPEAT || ms <= 0 || n == 255) {
+                  Serial.println(F("# usage: r <slot 0-3> <ms> <id> <hex>"));
+                } else {
+                  repeats[slot].id = id; repeats[slot].len = n;
+                  memcpy(repeats[slot].data, d, n);
+                  repeats[slot].period = ms; repeats[slot].last = 0;
+                  repeats[slot].active = true;
+                  Serial.print(F("# slot ")); Serial.print(slot);
+                  Serial.print(F(" every ")); Serial.print(ms);
+                  Serial.println(F("ms"));
+                } } break;
+    case 'q': for (uint8_t i = 0; i < MAX_REPEAT; i++) repeats[i].active = false;
+              Serial.println(F("# repeats stopped")); break;
+    case 0: break;
+    default: Serial.println(F("# unknown -- '?' for help"));
+  }
+}
+
+// ======================================================================
 
 void setup() {
-    Serial.begin(115200);
-    while (!Serial && millis() < 3000);  // Wait for serial (max 3s)
+  Serial.begin(115200);
+  while (!Serial && millis() < 3000);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(INT_PIN, INPUT);
+  for (uint8_t i = 0; i < MAX_REPEAT; i++) repeats[i].active = false;
 
-    Serial.println(F("================================="));
-    Serial.println(F("  PCM-Forge Bench Dongle v0.1.0"));
-    Serial.println(F("================================="));
-
-    pinMode(STATUS_LED, OUTPUT);
-    pinMode(CAN_INT_PIN, INPUT);
-
-    // Initialize MCP2515
-    Serial.print(F("Init MCP2515... "));
-    if (CAN.begin(MCP_ANY, CAN_SPEED, CAN_CRYSTAL) == CAN_OK) {
-        Serial.println(F("OK"));
-    } else {
-        Serial.println(F("FAILED! Check wiring and crystal."));
-        errorBlink();
-    }
-
-    CAN.setMode(MCP_NORMAL);
-
-    Serial.print(F("CAN speed: "));
-    #if CAN_SPEED == CAN_100KBPS
-        Serial.println(F("100 kbps"));
-    #elif CAN_SPEED == CAN_500KBPS
-        Serial.println(F("500 kbps"));
-    #else
-        Serial.println(F("custom"));
-    #endif
-
-    Serial.print(F("VIN spoof: "));
-    #if ENABLE_VIN_SPOOF
-        Serial.println(SPOOF_VIN);
-    #else
-        Serial.println(F("disabled"));
-    #endif
-
-    Serial.print(F("Sniffer: "));
-    #if ENABLE_SNIFFER
-        Serial.println(F("enabled"));
-    #else
-        Serial.println(F("disabled"));
-    #endif
-
-    Serial.println(F(""));
-    Serial.println(F("Sending wake frames..."));
-    Serial.println(F(""));
+  Serial.println(F("# PCM-Forge bench dongle v2.0.0"));
+  Serial.println(F("# starts LISTEN-ONLY so it cannot disturb a live bus."));
+  Serial.println(F("# 's' scans bitrates. '?' for help."));
+  applyConfig();
 }
-
-// ============================================================
-// Main loop
-// ============================================================
 
 void loop() {
-    unsigned long now = millis();
-
-    // --- Send periodic wake frame ---
-    if (now - lastWake >= WAKE_INTERVAL) {
-        lastWake = now;
-        sendWakeFrame();
-        frameCount++;
-
-        // Blink status LED on each wake frame
-        ledState = !ledState;
-        digitalWrite(STATUS_LED, ledState);
-
-        // Periodic status every 10 frames
-        if (frameCount % 10 == 0) {
-            Serial.print(F("[status] TX: "));
-            Serial.print(frameCount);
-            Serial.print(F("  RX: "));
-            Serial.println(rxCount);
-        }
+  // receive
+  if (opened && CAN.checkReceive() == CAN_MSGAVAIL) {
+    unsigned long id; uint8_t len; uint8_t buf[8];
+    CAN.readMsgBuf(&id, &len, buf);
+    rxTotal++;
+    noteId(id, len);
+    digitalWrite(LED_PIN, (rxTotal & 1) ? HIGH : LOW);
+    if (echoFrames) {
+      Serial.print(F("R ")); Serial.print(millis());
+      Serial.print(' '); Serial.print(id, HEX);
+      Serial.print(' '); Serial.print(len);
+      Serial.print(' ');
+      for (uint8_t i = 0; i < len; i++) {
+        if (buf[i] < 0x10) Serial.print('0');
+        Serial.print(buf[i], HEX);
+      }
+      Serial.println();
     }
+  }
 
-    // --- Send VIN spoof if enabled ---
-    #if ENABLE_VIN_SPOOF
-    if (frameCount > 0 && frameCount % 5 == 0 && now - lastWake < 50) {
-        sendVinSpoof();
+  // periodic transmits
+  unsigned long now = millis();
+  for (uint8_t i = 0; i < MAX_REPEAT; i++) {
+    if (repeats[i].active && now - repeats[i].last >= repeats[i].period) {
+      repeats[i].last = now;
+      if (opened && !cfgListen) {
+        CAN.sendMsgBuf(repeats[i].id, 0, repeats[i].len, repeats[i].data);
+        txTotal++;
+      }
     }
-    #endif
+  }
 
-    // --- Receive and print CAN frames ---
-    #if ENABLE_SNIFFER
-    if (!digitalRead(CAN_INT_PIN)) {
-        receiveCAN();
+  // serial commands
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (lineLen) { line[lineLen] = 0; handle(line); lineLen = 0; }
+    } else if (lineLen < sizeof(line) - 1) {
+      line[lineLen++] = c;
     }
-    #endif
-}
-
-// ============================================================
-// Wake frame
-// ============================================================
-
-void sendWakeFrame() {
-    // Send a generic frame on the gateway CAN ID
-    // The V850 IOC just needs to see valid CAN traffic to wake up
-    byte data[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-    byte result = CAN.sendMsgBuf(CAN_ID_GATEWAY, 0, 8, data);
-    if (result != CAN_OK) {
-        Serial.print(F("[wake] TX failed: "));
-        Serial.println(result);
-    }
-}
-
-// ============================================================
-// VIN spoof (optional)
-// ============================================================
-
-#if ENABLE_VIN_SPOOF
-void sendVinSpoof() {
-    // Simulate gateway VIN broadcast
-    // CAN ID 0x65F is used on some VAG platforms for VIN broadcast
-    // The VIN is 17 chars, sent across 3 CAN frames (ISO-TP)
-    const char* vin = SPOOF_VIN;
-
-    // Frame 1: First Flow (10) + length + first 6 bytes of VIN
-    byte f1[8] = {0x10, 0x11};  // multi-frame, 17 bytes total
-    for (int i = 0; i < 6; i++) f1[2 + i] = vin[i];
-    CAN.sendMsgBuf(CAN_ID_GATEWAY, 0, 8, f1);
-
-    delay(5);
-
-    // Frame 2: Consecutive (21) + next 7 bytes
-    byte f2[8] = {0x21};
-    for (int i = 0; i < 7; i++) f2[1 + i] = vin[6 + i];
-    CAN.sendMsgBuf(CAN_ID_GATEWAY, 0, 8, f2);
-
-    delay(5);
-
-    // Frame 3: Consecutive (22) + last 4 bytes + padding
-    byte f3[8] = {0x22};
-    for (int i = 0; i < 4; i++) f3[1 + i] = vin[13 + i];
-    f3[5] = 0x00; f3[6] = 0x00; f3[7] = 0x00;
-    CAN.sendMsgBuf(CAN_ID_GATEWAY, 0, 8, f3);
-
-    Serial.println(F("[vin] VIN spoof sent"));
-}
-#endif
-
-// ============================================================
-// CAN sniffer
-// ============================================================
-
-#if ENABLE_SNIFFER
-void receiveCAN() {
-    unsigned long canId;
-    byte len = 0;
-    byte buf[8];
-
-    if (CAN.readMsgBuf(&canId, &len, buf) == CAN_OK) {
-        rxCount++;
-
-        // Skip TX echo (bit 30 set = extended frame, not what we want)
-        // Print received frame
-        Serial.print(F("[rx] 0x"));
-        if (canId < 0x100) Serial.print(F("0"));
-        if (canId < 0x10)  Serial.print(F("0"));
-        Serial.print(canId, HEX);
-        Serial.print(F(" ["));
-        Serial.print(len);
-        Serial.print(F("] "));
-
-        for (int i = 0; i < len; i++) {
-            if (buf[i] < 0x10) Serial.print(F("0"));
-            Serial.print(buf[i], HEX);
-            if (i < len - 1) Serial.print(F(" "));
-        }
-        Serial.println();
-    }
-}
-#endif
-
-// ============================================================
-// Error handler
-// ============================================================
-
-void errorBlink() {
-    // Rapid blink forever on init failure
-    while (1) {
-        digitalWrite(STATUS_LED, HIGH);
-        delay(100);
-        digitalWrite(STATUS_LED, LOW);
-        delay(100);
-    }
+  }
 }
