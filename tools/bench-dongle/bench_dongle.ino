@@ -48,15 +48,18 @@
 MCP_CAN CAN(CS_PIN);
 
 // ---- runtime configuration -------------------------------------------
+// Names are the library's, which are not the obvious ones -- there is no
+// CAN_83K3BPS or CAN_33KBPS; check mcp_can_dfs.h before adding a rate.
 const uint8_t  BITRATES[]   = {CAN_100KBPS, CAN_125KBPS, CAN_250KBPS,
                                CAN_500KBPS, CAN_1000KBPS, CAN_50KBPS,
-                               CAN_83K3BPS, CAN_33KBPS};
-const uint16_t BITRATE_KBPS[] = {100, 125, 250, 500, 1000, 50, 83, 33};
+                               CAN_80KBPS, CAN_33K3BPS};
+const uint16_t BITRATE_KBPS[] = {100, 125, 250, 500, 1000, 50, 80, 33};
 #define N_BITRATES (sizeof(BITRATES) / sizeof(BITRATES[0]))
 
 uint8_t  cfgRate    = 3;      // default 500k -- VAG infotainment is usually this
 uint8_t  cfgCrystal = 8;      // 8 or 16 MHz
-bool     cfgListen  = true;   // start silent: cannot disturb a live bus
+// 0 = normal, 1 = listen-only, 2 = loopback (internal, transceiver not used)
+uint8_t  cfgMode    = 1;      // start silent: cannot disturb a live bus
 bool     opened     = false;
 bool     echoFrames = true;
 
@@ -83,6 +86,12 @@ uint8_t lineLen = 0;
 
 // ======================================================================
 
+const __FlashStringHelper *modeName() {
+  return cfgMode == 1 ? F("listen-only")
+       : cfgMode == 2 ? F("LOOPBACK (internal -- bus not used)")
+                      : F("normal");
+}
+
 void applyConfig() {
   uint8_t xtal = (cfgCrystal == 16) ? MCP_16MHZ : MCP_8MHZ;
   Serial.print(F("# open "));
@@ -90,10 +99,12 @@ void applyConfig() {
   Serial.print(F("k xtal="));
   Serial.print(cfgCrystal);
   Serial.print(F("MHz mode="));
-  Serial.println(cfgListen ? F("listen-only") : F("normal"));
+  Serial.println(modeName());
 
   if (CAN.begin(MCP_ANY, BITRATES[cfgRate], xtal) == CAN_OK) {
-    CAN.setMode(cfgListen ? MCP_LISTENONLY : MCP_NORMAL);
+    CAN.setMode(cfgMode == 1 ? MCP_LISTENONLY
+              : cfgMode == 2 ? MCP_LOOPBACK
+                             : MCP_NORMAL);
     opened = true;
     Serial.println(F("# ok"));
   } else {
@@ -126,8 +137,8 @@ void printMap() {
  * that yields frames at all; a wrong one yields none or a trickle of errors.
  * Silent throughout, so a live bus is never disturbed by the guessing. */
 void scanBitrates(uint16_t dwellMs) {
-  bool wasListen = cfgListen;
-  cfgListen = true;
+  uint8_t wasMode = cfgMode;
+  cfgMode = 1;
   Serial.println(F("# scanning bitrates, listen-only"));
   for (uint8_t i = 0; i < N_BITRATES; i++) {
     cfgRate = i;
@@ -144,7 +155,7 @@ void scanBitrates(uint16_t dwellMs) {
     Serial.print(F("S ")); Serial.print(BITRATE_KBPS[i]);
     Serial.print(F("k frames=")); Serial.println(n);
   }
-  cfgListen = wasListen;
+  cfgMode = wasMode;
   Serial.println(F("# scan done -- pick with 'b <index>' then 'o'"));
 }
 
@@ -173,14 +184,39 @@ uint8_t parseFrame(char *s, unsigned long *id, uint8_t *data) {
 
 void sendFrame(unsigned long id, uint8_t len, uint8_t *data) {
   if (!opened) { Serial.println(F("# not open (use 'o')")); return; }
-  if (cfgListen) {
+  if (cfgMode == 1) {
     Serial.println(F("# listen-only: nothing sent. 'l 0' to enable transmit"));
     return;
   }
   byte r = CAN.sendMsgBuf(id, 0, len, data);
-  txTotal++;
+  if (r == CAN_OK) txTotal++;          // count successes, not attempts
   Serial.print(r == CAN_OK ? F("T ok ") : F("T ERR "));
   Serial.println(id, HEX);
+}
+
+/* Dump the MCP2515 error state. This is how we tell "nobody is out there"
+   apart from "our transceiver is not driving the bus":
+
+     TEC climbing to 128 then sitting there   -> ACK errors. We transmit, the
+        bits go out fine, nothing answers. Bus wiring is good; the PCM is
+        absent or silent.
+     TEC racing past 128 to bus-off (TXBO)    -> bit errors. We drive dominant
+        and read back recessive, meaning the transceiver is dead, unpowered,
+        or its ground is not the bus ground.                                  */
+void printFaults() {
+  uint8_t eflg = CAN.getError();
+  Serial.print(F("F eflg=0x")); Serial.print(eflg, HEX);
+  Serial.print(F(" tec=")); Serial.print(CAN.errorCountTX());
+  Serial.print(F(" rec=")); Serial.print(CAN.errorCountRX());
+  Serial.print(F(" ["));
+  if (eflg & 0x01) Serial.print(F("EWARN "));
+  if (eflg & 0x02) Serial.print(F("RXWAR "));
+  if (eflg & 0x04) Serial.print(F("TXWAR "));
+  if (eflg & 0x08) Serial.print(F("RXEP "));
+  if (eflg & 0x10) Serial.print(F("TXEP "));
+  if (eflg & 0x20) Serial.print(F("TXBO "));
+  if (eflg & 0xC0) Serial.print(F("RXOVR "));
+  Serial.println(F("]"));
 }
 
 void help() {
@@ -189,10 +225,14 @@ void help() {
   Serial.println(F("#  s [ms]       scan bitrates, listen-only (default 1500ms each)"));
   Serial.println(F("#  b <0-7>      bitrate: 0=100k 1=125k 2=250k 3=500k 4=1M 5=50k 6=83k 7=33k"));
   Serial.println(F("#  x <8|16>     MCP2515 crystal MHz -- wrong value = every rate wrong"));
-  Serial.println(F("#  l <0|1>      listen-only off/on"));
+  Serial.println(F("#  l <0|1|2>    mode: 0 normal, 1 listen-only, 2 loopback"));
+  Serial.println(F("#               loopback is internal to the MCP2515 -- it"));
+  Serial.println(F("#               proves SPI and the controller work without"));
+  Serial.println(F("#               involving the transceiver, wiring, or bus."));
   Serial.println(F("#  o            (re)open with current settings"));
   Serial.println(F("#  e <0|1>      echo received frames"));
   Serial.println(F("#  m            print the seen-ID map"));
+  Serial.println(F("#  f            error counters: ACK errors vs bit errors"));
   Serial.println(F("#  z            zero counters and the ID map"));
   Serial.println(F("#  t <id> <hex> transmit once,  e.g. t 710 0102030405060708"));
   Serial.println(F("#  r <slot> <ms> <id> <hex>   repeat every ms (slot 0-3)"));
@@ -201,7 +241,7 @@ void help() {
   Serial.print(opened ? F("open ") : F("closed "));
   Serial.print(BITRATE_KBPS[cfgRate]); Serial.print(F("k xtal="));
   Serial.print(cfgCrystal); Serial.print(F(" "));
-  Serial.print(cfgListen ? F("listen-only") : F("normal"));
+  Serial.print(modeName());
   Serial.print(F(" rx=")); Serial.print(rxTotal);
   Serial.print(F(" tx=")); Serial.println(txTotal);
 }
@@ -219,11 +259,13 @@ void handle(char *s) {
     case 'x': { int v = atoi(s); if (v == 8 || v == 16) { cfgCrystal = v;
                 Serial.println(F("# crystal set (use 'o' to apply)")); }
                 else Serial.println(F("# 8 or 16")); } break;
-    case 'l': cfgListen = (atoi(s) != 0);
-              Serial.println(F("# (use 'o' to apply)")); break;
+    case 'l': { int v = atoi(s); cfgMode = (v >= 0 && v <= 2) ? (uint8_t)v : 1;
+                Serial.print(F("# mode ")); Serial.print(modeName());
+                Serial.println(F(" (use 'o' to apply)")); } break;
     case 'o': applyConfig(); break;
     case 'e': echoFrames = (atoi(s) != 0); Serial.println(F("# ok")); break;
     case 'm': printMap(); break;
+    case 'f': printFaults(); break;
     case 'z': nSeen = 0; rxTotal = txTotal = 0; Serial.println(F("# cleared")); break;
     case 't': { unsigned long id; uint8_t d[8];
                 uint8_t n = parseFrame(s, &id, d);
@@ -294,9 +336,9 @@ void loop() {
   for (uint8_t i = 0; i < MAX_REPEAT; i++) {
     if (repeats[i].active && now - repeats[i].last >= repeats[i].period) {
       repeats[i].last = now;
-      if (opened && !cfgListen) {
-        CAN.sendMsgBuf(repeats[i].id, 0, repeats[i].len, repeats[i].data);
-        txTotal++;
+      if (opened && cfgMode != 1) {
+        if (CAN.sendMsgBuf(repeats[i].id, 0, repeats[i].len,
+                           repeats[i].data) == CAN_OK) txTotal++;
       }
     }
   }
