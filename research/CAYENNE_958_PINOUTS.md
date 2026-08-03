@@ -122,9 +122,59 @@ wake source.
 | PCMH_P | H1, H2 | SDARS ANTENNA, shield |
 | PCMJ_P | J1, J2 | GPS HF IN, shield |
 | PCMK_P | K1, K2 | TELEPHONE HF IN, shield |
-| PCML_P | L1–L5S | USB: DATA +, VLUSB, DATA −, GROUND, shield |
+| PCML_P | L1–L5S | USB: DATA + (BU BU 0.14), VUSB (BN BN 0.14), DATA − (GN GN 0.14), GROUND (OG OG 0.14), shield (BK BK 1.0) |
+| PCMM_P | M1–M5S | LVDS −, GROUND, LVDS +, GROUND, shield — the display link |
+| PCMN_P | N1, N2 | DAB ANTENNA, shield |
 
 The optical waveguide pairs cross-reference to sheet 39 (`LVL SEE SHEET 39`).
+
+### Minimum bench harness
+
+Only four pins are needed to power a PCM and put it on a bus:
+
+    A15  TERM. 30F   -> +12 V constant
+    A12  TERM. 31    -> ground
+    A11  CAN HIGH    -> gateway A18  (OG VT)
+    A9   CAN LOW     -> gateway A8   (OG BN)
+
+Add `A16 RING BREAK DIAGNOSIS` if experimenting with MOST-side wake. Speakers
+are `B1`–`B8` and USB is `PCML_P` if audio or mass storage is wanted.
+
+Chambers A–D follow the standard VAG quadlock layout, so an Audi quadlock
+housing fits physically. **The pin assignments do not carry over** — populate by
+the Porsche numbers above and disregard what a donor Audi harness's wire colours
+originally meant.
+
+## External connectors on this sheet
+
+### T020.1 — antenna amplifier, left side window (`DABB_P`)
+
+| pin | signal |
+|-----|--------|
+| A1 | SUPPLY |
+| A2, A3 | not connected |
+| B1 | DAB ANTENNA |
+| B2 | SHIELD |
+| C1 | TV OUT |
+| C2 | SHIELD |
+
+TV tuner connection cross-references to sheet 25.
+
+### X816.1 — TSX816 universal audio interface
+
+The AUX/USB interface box, relevant to the AUX and Bluetooth source work.
+
+| chamber | pin | signal |
+|---------|-----|--------|
+| AUX_P | A1 | AUX RETURN |
+| | A2 | AUX L+ |
+| | A3 | AUX R+ |
+| | A4 | AUX SHIELD |
+| USB_P | B1 | USB GROUND |
+| | B2 | DATA − |
+| | B3 | VUSB |
+| | B4 | DATA + |
+| | B5S | SHIELD |
 
 Note this sheet shows the **fully-optioned** variant — DAB, TV tuner, SDARS,
 iPod, telephone. A given car populates only what it was built with.
