@@ -72,6 +72,63 @@ the ignition signal.
 
 Pin 15 is airbag triggering. Do not probe or inject there.
 
+## PCM head unit — P100.1
+
+Housing `B44LWL04A02`. Multi-chamber connector; chambers are lettered and pins
+numbered within each chamber.
+
+### PCMA_P — power and CAN
+
+| pin | signal | wire |
+|-----|--------|------|
+| A9 | **CAN LOW** | OG BN 0.35 |
+| A10 | not connected | |
+| A11 | **CAN HIGH** | OG VT 0.35 |
+| A12 | TERM. 31 (ground) | BN BN 2.5 |
+| A13 | not connected | |
+| A14 | ANTENNA SWITCHED OUTPUT | WH WH 0.5 |
+| A15 | TERM. 30F (constant +12 V) | RD YE 2.5 |
+| A16 | RING BREAK DIAGNOSIS | BN WH 0.35 |
+
+**Pin 9 is CAN LOW and pin 11 is CAN HIGH.** Widely-repeated forum guidance has
+these reversed ("CAN-High and CAN-Low are pins 9 and 11 respectively") — that is
+wrong per the OEM sheet. Swapping H and L does not degrade a CAN link, it stops
+it dead: dominant bits arrive inverted and read as recessive, so the bus appears
+permanently idle with no frames and no ACK. Verify by **wire colour**, which is
+independent of pin counting and matches the gateway end:
+
+    OG VT (orange/violet) = CAN HIGH  -> gateway A18
+    OG BN (orange/brown)  = CAN LOW   -> gateway A8
+
+**There is no TERM. 15 on this connector.** The PCM has only constant power
+(A15) and ground (A12) — no ignition input. It must therefore be woken over
+**CAN**, or via **RING BREAK DIAGNOSIS** (A16), the MOST ring's wake/diagnostic
+line. On a bench with neither a gateway nor a MOST ring present, nothing ever
+tells the PCM to wake: the CAN transceiver stays unpowered, both bus lines sit
+at 0 V, and the unit will light its display and answer the power button while
+transmitting nothing. A gateway is not a convenience for bench work — it is the
+wake source.
+
+### Other chambers
+
+| chamber | pins | carries |
+|---------|------|---------|
+| PCMB_P | B1–B8 | speakers: rear right ±, front right ±, front left ±, rear left ± |
+| PCMC_P | C1–C12 | microphone ± and shield, switched output amplifier, video signal, video GND, Bluetooth handset |
+| PCMD_P | D1–D12 | iPod acc det / charge GND / charge power / accessory ident, iPod CON RX+TX, AUX 1 IN L+ / R+, AUX-1-RETURN, AUX shield |
+| — | E1, E2 | **OPTICAL WAVEGUIDE IN / OUT** (MOST ring) |
+| — | F1, F2 | OPTICAL WAVEGUIDE IN / OUT (second pair) |
+| PCMG_P | G1, G2 | RADIO HF IN, shield |
+| PCMH_P | H1, H2 | SDARS ANTENNA, shield |
+| PCMJ_P | J1, J2 | GPS HF IN, shield |
+| PCMK_P | K1, K2 | TELEPHONE HF IN, shield |
+| PCML_P | L1–L5S | USB: DATA +, VLUSB, DATA −, GROUND, shield |
+
+The optical waveguide pairs cross-reference to sheet 39 (`LVL SEE SHEET 39`).
+
+Note this sheet shows the **fully-optioned** variant — DAB, TV tuner, SDARS,
+iPod, telephone. A given car populates only what it was built with.
+
 ## CAN MMI bus topology
 
 The MMI bus leaves the gateway on A18 / A8 and fans out through four splice
@@ -114,7 +171,8 @@ near 40 Ω means too many. See `tools/bench-dongle/` for the capture scripts.
 
 ## Still to transcribe
 
-- [ ] PCM / head unit quadlock — which pins carry CAN MMI, and terminal 15
+- [x] ~~PCM quadlock — which pins carry CAN MMI, and terminal 15~~ (A9/A11; no
+      terminal 15 exists — the PCM wakes over CAN or the MOST ring)
 - [ ] Which modules terminate the MMI bus
 - [ ] Node identities behind the MMI sheet references listed above
 - [ ] Comfort, Drive, Chassis bus participants
