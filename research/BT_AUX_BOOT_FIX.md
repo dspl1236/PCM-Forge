@@ -21,6 +21,20 @@
 > defect is that **nothing re-evaluates the source when the phone connects seconds
 > later**.
 >
+> **Read "at boot" strictly.** `RequestState=STOP` describes the *boot* request state,
+> not a permanent one. Confirmed on the bench 2026-08-03: with terminal 30 only, no
+> gateway and no ignition, pressing the power knob brings Bluetooth up and a phone
+> pairs and connects normally. The package is demand-started and the demand arrives
+> when the unit leaves standby. That is the whole point — BT exists a few seconds
+> after the source decision was already made, which is exactly the race described
+> above. It also means **the bench is a valid testbed for this fix**; a car is not
+> required to exercise it.
+>
+> Worth contrasting with USB, which is package 11 and *also* `STOP` at boot but does
+> **not** come up on power-on. So the two are gated differently, and USB's blocker is
+> elsewhere — most likely `/dev/sysregs` `IpodPwrEn` and `UsbCableDetEn`, which both
+> default to 0, leaving the port unpowered regardless of what software is running.
+>
 > **Therefore every decision-layer patch is inert by construction** — this one, and any
 > other that edits how the choice is made. The fix has to ride the **connect event**,
 > which means a post-hoc source change: `SoundPresCtrl.SPHSound` →

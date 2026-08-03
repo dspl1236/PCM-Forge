@@ -3,16 +3,25 @@
 
 Move the dongle to a candidate pair, run this, move to the next. It sweeps
 every bitrate listen-only (which cannot disturb a live bus) and tells you what
-it heard -- and specifically whether the v1 fingerprint showed up.
+it heard -- and specifically whether the fingerprint showed up.
 
     python find_pair.py COM4                 sweep once, report
     python find_pair.py COM4 --watch         sweep repeatedly until Ctrl-C
 
-The fingerprint is the capture from the first working bench session: five IDs
-at 100 kbps from the PCM itself. If these appear, the pair under test is the
-infotainment CAN and the PCM is transmitting on it. Anything else alive is
-still useful -- a gateway on the diagnostic pair proves the dongle and wiring
-are good, which is the harder thing to establish.
+**The infotainment bus is 500 kbps.** An earlier note in this project claimed
+100 kbps "confirmed empirically" and it was wrong; it cost a full session of
+captures that could not have worked and produced a confident, false conclusion
+that the unit was asleep. Six IDs are seen live at 500k with terminal 30 alone.
+
+Two behaviours to know before trusting a silent result:
+
+  * **The PCM sleeps.** It wakes on bus activity, transmits for about 1.2s,
+    then goes quiet -- repeatably. A purely passive capture sees nothing.
+    Transmit first, or better, keep the bus alive with periodic traffic.
+  * **Listen-only is not universally implemented.** On the CANable2 firmware
+    it does not receive at all, so a listen-only sweep reports silence at every
+    rate including the right one. That is not evidence. Verify a sweep result
+    in normal mode before concluding a pair is dead.
 """
 import sys
 import time
@@ -23,13 +32,16 @@ try:
 except ImportError:
     sys.exit("needs pyserial:  pip install pyserial")
 
-# The v1 capture -- see research/, and the pcm31-bench-can-link note.
+# Captured live at 500 kbps, terminal 30 only, no gateway. Payloads shown are
+# one observed form -- 0x539 byte 0 and 0x6AB byte 7 carry live state and move
+# between runs, so match on ID, never on payload.
 FINGERPRINT = {
-    "6AB": "~200ms  00 00 00 00 00 00 0F A1",
-    "539": "~250ms  35 02 80 00 08 03 00 00",
+    "539": "~250ms  XX 02 00 00 FE 01 00 00   (byte 0 varies)",
     "541": "~250ms  all zeros",
-    "6D3": "~200ms  01 00 00 00 00 00 00",
-    "5FB": "~1000ms 1F FF FF FF FF 1F F8 7E",
+    "5FA": "~1000ms 00 00 00 00 00 00 F8 FF",
+    "5FB": "~1000ms 00 00 00 00 00 00 00 7E",
+    "6AB": "~200ms  00 00 00 00 00 00 00 XX   (byte 7 varies)",
+    "6D3": "~500ms  01 01 00 00 00 00 00",
 }
 
 RATES = [(0, "100k"), (1, "125k"), (2, "250k"), (3, "500k"),
