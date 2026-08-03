@@ -169,6 +169,9 @@ async function showSheet(id) {
   box.textContent = '';
   box.appendChild(document.importNode(svg, true));
   setZoom(1);
+  box.scrollTop = 0;
+  box.scrollLeft = 0;
+  window.scrollTo(0, 0);
   $('#status').textContent = '';
 
   loadPins(proj, year, sheet, n.l);

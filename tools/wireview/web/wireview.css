@@ -3,6 +3,10 @@
   --fg:#e8e8ea; --dim:#8a8a96; --accent:#c8a44e;
 }
 * { box-sizing:border-box; }
+/* .grid and .split set display:flex, and a class selector outbids the UA
+   stylesheet's [hidden] rule -- so hiding them in JS silently does nothing
+   and the sheet list stays stacked above the drawing. */
+[hidden] { display:none !important; }
 body { margin:0; background:var(--bg); color:var(--fg);
        font:14px/1.5 "Segoe UI",system-ui,sans-serif; }
 a { color:var(--accent); text-decoration:none; cursor:pointer; }

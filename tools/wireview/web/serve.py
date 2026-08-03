@@ -48,8 +48,14 @@ class Handler(SimpleHTTPRequestHandler):
         return full if full.startswith(HERE) else HERE
 
     def end_headers(self):
-        # sheets are static and large; let the browser keep them
-        self.send_header("Cache-Control", "public, max-age=3600")
+        # Cache the big immutable data, never the app itself -- caching the
+        # app means editing wireview.css and reloading to no visible effect,
+        # which is a maddening way to lose ten minutes.
+        top = self.path.lstrip("/").split("/", 1)[0]
+        if top in MOUNTS:
+            self.send_header("Cache-Control", "public, max-age=3600")
+        else:
+            self.send_header("Cache-Control", "no-store")
         SimpleHTTPRequestHandler.end_headers(self)
 
 
