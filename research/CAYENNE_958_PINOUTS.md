@@ -219,6 +219,65 @@ Termination is per-segment. Measure each pair unpowered before connecting:
 60 Ω means two terminators are already present, 120 Ω means one, and anything
 near 40 Ω means too many. See `tools/bench-dongle/` for the capture scripts.
 
+## CAN MMI participants
+
+From the `(07A) CAN TOPOLOGY` sheet. Nine nodes share this bus:
+
+    GATEWAY          RADIO/PCM              INSTRUMENT CLUSTER
+    COMPASS          AIR CONDIT. CONTROL UNIT
+    PDC              PDC CONTROL UNIT
+    CAN ADAPTER      CU PARKING HEATER
+
+Splices SC50/51 and SC54/55.
+
+A bench PCM has **zero** peers where the car gives it eight. That matters for
+more than ACK: a node transmitting with nothing to acknowledge it accumulates
+TEC by 8 per attempt and goes **bus-off at 255, ceasing to transmit entirely**.
+A lone bench PCM will therefore talk briefly after power-up and then fall
+permanently silent until reset — so a capture must be running *before* the unit
+boots, and in normal (ACKing) mode, or it records nothing and proves nothing.
+
+## What the gateway tells the PCM
+
+From the `FUNCTION FLOW - PCM 3.1` sheet. Gateway to PCM, over CAN MMI:
+
+    LOAD SWITCH-OFF STATUS        DRIVER DOOR STATUS
+    ANTI-THEFT WARNING SYSTEM     MEMORY BUTTON STATUS
+    PSM STATUS                    IMAGE OUTPUT ON
+    PDK STATUS                    RADIO KEY
+    EPS STATUS                    **TERM. 15**
+    MSW STATUS                    S CONTACT
+    UPS STATUS                    MANUAL RC
+    CLSM STATUS
+    PTT STATUS
+
+**TERM. 15 arrives as a CAN message, not a wire.** This is why the PCM
+connector has no ignition pin — the head unit is *told* the ignition is on by
+the gateway. A bench unit with no gateway is never told, so it has no reason to
+bring up or hold up its CAN section, which explains a unit that powers on,
+lights its display, answers the power button, and transmits nothing.
+
+Making a bench PCM believe it is in a car therefore reduces to a concrete task:
+**transmit the frame carrying TERM. 15 and S CONTACT**. The ID and layout are
+not yet known. The cleanest way to learn them is to sniff pins A9/A11 at the
+PCM connector *in a running car* — CAN MMI sits behind the gateway and is not
+reachable from the OBD port.
+
+Other flows worth noting:
+
+| from | over | signals |
+|------|------|---------|
+| Instrument cluster | CAN MMI | MCNET, indiv. memory, GPS time/status, **odometer**, cluster status, light sensor |
+| Instrument cluster | LVDS | map display |
+| PDC | CAN MMI | top-view display on/off, distance information, display readiness |
+| A/C unit, front | CAN MMI | fresh air fan stage, sun intensity |
+| MFL steering wheel | LIN → CLSM → CAN Comfort → gateway → CAN MMI | MSW status, PTT status |
+| TV tuner, sound packages | MOST | video signal, audio signal |
+| UAI | USB / serial (iPod) / AUX | — |
+
+The odometer on CAN MMI is a second source for service-interval work,
+independent of the DSI `SPHLogBook` route.
+
 ## Still to transcribe
 
 - [x] ~~PCM quadlock — which pins carry CAN MMI, and terminal 15~~ (A9/A11; no
