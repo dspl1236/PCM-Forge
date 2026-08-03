@@ -55,8 +55,8 @@ main { padding:16px; }
 .grid a:hover { border-color:var(--accent); text-decoration:none; }
 .split { display:flex; gap:16px; align-items:flex-start; }
 .sheet { flex:1 1 auto; min-width:0; background:#fff; border-radius:4px;
-         overflow:auto; padding:8px; }
-.sheet svg { width:100%; height:auto; }
+         overflow:auto; padding:8px; max-height:calc(100vh - 150px); }
+.sheet svg { display:block; }
 aside { flex:0 0 340px; position:sticky; top:56px; max-height:calc(100vh - 72px);
         overflow:auto; background:var(--panel); border:1px solid var(--line);
         border-radius:4px; padding:12px; }
@@ -78,14 +78,98 @@ input[type=search] { background:var(--bg); border:1px solid var(--line);
 """
 
 ZOOM_JS = """
-let z = 1;
 const box = document.querySelector('.sheet');
-function setZoom(v){ z = Math.min(8, Math.max(0.2, v));
-  const s = box.querySelector('svg'); if (s) s.style.width = (z*100)+'%'; }
-document.querySelectorAll('[data-zoom]').forEach(b =>
-  b.onclick = () => setZoom(b.dataset.zoom === 'in' ? z*1.35
-                     : b.dataset.zoom === 'out' ? z/1.35 : 1));
+const svg = box && box.querySelector('svg');
+let base = 1200, z = 1;
+if (svg) {
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  if (vb && vb.width) base = vb.width;
+  svg.removeAttribute('width'); svg.removeAttribute('height');
+}
+function apply(){ if (!svg) return;
+  svg.style.width = Math.round(base*z)+'px'; svg.style.height='auto'; }
+function fit(){ if (!svg) return; z = (box.clientWidth-24)/base; apply(); }
+document.querySelectorAll('[data-zoom]').forEach(b => b.onclick = () => {
+  const k = b.dataset.zoom;
+  if (k === 'fit') return fit();
+  z = k === 'in' ? z*1.35 : k === 'out' ? z/1.35 : 1;
+  z = Math.min(12, Math.max(0.05, z)); apply();
+});
+apply();
 """
+
+
+_TREE = {}
+
+
+def load_tree(lang="EN"):
+    """Rebuild WireView's own navigation tree from its index.
+
+    The filesystem only gives sheet numbers; the index gives the cascade PIWIS
+    shows -- model line, model, year, category, item -- with real names like
+    "PCM 3.1" and a FUNCTION FLOW branch that has no folder of its own.
+
+    Node ids encode their own ancestry ("dfs0.5.1.0.0.1"), so the parent is the
+    id minus its last component and no nesting has to be tracked. Language is a
+    subtree, not an attribute per item, so whole branches are dropped when they
+    belong to another language.
+    """
+    if _TREE:
+        return _TREE
+    if not os.path.isfile(W.INDEX_XML):
+        return {}
+    blob = open(W.INDEX_XML, encoding="utf-8", errors="replace").read()
+
+    drop = []
+    raw = {}
+    for m in re.finditer(r"<dfsItem\b([^>]*)>", blob):
+        a = m.group(1)
+        idm = re.search(r'id="([^"]*)"', a)
+        if not idm:
+            continue
+        nid = idm.group(1)
+        lm = re.search(r'lang="(\w+)', a)
+        if lm and lm.group(1) != lang:
+            drop.append(nid + ".")
+            continue
+        kd = re.search(r'kdview="([^"]*)"', a)
+        ti = re.search(r'title="([^"]*)"', a)
+        pa = re.search(r'path="([^"]*)"', a)
+
+        # Model-year nodes carry their readable name only in langMap
+        # ("DE:Mj 2011;EN:Model Year 2011 (B);..."), so without this the tree
+        # shows the raw folder name "mj0b" instead.
+        label = ""
+        lmap = re.search(r'langMap="([^"]*)"', a)
+        if lmap:
+            for pair in lmap.group(1).split(";"):
+                k, _, v = pair.partition(":")
+                if k.strip().upper() == lang and v.strip():
+                    label = v.strip()
+                    break
+        if not label and kd and kd.group(1).strip():
+            label = kd.group(1).strip()
+        if not label and ti:
+            label = ti.group(1).strip()
+        raw[nid] = {"id": nid, "label": label,
+                    "path": pa.group(1).strip() if pa else "",
+                    "kids": []}
+
+    nodes = {k: v for k, v in raw.items()
+             if not any(k.startswith(d) for d in drop)}
+    # the tree root is a <dfs> element, not a <dfsItem>, so it never appears
+    # in the scan above -- synthesise it or nothing has a parent
+    nodes.setdefault("dfs0", {"id": "dfs0", "label": "All models",
+                              "path": "", "kids": []})
+    for nid, n in nodes.items():
+        parent = nid.rsplit(".", 1)[0]
+        if parent != nid and parent in nodes:
+            nodes[parent]["kids"].append(nid)
+    for n in nodes.values():
+        n["kids"].sort(key=lambda k: [int(x) if x.isdigit() else x
+                                      for x in k.split(".")])
+    _TREE.update(nodes)
+    return _TREE
 
 
 def safe(*parts):
@@ -94,6 +178,33 @@ def safe(*parts):
     if not p.startswith(os.path.abspath(ROOT)):
         raise ValueError("path escapes root")
     return p
+
+
+def wireview_css():
+    """WireView's own stylesheet, scoped to the drawing container.
+
+    The sheets rely on it completely -- it carries `path {fill:none}` and the
+    stroke-width classes. Without it every path renders as a filled black blob,
+    which looks like a broken export rather than a missing stylesheet. Scoped
+    because its bare `text`/`line`/`circle` selectors would otherwise reach the
+    surrounding page.
+    """
+    css = os.path.join(os.path.dirname(os.path.dirname(ROOT.rstrip("\\/"))),
+                       "style_sheets", "common.css")
+    if not os.path.isfile(css):
+        return ""
+    raw = open(css, encoding="utf-8", errors="replace").read()
+    raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    out = []
+    for rule in raw.split("}"):
+        if "{" not in rule:
+            continue
+        sel, body = rule.split("{", 1)
+        sel = ",".join(".sheet %s" % s.strip()
+                       for s in sel.split(",") if s.strip())
+        if sel:
+            out.append("%s{%s}" % (sel, body.strip()))
+    return "\n".join(out)
 
 
 def localize(svg, lang=LANG):
@@ -152,6 +263,10 @@ class Handler(BaseHTTPRequestHandler):
         parts = [p for p in u.path.split("/") if p]
         try:
             if not parts:
+                return self.browse("dfs0")
+            if parts[0] == "n" and len(parts) == 2:
+                return self.browse(parts[1])
+            if parts[0] == "files":
                 return self.index()
             if parts[0] == "search":
                 q = parse_qs(u.query).get("q", [""])[0]
@@ -170,6 +285,52 @@ class Handler(BaseHTTPRequestHandler):
                            % html.escape(str(e))))
             return
         self.send_error(404)
+
+    def browse(self, nid):
+        tree = load_tree()
+        node = tree.get(nid)
+        if node is None:
+            return self.send(page("not found", "",
+                                  "<p class='empty'>unknown node</p>"))
+
+        # breadcrumb from the id's own ancestry
+        chain, cur = [], nid
+        while "." in cur:
+            cur = cur.rsplit(".", 1)[0]
+            if cur in tree:
+                chain.append(tree[cur])
+        chain.reverse()
+        crumb = " / ".join(
+            '<a href="/n/%s">%s</a>' % (c["id"], html.escape(c["label"] or "…"))
+            for c in chain if c["label"] or c["id"] == "dfs0")
+        if node["label"]:
+            crumb += (" / " if crumb else "") + html.escape(node["label"])
+
+        # a leaf with a path is a sheet
+        if node["path"] and not node["kids"]:
+            p = node["path"].strip("/").split("/")
+            if len(p) == 3 and os.path.isdir(safe(*p)):
+                return self.sheet(p[0], p[1], p[2], crumb=crumb,
+                                  title=node["label"])
+
+        # The index has unlabelled pass-through levels (language containers and
+        # the like). Descend through them rather than making the user click an
+        # "(unnamed)" tile that only leads to one more list.
+        kids = list(node["kids"])
+        while len(kids) == 1 and not tree[kids[0]]["label"] \
+                and tree[kids[0]]["kids"]:
+            kids = list(tree[kids[0]]["kids"])
+
+        items = []
+        for kid in kids:
+            k = tree[kid]
+            if not k["label"] and not k["kids"]:
+                continue
+            items.append('<a href="/n/%s">%s</a>'
+                         % (k["id"], html.escape(k["label"] or "(unnamed)")))
+        body = ('<div class="grid">%s</div>' % "".join(items)) if items \
+            else "<p class='empty'>nothing here</p>"
+        self.send(page(node["label"] or "WireView", crumb or "browse", body))
 
     def index(self):
         items = "".join('<a href="/p/%s">%s</a>' % (quote(d), html.escape(d))
@@ -200,7 +361,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send(linkify(localize(raw), project, year),
                   "image/svg+xml; charset=utf-8")
 
-    def sheet(self, project, year, sheet):
+    def sheet(self, project, year, sheet, crumb=None, title=None):
         try:
             rows = W.pins(project, year, sheet)
         except SystemExit:
@@ -214,22 +375,28 @@ class Handler(BaseHTTPRequestHandler):
         else:
             table = "<p class='empty'>no connector pins found on this sheet</p>"
 
-        crumb = ('<a href="/p/%s">%s</a> / <a href="/p/%s/%s">%s</a> / %s'
-                 % (quote(project), html.escape(project), quote(project),
-                    quote(year), html.escape(year), html.escape(sheet)))
+        if crumb is None:
+            crumb = ('<a href="/p/%s">%s</a> / <a href="/p/%s/%s">%s</a> / %s'
+                     % (quote(project), html.escape(project), quote(project),
+                        quote(year), html.escape(year), html.escape(sheet)))
         raw = open(safe(project, year, sheet, "sheet.svg"),
                    encoding="utf-8", errors="replace").read()
         # drop the XML prolog and DOCTYPE -- this is being inlined into HTML,
         # where a stray <?xml ...?> renders as text
-        raw = re.sub(r"<\?xml.*?\?>|<!DOCTYPE.*?>", "", raw, flags=re.S)
+        # The DOCTYPE carries an internal subset, so a non-greedy match to the
+        # first '>' leaves a stray ']>' rendering as text on the page.
+        raw = re.sub(r"<\?xml.*?\?>", "", raw, flags=re.S)
+        raw = re.sub(r"<!DOCTYPE[^\[>]*(\[.*?\])?\s*>", "", raw, flags=re.S)
         drawing = linkify(localize(raw), project, year)
 
         body = """
+<style>%s</style>
 <div class="zoom" style="margin-bottom:10px">
   <button data-zoom="out">&minus;</button>
-  <button data-zoom="reset">reset</button>
+  <button data-zoom="fit">fit width</button>
+  <button data-zoom="reset">100%%</button>
   <button data-zoom="in">+</button>
-</div>
+</div>""" % wireview_css() + """
 <div class="split">
   <div class="sheet">%s</div>
   <aside><h2>pinout &mdash; sheet %s</h2>%s</aside>
