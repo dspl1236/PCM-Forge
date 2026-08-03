@@ -189,11 +189,18 @@ def wireview_css():
     because its bare `text`/`line`/`circle` selectors would otherwise reach the
     surrounding page.
     """
-    css = os.path.join(os.path.dirname(os.path.dirname(ROOT.rstrip("\\/"))),
-                       "style_sheets", "common.css")
-    if not os.path.isfile(css):
+    base = os.path.join(os.path.dirname(os.path.dirname(ROOT.rstrip("\\/"))),
+                        "style_sheets")
+    # common.css alone is not enough: sv_sheet.css holds .frame {fill:white},
+    # .text {fill:black} and the element classes. Without it the frame rect
+    # falls back to a black fill and the whole sheet renders as a black slab.
+    raw = ""
+    for name in ("common.css", "sv_sheet.css"):
+        p = os.path.join(base, name)
+        if os.path.isfile(p):
+            raw += open(p, encoding="utf-8", errors="replace").read() + "\n"
+    if not raw:
         return ""
-    raw = open(css, encoding="utf-8", errors="replace").read()
     raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
     out = []
     for rule in raw.split("}"):
