@@ -36,6 +36,8 @@ Check your version: press **INFO** → **Option** → **Show System Version**.
 
 **Firmware update ISO (v4.76 / v3.43 / v2.47 — all in one):** [hausofdub.com/iso/PCM_NA_20150721.ISO](https://hausofdub.com/iso/PCM_NA_20150721.ISO) — burn to DVD-R (Verbatim recommended, 4x speed). North America region, also confirmed working on ROW units.
 
+**Wiring diagrams:** [hausofdub.com/wireview](https://hausofdub.com/wireview/) — browse by model, year and system. Each sheet shows its connector pinout alongside the drawing, and prints or exports to SVG and PNG. The PCM and gateway connectors this project works against are in [research/CAYENNE_958_PINOUTS.md](research/CAYENNE_958_PINOUTS.md).
+
 **PCM-Forge activation compatibility:** Tested and verified on PCMS02XX (v4.76). The RSA-64 algorithm is firmware-independent, but v2.47 and v3.43 are untested — if you're on older firmware and have issues, run the diagnostic USB and [open an issue](https://github.com/dspl1236/PCM-Forge/issues).
 
 ## Web App
