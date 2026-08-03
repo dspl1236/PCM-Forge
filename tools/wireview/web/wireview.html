@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WireView</title>
+<link rel="stylesheet" href="wireview.css">
+</head>
+<body>
+
+<header id="bar">
+  <h1>WireView</h1>
+  <nav id="crumb"></nav>
+  <form id="searchform" autocomplete="off">
+    <input type="search" id="q" placeholder="search sheet names&hellip;">
+  </form>
+</header>
+
+<main>
+  <div id="tools" hidden>
+    <button data-zoom="out" title="zoom out">&minus;</button>
+    <button data-zoom="fit">fit width</button>
+    <button data-zoom="reset">100%</button>
+    <button data-zoom="in" title="zoom in">+</button>
+    <span class="sep"></span>
+    <button id="print">Print</button>
+    <button id="saveSvg">Save SVG</button>
+    <button id="savePng">Save PNG</button>
+    <span class="sep"></span>
+    <label><input type="checkbox" id="showPins" checked> pinout</label>
+  </div>
+
+  <div id="browse" class="grid"></div>
+
+  <div id="split" class="split" hidden>
+    <div id="sheet" class="sheet"></div>
+    <aside id="side">
+      <h2 id="sidetitle">Pinout</h2>
+      <div id="pins"></div>
+    </aside>
+  </div>
+
+  <p id="status" class="empty"></p>
+</main>
+
+<script src="wireview.js"></script>
+</body>
+</html>

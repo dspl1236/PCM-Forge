@@ -1,0 +1,70 @@
+:root {
+  --bg:#0a0a0c; --panel:#141419; --line:#26262e;
+  --fg:#e8e8ea; --dim:#8a8a96; --accent:#c8a44e;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font:14px/1.5 "Segoe UI",system-ui,sans-serif; }
+a { color:var(--accent); text-decoration:none; cursor:pointer; }
+a:hover { text-decoration:underline; }
+
+header { padding:10px 16px; background:var(--panel);
+         border-bottom:1px solid var(--line); display:flex;
+         align-items:center; gap:16px; flex-wrap:wrap;
+         position:sticky; top:0; z-index:10; }
+header h1 { font-size:15px; margin:0; font-weight:600; letter-spacing:.02em; }
+#crumb { color:var(--dim); font-size:13px; }
+#crumb .sep { opacity:.5; margin:0 6px; }
+#searchform { margin-left:auto; }
+input[type=search] { background:var(--bg); border:1px solid var(--line);
+  color:var(--fg); padding:6px 10px; border-radius:4px; width:230px; }
+
+main { padding:16px; }
+
+.grid { display:flex; flex-wrap:wrap; gap:6px; }
+.grid a { display:block; padding:7px 12px; background:var(--panel);
+          border:1px solid var(--line); border-radius:4px; min-width:64px; }
+.grid a:hover { border-color:var(--accent); text-decoration:none; }
+
+#tools { display:flex; align-items:center; gap:6px; margin-bottom:10px;
+         flex-wrap:wrap; }
+#tools button { background:var(--panel); color:var(--fg);
+  border:1px solid var(--line); border-radius:4px; padding:5px 11px;
+  cursor:pointer; font-size:13px; }
+#tools button:hover { border-color:var(--accent); }
+#tools .sep { width:1px; height:20px; background:var(--line); margin:0 6px; }
+#tools label { color:var(--dim); font-size:13px; user-select:none; }
+
+.split { display:flex; gap:16px; align-items:flex-start; }
+.sheet { flex:1 1 auto; min-width:0; background:#fff; border-radius:4px;
+         overflow:auto; padding:8px; max-height:calc(100vh - 165px); }
+.sheet svg { display:block; }
+aside { flex:0 0 340px; position:sticky; top:58px;
+        max-height:calc(100vh - 165px); overflow:auto;
+        background:var(--panel); border:1px solid var(--line);
+        border-radius:4px; padding:12px; }
+aside h2 { font-size:13px; margin:0 0 8px; color:var(--accent);
+           text-transform:uppercase; letter-spacing:.06em; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+td { padding:3px 6px; border-bottom:1px solid var(--line);
+     vertical-align:top; }
+td.pin { color:var(--accent); font-family:Consolas,monospace;
+         white-space:nowrap; }
+td.wire { color:var(--dim); font-family:Consolas,monospace; font-size:11px; }
+
+.empty { color:var(--dim); font-style:italic; }
+.hit { padding:6px 0; border-bottom:1px solid var(--line); }
+.hit .where { font-family:Consolas,monospace; }
+
+/* Printing: only the drawing, on white, at whatever zoom is on screen.
+   Everything else is navigation chrome that wastes a page. */
+@media print {
+  @page { size: landscape; margin: 8mm; }
+  body { background:#fff; color:#000; }
+  header, #tools, #browse, #status, aside { display:none !important; }
+  main { padding:0; }
+  .split { display:block; }
+  .sheet { max-height:none; overflow:visible; padding:0;
+           border-radius:0; }
+  .sheet svg { width:100% !important; height:auto !important; }
+}

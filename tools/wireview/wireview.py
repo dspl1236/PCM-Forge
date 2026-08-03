@@ -223,6 +223,84 @@ def pins(project, year, sheet):
     return uniq
 
 
+INDEX_XML = os.path.join(os.path.dirname(ROOT.rstrip("\\/")),
+                         "sv_projects.xml")
+ITEM_RE = re.compile(r"<dfsItem\b([^>]*)>")
+
+
+def titles(project, lang="EN"):
+    """path -> sheet title, from the viewer's own index.
+
+    The index repeats every sheet once per language inside subtrees marked by
+    a lang attribute, so the title has to be taken from the right subtree --
+    picking the first match gets German.
+    """
+    if not os.path.isfile(INDEX_XML):
+        return {}
+    blob = open(INDEX_XML, encoding="utf-8", errors="replace").read()
+    out, cur = {}, None
+    want = "/%s/" % project
+    for m in ITEM_RE.finditer(blob):
+        attrs = m.group(1)
+        lm = re.search(r'lang="(\w+)', attrs)
+        if lm:
+            cur = lm.group(1)
+            continue
+        if cur != lang:
+            continue
+        pm = re.search(r'path="([^"]*)"', attrs)
+        if not pm or want not in pm.group(1):
+            continue
+        kd = re.search(r'kdview="([^"]*)"', attrs)
+        if kd:
+            out[pm.group(1).strip("/")] = kd.group(1).strip()
+    return out
+
+
+def export(project, outdir):
+    tmap = titles(project)
+    base = os.path.join(ROOT, project)
+    years = sorted(d for d in os.listdir(base)
+                   if os.path.isdir(os.path.join(base, d)))
+    os.makedirs(outdir, exist_ok=True)
+    written = []
+
+    for year in years:
+        ydir = os.path.join(base, year)
+        sheets = sorted(d for d in os.listdir(ydir)
+                        if os.path.isdir(os.path.join(ydir, d)))
+        chunks, n_pins, n_sheets = [], 0, 0
+        for sheet in sheets:
+            if not os.path.isfile(os.path.join(ydir, sheet, "sheet.svg")):
+                continue
+            title = tmap.get("%s/%s/%s" % (project, year, sheet), "")
+            try:
+                rows = pins(project, year, sheet)
+            except SystemExit:
+                rows = []
+            head = "## %s%s\n" % (sheet, " — %s" % title if title else "")
+            if not rows:
+                chunks.append(head + "\nNo connector pins on this sheet.\n")
+                continue
+            n_sheets += 1
+            n_pins += len(rows)
+            body = ["", "| pin | signal | wire |", "|---|---|---|"]
+            body += ["| %s | %s | %s |" % r for r in rows]
+            chunks.append(head + "\n".join(body) + "\n")
+            print("  %s/%s  %d pins" % (year, sheet, len(rows)))
+
+        path = os.path.join(outdir, "%s.md" % year)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("# %s — %s\n\n" % (project, year))
+            fh.write("Extracted from Porsche WireView (SchaltplanViewer) SVG "
+                     "sheets with `tools/wireview/wireview.py`.\n"
+                     "%d sheets carrying %d pins.\n\n" % (n_sheets, n_pins))
+            fh.write("\n".join(chunks))
+        written.append((year, n_sheets, n_pins,
+                        os.path.getsize(path)))
+    return written
+
+
 def main(argv):
     if not argv:
         print(__doc__)
