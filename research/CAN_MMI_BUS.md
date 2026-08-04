@@ -87,3 +87,56 @@ request from us before there is anything to hear.
 shared wall-clock stamp. See `BENCH_CAN.md` for the adapter traps — particularly
 that the CANable will not receive until it has transmitted, which is why the
 capture emits a burst before the unit is powered.
+
+## Ignition: found, and not sufficient
+
+Isolated 2026-08-03 by disconnecting the gateway's A14 and capturing, then
+applying 12 V mid-capture.
+
+**`3F1` byte 1 is the gateway's ignition flag.** `00` with A14 open, `02` with
+12 V applied — predicted from shape two captures earlier (a one-shot latch at
+2 s that never moved again) and then confirmed by controlled variable.
+`663` byte 2 moves with it, `00 -> E0`.
+
+The PCM's response, all on its own transmitted IDs:
+
+| | ignition OFF | ignition ON |
+|---|---|---|
+| `539` | `XX 02 **00** 00 **FE 01** 00 00` | `XX 02 **80** 00 **08 03** 00 00` |
+| `5FA` | all zeros | `5B 9D C7 CC 9C 46 F1 FF` |
+| `5FB` | all zeros | `1F FF FF FF FF 1F F8 7E` |
+| `6AB` byte 6 | `00` | `3F`/`41` (drifts) |
+| `6D3` | present | absent |
+
+### Ignition is sampled at boot, not watched
+
+Applying 12 V to A14 while the PCM sat in standby did nothing — it stayed dark
+and kept reporting ignition-off. Pressing the power knob afterwards made it
+boot, read the flag, and report ignition-on. So the PCM latches vehicle state
+at startup; asserting it later does not change its mind.
+
+### A gateway-only restbus is not enough
+
+With the real gateway off the bus, replaying all 23 of its IDs **verbatim** —
+original order, original timing, live rolling counters, ignition asserted — and
+power-cycling the PCM into it: the PCM boots (`6D3` fires twice) and still
+reports ignition **off** on every signal above. 28,438 frames.
+
+This also disproves the frozen-counter theory. A synthesised table with `6B2`
+frozen failed, but so did a verbatim replay with the counter moving correctly,
+so stale-data rejection is not the mechanism.
+
+**The likely reason: we are replaying one node out of nine.** The topology
+sheet lists gateway, PCM, instrument cluster, compass, A/C control unit, PDC
+x2, CAN adapter and parking heater on CAN MMI. This bench has only ever had two
+of them, so seven modules' worth of traffic has never been captured. The
+instrument cluster is the obvious suspect — the function-flow sheet has it
+sending cluster status, odometer, GPS time and light sensor to the PCM, and in
+VAG-derived cars the cluster is usually the authority on vehicle state.
+
+That a commercial CAN-only emulator reportedly does achieve this says the
+answer is on this bus and we are simply missing most of it.
+
+**Next: sniff a running car.** Pins A9/A11 at the PCM connector on the real
+Cayenne gives all nine nodes at once. Replay that and the bench has a complete
+car rather than a gateway impersonation.
