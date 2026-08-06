@@ -53,9 +53,94 @@ and CAN.
 | A15 | TERM. 30F (constant +12 V) | RD YE 2.5 |
 | A16 | RING BREAK DIAGNOSIS | BN WH 0.35 |
 
-The remaining chambers are speakers (B), microphone and video (C), iPod and
-AUX (D), the two optical waveguide pairs for the MOST ring, four antenna HF
-inputs, and USB.
+## PCM head unit — the remaining chambers
+
+Full map for **MJ0D–MJ0G**, which covers our MOPF unit. Read off sheet 20 of
+the vehicle wiring set. Pins not listed are `nc`.
+
+| chamber | pin | signal | wire |
+|---------|-----|--------|------|
+| **B** speakers | B1 | SPEAKER, REAR RIGHT + | VT VT 0.5 |
+| | B2 | SPEAKER, FRONT RIGHT + | GY GY 0.5 |
+| | B3 | SPEAKER, FRONT LEFT + | WH WH 0.5 |
+| | B4 | SPEAKER, REAR LEFT + | GN GN 0.5 |
+| | B5 | SPEAKER, REAR RIGHT − | VT BK 0.5 |
+| | B6 | SPEAKER, FRONT RIGHT − | GY BK 0.5 |
+| | B7 | SPEAKER, FRONT LEFT − | WH BK 0.5 |
+| | B8 | SPEAKER, REAR LEFT − | GN BK 0.5 |
+| **C** mic / video | C1 | MICROPHONE + | GY GY 0.35 |
+| | C3 | MICROPHONE SHIELD | BK BK 0.35 |
+| | C4 | SWITCHED OUTPUT AMPLIFIER | BK RD 0.35 |
+| | C9 | MICROPHONE − | BU BU 0.35 |
+| | C10 | VIDEO SIGNAL | BLK BLK 0.1 |
+| | C11 | VIDEO GND | BK BK 0.75 |
+| | C12 | BLUETOOTH HANDSET | WH WH 0.35 |
+| **D** iPod / AUX | D1 | IPOD ACC DET | |
+| | D2 | AUX 1 IN L+ | BU BU 0.14 |
+| | D3 | IPOD CHARGE GND | OG OG 0.14 |
+| | D4 | AUX SHIELD | BK BK 1.0 |
+| | D5 | IPOD CON RX | |
+| | D6 | IPOD CON TX | |
+| | D7 | AUX 1 IN R+ | GN GN 0.14 |
+| | D8 | AUX-1-RETURN | BN BN 0.14 |
+| | D11 | IPOD ACCESSORY IDENT | |
+| | D12 | IPOD CHARGEPOWER + | OG OG 0.14 |
+| **E / F** MOST | E1 / F1 | OPTICAL WAVEGUIDE IN | |
+| | E2 / F2 | OPTICAL WAVEGUIDE OUT | |
+| **G** | G1 / G2 | RADIO HF IN / SHIELD | BLK 0.35 / BK 0.5 |
+| **H** | H1 / H2 | SDARS ANTENNA / SHIELD | BLK 0.35 / BK 0.5 |
+| **J** | J1 / J2 | GPS HF IN / SHIELD | BLK 0.35 / BK 0.5 |
+| **K** | K1 / K2 | TELEPHONE HF IN / SHIELD | BLK 0.35 / BK 0.5 |
+| **L** USB | L1 | DATA + | BU BU 0.14 |
+| | L2 | **VUSB** | BN BN 0.14 |
+| | L3 | DATA − | GN GN 0.14 |
+| | L4 | GROUND | OG OG 0.14 |
+| | L5S | SHIELD | BK BK 1.0 |
+| **M** display | M1 | LVDS − | BU BU 0.14 |
+| | M2 | GROUND | OG OG 0.14 |
+| | M3 | LVDS + | GN GN 0.14 |
+| | M4 | GROUND | BN BN 0.14 |
+| | M5S | SHIELD | BK BK 1.0 |
+| **N** | N1 / N2 | DAB ANTENNA / SHIELD | BLK 0.35 / BK 0.5 |
+
+Sheet 20 also carries pins `A1`–`A4` that are **not** the PCM: they belong to
+the AUX socket and the antenna module sharing the sheet. The PCM's own chamber
+A starts at A9. Pin letters repeat across devices on one sheet, so read the
+connector name, not just the pin.
+
+### USB is native to the head unit, on chamber L
+
+Worth stating because it is easy to assume otherwise from the MOST ring being
+right there on the same sheet. The socket end of the same harness appears as
+`B1`–`B4`, and the colours identify the wires unambiguously at either end:
+
+    BN  VUSB      BU  DATA +      GN  DATA −      OG  GROUND      BK  shield
+
+### The iPod path cannot substitute for USB
+
+`D5 IPOD CON RX` / `D6 IPOD CON TX` is a **UART**, with audio arriving as
+*analog* line-in on the AUX pins and charge power on D12. There are no
+differential data lines in chamber D. It is the 30-pin dock arrangement — iAP
+control over serial, sound over analog — so a mass-storage device has nothing
+to enumerate against there, at any voltage, with any adapter.
+
+### Model-year history
+
+| years | what changed |
+|-------|--------------|
+| MJ0B, MJ0C | iPod on the **B** chamber (`B5` RX, `B10` TX, `B7` charge power). **No USB, no DAB.** |
+| **MJ0D** | USB added (`L1`–`L5S`), DAB added (`N1`/`N2`), iPod relocated to chamber **D**, AUX to `A1`–`A4`. |
+| MJ0D–MJ0G | stable; `MJ0F`→`MJ0G` differs only by cross-reference artifacts. **Our unit.** |
+| MJ0H, MJ0J | different head unit: `MOST IN/OUT` replaces `OPTICAL WAVEGUIDE`, three LVDS pairs, `RESET CENTRAL COMPUTER`, a second CAN pair for the display control panel, LTE antennas. PCM 4.x split architecture. |
+
+The later platform gained a discrete **`E5 POWER ON`** pin. Ours has no such
+line, which is consistent with everything the bench has shown: power-on is
+decided inside the box or over CAN, never by a wire.
+
+> Data note: the `MJ0E` English file in the wiring set is actually German
+> (`KL.30`, `MASSE`, `SCHIRM`, `LWL IN`). Diffing it against its neighbours
+> produces dozens of phantom changes. Many projects in that set have no English
+> branch at all — check the language before trusting a comparison.
 
 ## Two things worth stating plainly
 
@@ -81,14 +166,24 @@ find, because **terminal 15 reaches the PCM as a CAN message on CAN MMI**,
 sent by the gateway alongside S CONTACT, RADIO KEY and the various chassis
 status signals.
 
-The consequence for bench work: a PCM with no gateway is never told the car is
-on. It powers from terminal 30, lights its display and answers the power
-button while its CAN section stays down — both bus lines sitting at 0 V. That
-is not a fault, and no amount of probing the head unit will reveal anything,
-because the thing it is waiting for is a frame that nobody is sending.
+The consequence for bench work is narrower than it first appears, and an
+earlier version of this file overstated it. It claimed the PCM's CAN section
+stays down without a gateway, both lines at 0 V, and that a gateway is
+therefore the wake source. **Both claims were wrong** — they came from captures
+taken at the wrong bitrate (100 k instead of 500 k) and in the CANable's broken
+listen-only mode, which made a live bus look silent.
 
-**A gateway is the wake source for a bench PCM, not a convenience.** Feed the
-gateway terminal 15 on its A14 and it broadcasts the message the PCM wants.
+What is actually true, measured at 500 k:
+
+- **The PCM transmits on terminal 30 alone**, six IDs: `539` `541` `5FA` `5FB`
+  `6AB` `6D3`. No gateway needed to see traffic.
+- A gateway does keep it awake indefinitely, where alone it sleeps after
+  ~1.2 s — so the gateway is a convenience, not the wake source.
+- Replaying all 23 gateway IDs verbatim, ignition asserted, still does not make
+  the PCM report ignition on. See `CAN_MMI_BUS.md`.
+
+Terminal 15 does still reach the PCM only as a CAN message, and the PCM samples
+it at boot rather than watching it. That part stands.
 
 ## Bench harness
 

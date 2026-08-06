@@ -66,6 +66,34 @@ C  ->  S6 (500k)  ->  O  ->  transmit a burst  ->  read
 
 `t<3-hex-id><dlc><data>` to send; received frames arrive in the same form.
 
+## What the bench is actually made of
+
+Read 2026-08-05 over CAN, no dealer tool. The gateway answers **UDS** on
+`710`/`77A` on the **diagnostic** pair — not on CAN MMI, so it must be probed
+through the OBD-side adapter; the same request on the MMI adapter gets nothing.
+
+```
+python pcm_slcan.py --port COM6 --target gateway --step version
+```
+
+| | VIN | part |
+|---|---|---|
+| gateway | `WP1AD2A22DLA79324` | `7PP907530Q` |
+| PCM (Cayenne) | `WP1AA2A21DLA04395` | `7P5035884AB` |
+| PCM (991, Spyderdoc) | `WP0AC2A84GK191352` | — |
+
+Gateway detail: software `1043`, serial `2441B510013317`, system name
+`zentr Gateway`, ODX id `CAN/CAN Gateway`, programming status `0x40` (valid
+application).
+
+**These are three different vehicles.** The gateway and the Cayenne PCM are
+both 2013 Leipzig cars (`D` = model year, `L` = plant) but different serials —
+`79324` against `04395` — and different model codes, `AD2A2` against `AA2A2`.
+
+Worth stating because it will otherwise be mistaken for a fault: any coding,
+component-list or VIN mismatch between the gateway and either PCM is **expected**
+on this bench. Nothing here has ever been a matched set.
+
 ## Tools
 
 `tools/bench-dongle/*.ps1` drive the adapter's serial port directly from

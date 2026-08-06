@@ -212,6 +212,81 @@ produced the first version of this analysis:
 | 7 | 24 | `PSSBSSProcess` → `/dev/scp_pss` *(package STOPped)* |
 | 8 | 55 | `io-fs-media -d mediabt` — A2DP *(package STOPped)* |
 
+## ★ Why a bench PCM will not power itself on
+
+Found 2026-08-05 in `PCM3Root`, and it explains a behaviour that resisted a
+whole session of CAN experiments.
+
+The unit does not decide to run because power arrived. It boots, asks **why** it
+was woken, and if the answer is not a recognised reason it shuts back down:
+
+```
+"...from persistence or no wakeup reason available, System shuts down"
+"WakeUp reason [%d] %s"
+"new WakeUpReason: %d is not processed"
+```
+
+The reason codes, recovered from the name pointer table at file offset
+`001D72F4` in `PCM3Root`:
+
+| code | name | source |
+|------|------|--------|
+| **0** | `WUR_HU_ON_REQ` | head-unit-on **request** — not the button |
+| 1 | `WUR_DOOR` | door opened |
+| 2 | `WUR_IGNITION` | terminal 15 |
+| 3 | `WUR_DWA_INACTIVE` | anti-theft deactivated |
+| **4** | `WUR_ON_BUTTON` | the power knob |
+| 5 | `WUR_UPDATE_RESET` | |
+| 7 | `WUR_BIOS_RESET` | |
+| 10 | `WUR_PRODUCTIONMODE` | |
+| 13 | `WUR_FRONT_CTRL_RESET` | |
+| 14 | `WUR_SYSTEM_RESET` | |
+| 15 | `WUR_ECU_RESET` | |
+| 16 | `WUR_START_IN_FLASHMODE` | |
+| 19 | `WUR_DIAGNOSIS_SESSION` | a tester opened a session |
+
+Also present as strings: `WUR_DIAGNOSIS_SESSION_90`, `WUR_INIT`, `WUR_UNKNOWN`.
+
+### The consequence for bench work
+
+**The wake decision is not made by the SH4.** The SH4 is *told* a reason code
+and reacts; something else detects the event. That is why injecting on CAN MMI
+never woke the unit — we were talking to the processor that receives the verdict,
+not the one that reaches it.
+
+It also retires a session's worth of negative results as *expected* rather than
+puzzling: the gateway-only restbus, both diagnostic sessions, and `3F1` with the
+terminal bits asserted all failed because none of them causes a wake reason to
+be delivered. `WUR_ON_BUTTON` is the only one the bench can currently produce,
+which is exactly what the knob does.
+
+### Who detects what
+
+`FDC/FC9600.bin` in the update package is **AVR firmware** — it opens with an
+AVR interrupt vector table (`0c 94` = `JMP`), 12 KB. That is the front panel
+controller, and it is what reads the power knob and produces `WUR_ON_BUTTON`.
+`WUR_FRONT_CTRL_RESET` refers to the same device.
+
+`WUR_HU_ON_REQ` at code **0** is the interesting one: something *requests* the
+head unit on, and it is neither the knob nor ignition. That is the most likely
+identity of the wake path a commercial CAN emulator reportedly achieves.
+
+Vehicle-side reasons (`DOOR`, `IGNITION`, `DWA_INACTIVE`, `HU_ON_REQ`) must
+arrive over CAN and be interpreted by the IOC — whose firmware is **not** in the
+IFS images. The SWDL target list names it (`IBOC_SW`, `IBOC_FPGA`,
+`IBOC_CONFIG`, `MAINAPPL`, `ROUTINGTABLE`, `EEPROM1/2`), so it is a separately
+flashed device, and the update package does not appear to ship its application.
+
+`BUP_*/boloSW.bin` is a **bootloader**, not the IOC application — it carries
+`"Applikationskennung fuer Bootld. C Becker Automotiv Systems 2000"`, `_BUP_APPL`
+and a build date of Feb 20 2009. Only 12% non-erased.
+
+### What would settle it
+
+Sniff the real car on CAN MMI at PCM pins A9/A11 across a genuine wake — unlock,
+door open, ignition. Whatever the IOC acts on is in that trace, and it is the one
+experiment the bench cannot substitute for.
+
 ## Sources
 
 `D:\PCM\ifs1_rootfs\proc\boot\pcm3_sop_starter.cfg`,
