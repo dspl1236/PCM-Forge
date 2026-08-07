@@ -127,7 +127,29 @@ class Slcan:
 def request(bus, payload, window=2.0):
     """One KWP request, ISO-TP framed and reassembled. Returns bytes or None."""
     p = bytes(payload)
-    bus.send(PCM_TX, bytes([len(p)]) + p)          # single frame; all ours fit
+    if len(p) <= 7:
+        bus.send(PCM_TX, bytes([len(p)]) + p)      # single frame
+    else:
+        # MULTI-FRAME. This path did not exist, and its absence was silent:
+        # a 13-byte activation frame (31 F0 <SWID:2> <code:9>) went out as one
+        # malformed single frame and the unit simply never answered, which
+        # reads identically to "the routine is not supported".
+        bus.send(PCM_TX, bytes([0x10 | (len(p) >> 8), len(p) & 0xFF]) + p[:6])
+        # wait for the ECU's flow control before sending consecutive frames
+        fc, deadline = False, time.time() + 1.5
+        while not fc and time.time() < deadline:
+            for cid, d in bus.frames(0.2):
+                if cid == PCM_RX and d and (d[0] >> 4) == 3:
+                    fc = True
+                    break
+        if not fc:
+            print("    (no flow control from ECU; sending anyway)")
+        seq, i = 1, 6
+        while i < len(p):
+            bus.send(PCM_TX, bytes([0x20 | (seq & 0x0F)]) + p[i:i + 7])
+            seq += 1
+            i += 7
+            time.sleep(0.01)
 
     got, expect, out = None, 0, bytearray()
     deadline = time.time() + window
