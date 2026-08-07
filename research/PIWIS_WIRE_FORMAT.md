@@ -38,6 +38,32 @@ supported. So either routine `F0` does not exist on this unit, or the parameter
 form differs from what PIWIS sent. Consistent with the PIWIS screen showing
 every Freischaltcode as zeros: the dealer tool did not have valid codes either.
 
+### ★ THE CAPTURED PIWIS CODE IS BYTE-IDENTICAL TO OURS
+
+`generate_codes.py` on VIN `WP1AA2A21DLA04395` emits ENGINEERING
+`621590c3dc5bba90`. The frame PIWIS sent, captured above, is
+`31 F0 01 0B 62 15 90 C3 DC 5B BA 90 00`. Same eight bytes.
+
+Two consequences.
+
+**The algorithm in `ALGORITHM_CRACKED.md` is confirmed against a real dealer
+tool frame**, not just against the PagSWAct.csv pairs it was derived from. That
+is independent validation.
+
+**And the remark above that "the dealer tool did not have valid codes either"
+is wrong.** PIWIS had a perfectly valid code; the all-zero display was cosmetic.
+What it did not have was the right VIN. It sent a code for
+`WP1AA2A21DLA04395` -- the car's VIN -- while this unit has never learned one
+and stores `WP1  2A 2` padded with spaces. The unit validates against what IT
+holds, so a code for any other VIN is rejected however correct the algorithm.
+
+`vin_to_number` for the two differs completely: 277870 for the car VIN, 0 for
+the stored blank. Codes: `621590c3dc5bba90` vs `01383a0937c0b152`.
+
+**This is the likely reason activation codes "will not stick" on a bench unit.**
+Read the unit's own VIN with `1A 90` first and generate against that, or set the
+unit's VIN and generate against the new one -- but do not assume the car's VIN.
+
 ### ✓ EXPERIMENT RUN 2026-08-07 — ROUTINE `F0` EXISTS, AND THE GATE IS THE LOCK
 
 The conclusion above ("routine `F0` is genuinely absent here") is **wrong**, and
