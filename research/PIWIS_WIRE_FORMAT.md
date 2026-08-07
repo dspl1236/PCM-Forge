@@ -64,7 +64,44 @@ the stored blank. Codes: `621590c3dc5bba90` vs `01383a0937c0b152`.
 Read the unit's own VIN with `1A 90` first and generate against that, or set the
 unit's VIN and generate against the new one -- but do not assume the car's VIN.
 
-### ✓ EXPERIMENT RUN 2026-08-07 — ROUTINE `F0` EXISTS, AND THE GATE IS THE LOCK
+### ✗ RETRACTED — ROUTINE `F0` IS ABSENT AFTER ALL (unlocked control, same day)
+
+**The section below is wrong. The document's original conclusion was right.**
+
+I argued `F0` must exist because a locked unit answered `securityAccessDenied`
+rather than `requestOutOfRange`, reasoning that a routine which does not exist
+cannot deny you access to it. That reasoning is invalid: **the security check
+simply runs before the routine-existence check**, so a locked unit returns the
+security error for every routine id, real or not.
+
+Riding along on a PIWIS unlock (seed `0000`) exposed the real answer, and a
+control settles it:
+
+```
+31 22  -> 71 22          positive, routine exists
+31 25  -> 71 25 00       positive, routine exists
+31 01  -> 71 01          positive, routine exists
+31 AA  -> 7F 31 12       subFunctionNotSupported  (bogus id)
+31 EE  -> 7F 31 12       subFunctionNotSupported  (bogus id)
+31 F0  -> 7F 31 12       subFunctionNotSupported  <- same as bogus
+31 F1  -> 7F 31 12       subFunctionNotSupported
+```
+
+`31 F0` is indistinguishable from an invented routine id, while three real
+routines answer positively in the same session. **Feature activation over CAN
+does not work on this unit.** The USB route stays the only one.
+
+Lesson worth keeping: an error code that changes when you unlock does not prove
+the target exists — it proves the checks are ordered. Always calibrate against a
+known-absent identifier in the same session before concluding existence.
+
+The multi-frame ISO-TP fix that came out of this is still real and still needed;
+only the conclusion about `F0` was wrong.
+
+<details>
+<summary>Superseded reasoning, kept so the mistake is legible</summary>
+
+### (SUPERSEDED) EXPERIMENT RUN 2026-08-07 — ROUTINE `F0` EXISTS, AND THE GATE IS THE LOCK
 
 The conclusion above ("routine `F0` is genuinely absent here") is **wrong**, and
 so was the reasoning that got there.
@@ -183,3 +220,5 @@ writes `piwis_{mmi,diag,merged}.log` plus a summary of every `27`/`67` frame.
 
 Note it writes to **relative** paths, so run it from the directory you want the
 logs in.
+
+</details>
