@@ -162,6 +162,40 @@ Unlocks access to the Porsche-internal engineering/diagnostic menu. Similar to A
 
 **Access:** After activation, hold MENU + TUNER (or some variant; varies by firmware) on the PCM to enter.
 
+### ★ THE BENCH REASON TO WANT THIS: `03 Ignition Mode`
+
+Decoded from `PCM3Reload` 2026-08-07. The menu class is
+`project_hmi_engineering_GlobalSettings`, and its Global Settings page carries
+an **EEPROM** configuration list:
+
+```
+01 E2P-Structure          (Load E2Prom-File -> /HBpersistence/96xx.txt)
+02 IPC Watchdog           0x22 inactive / 0xFF active (default)
+03 Ignition Mode          0x00 Ignition from CAN (default)
+                          0x01 Ignition ALWAYS ON
+06 Store   07 Load
+08 ST10 Module Mask       + 'Save changes to E2P'
+```
+
+Strings at `09683C28`-`09683CC4`; the E2P loader path at `09683768`/`0968377C`.
+
+**`03 Ignition Mode = 0x01` makes the unit stop waiting for ignition on CAN.**
+On a bench with no BCM the unit reports no-contact and never reaches a state
+where the OnOff FSM will request `RELOAD_MODE_MEDIA` — which is the only safe
+mode carrying package 11 `USB` (see `research/BOOT_ORDER_AND_STARTER.md`). So a
+bench unit with no BCM cannot start USB no matter what you press, and
+`Ignition always on` is the documented way out. It saves to E2P, so it
+persists, and it is reversible by setting it back to `0x00`.
+
+This makes the Engineering Menu the highest-value activation for bench work,
+not a curiosity: it needs **no hardware** (see the table above), and it is the
+route to a setting that unblocks media, USB, and — because pkg 22 `NETWORK`
+requires 12 requires 11 — telnet/qconn as well.
+
+**Not yet proven on hardware.** That ignition gating is what stops the MEDIA
+request is a strong inference from `'IgnitionStatus is not valid'` plus the
+observed BCM no-contact error, not something read end-to-end from the FSM.
+
 ## 16-26. Navigation Map Databases (11 regions)
 
 **SWID/SubID range:** `0x2001-0x200b` / `0x00ff`
