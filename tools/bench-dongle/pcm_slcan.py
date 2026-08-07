@@ -294,6 +294,13 @@ def read_dtcs(bus):
     if r[0] == 0x7F:
         print("    negative response %s" % r.hex())
         return
+    if r[0] != 0x58:
+        # Echo check. When the unit answers slowly the reader otherwise pairs a
+        # reply with the wrong request, which once made a stable identifier set
+        # look like it had collapsed to zero-length. Never trust an unechoed
+        # reply.
+        print("    MISMATCH: expected 58, got %02X (%s) -- retry" % (r[0], r.hex()[:24]))
+        return
     count, body = r[1], r[2:]
     if len(body) % 3:
         print("    %d bytes, not a whole number of triplets: %s"

@@ -80,6 +80,20 @@ def main():
                 time.sleep(a.gap)
                 r = P.request(bus, req)
                 if r and r[0] != 0x7F:
+                    # VALIDATE THE ECHO. A positive KWP reply is
+                    # <service+0x40> <id> ..., and when the unit answers slowly
+                    # the harness otherwise pairs a reply with the NEXT
+                    # request. That produced a whole table of "0-byte" reads
+                    # with one identifier carrying the previous one's payload,
+                    # which reads exactly like a dramatic state change and is
+                    # not one.
+                    ok_echo = (r[0] == req[0] + 0x40
+                               and (len(req) < 2 or (len(r) > 1
+                                                     and r[1] == req[1])))
+                    if not ok_echo:
+                        why = "MISMATCH: asked %s got %s" % (req.hex(), r[:2].hex())
+                        time.sleep(a.gap)
+                        continue
                     got = r
                     busy_run = 0
                     break
