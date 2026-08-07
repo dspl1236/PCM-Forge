@@ -294,3 +294,56 @@ experiment the bench cannot substitute for.
 `D:\PCM\ifs1_rootfs\proc\boot\prepare_phone_db.sh`;
 MMI comparison from `8R0906961ES` → `MU9411/ifs-root/41/default/ifs-root.ifs` →
 `/mnt/ifs-root/etc/mmi3g-srv-starter.cfg`.
+
+
+---
+
+## ★ THE RELOAD_MODE TABLE — decoded 2026-08-07, and it explains dead USB
+
+The startup FSM's guards were called "table-driven, unreachable by string or
+xref search" after four failed attempts. The table is not hidden: **each mode's
+name string is immediately followed by its own u32 package list, and the next
+name begins exactly where that list ends.** Walking name -> gap -> name parses
+all fourteen.
+
+`PCM3Root`, VA = file + 0x8040000. Copier at `0x08231FE6`:
+`memcpy(dest, 0x085B9444, 40)` then a second copy to `r9+0x360` for the write.
+
+**The leading word is the STATE, not a package.** Every one of the fourteen
+modes leads with `2`, and `RELOAD_MODE_PHONE` = `{2, 20}` is byte-for-byte the
+8-byte `/dev/starter/start` write this document already records as
+`{state=2 RUN, pkg=20}`. (A verification pass proposed reading it as package 2
+`IO_DISPLAY` "included for idempotency" — that is wrong, and would corrupt any
+hand-built request.)
+
+| mode | list @ | state + packages |
+|---|---|---|
+| `RELOAD_MODE_UPDATE` | `085B92D4` | RUN + 11 USB, 12 MEDIALAUNCH, 24 MCD, **42 SRV_DRVFLSH**, 20 PHONE_AND_BT, 18 DRIVEHANDLER |
+| `RELOAD_MODE_NAVI` | `085B933C` | RUN + 43 |
+| `RELOAD_MODE_MEDIA` | `085B9444` | RUN + 24 MCD, **11 USB**, 12 MEDIALAUNCH, 26 MME_UPDATE, 25 QDB, 18 DRIVEHANDLER, 46 DVDPLAYER, 27 IO_MEDIA_MARGI, 28 MMELAUNCHER |
+| `RELOAD_MODE_PHONE` | `085B9490` | RUN + 20 PHONE_AND_BLUETOOTH |
+| `RELOAD_MODE_PHONE_AND_SPEECH_LOW` | `085B94CC` | RUN + 39 PREPARE_PHONE_DB, 20 PHONE_AND_BT, 21 |
+| `RELOAD_MODE_PARKHDD` | `085B9500` | RUN + 36 |
+| `RELOAD_MODE_SPEECH` | `085B9554` | RUN + 21 |
+| `RELOAD_MODE_ISO_MOUNT` | `085B9584` | RUN + 35, 38, 15 |
+| `RELOAD_MODE_EU_MAP` | `085B95B8` | RUN + ... |
+
+Also present with no list of their own: `MEDIA_DELAY`, `UNMOUNT_NAVDB`,
+`MOUNTHDD`, `NAVI_SWDL`.
+
+**★ ONLY TWO MODES CARRY PACKAGE 11 `USB`: `MEDIA` and `UPDATE`.** Since package
+11 hosts `/sbin/io-usb`, and nothing polls the USB cable line, **inserting a
+stick cannot start USB — an HMI action must request the media domain.** Dead USB
+on a bench unit is lazy-start working as designed, not a fault.
+
+`RELOAD_MODE_MEDIA` is the only *safe* route. **Do not use `UPDATE` to force
+USB:** it carries package 42 `SRV_DRVFLSH` = `/usr/sbin/srv-drvflsh`, a NOR
+flash eraser/programmer (`"*** erasing:"`, `"*** programming:"`,
+`"IPL could be killed !!"`).
+
+Selection site: `0x08231E5E` compares the incoming event name against a chain
+of 16-byte-spaced `std::string` members at `this+0x384`, `+0x394`, `+0x3A4`...,
+logging `'Start MEDIA Packages'` (`085B9284`) on a hit.
+
+**Still open:** what makes PCM3Root request MEDIA in the first place. The mode
+table is decoded; the *trigger* for entering it is not.
