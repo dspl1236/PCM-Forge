@@ -160,7 +160,34 @@ Internal: boot image / feature-enable baseline. Usually written together with Fe
 Unlocks access to the Porsche-internal engineering/diagnostic menu. Similar to Audi's "Green Menu" on MMI. Contains voltage readings, software version info, per-module status, GPS diagnostics, CAN bus scopes.
 
 
-**Access:** After activation, hold MENU + TUNER (or some variant; varies by firmware) on the PCM to enter.
+**Access: SOURCE + OPTION together.** Confirmed on the bench 2026-08-07 --
+pressing them on an unactivated unit produces "function not available", which is
+the gate refusing, not the combo being wrong. (This supersedes the earlier
+"MENU + TUNER, varies by firmware" guess.)
+
+Entry is **two-step**, and the firmware names every part of the gate:
+
+```
+UPD_ID_SWAct_engineeringmenu_step2_allowed      <- SWAct grants step 2
+UPD_ID_engineeringmenu_step2_allowed
+UPD_ID_engineeringmenu_step2UnlockCodeEngMode   <- alternative code path
+UPD_ID_engineeringmenu_step2_RestCycles         <- limited attempts
+```
+
+The `SWAct_` prefix is the point: **software activation is what sets
+`step2_allowed`.** So the combo gets you to step 1, and activating SWID `0x010b`
+is what lets step 2 through. Menu construction is
+`Engineering::MenuCreatorMediator` ("Activate EM: %d", "Creating H/B
+Engineering menus", "Creating PAG Engineering menus").
+
+99 engineering screens exist, including `GlobalSettings_GlobalSettings` (the
+Ignition Mode setting below), `FaultMemory`, `Diagnosis`, `PAGVariantCoding`,
+`SystemHarddisk`, `Trace`, and `SWActivationActivateSpecificCar`.
+
+Note `step2UnlockCodeEngMode` looks like a second route in, but it is a DSI
+property rather than a constant in the binary -- the 185 `UnlockCode` symbols in
+the firmware are SIM/phone PIN handling (`SEC_SetUnlockCode`, NADPHONE), not
+this. No shortcut found there.
 
 ### ★ THE BENCH REASON TO WANT THIS: `03 Ignition Mode`
 
