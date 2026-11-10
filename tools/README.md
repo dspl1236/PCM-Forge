@@ -54,6 +54,7 @@ Source, build scripts, and engineering-definition files behind the matching
 | `cvalue_tool.py` | decode Harman `CVALUE*.CVA` coding-value files (read-only) — `python cvalue_tool.py FILE.CVA` |
 | `hdd_tool.py` | open a PCM/MMI **HDD image** and browse its partitions + directory tree (read-only). GUI: `python hdd_tool.py`; CLI: `python hdd_tool.py <image> [parts\|tree P2\|hex 0x…]` |
 | `asix_universal_patch.py` | patch the ASIX USB-Ethernet driver for clone/unsupported chips |
+| `nor_repair.py` | check/repair a **NOR flash dump** read off the two S29GL256N chips with an external programmer: `merge` (auto-detects the chip layout), `check` (IFS1/Emergency/IFS2 self-checksum, so it works on builds with no disc; `--disc` matches OEM CRCs), `splice` one region from a known-good image (refuses the unit's own persistence), `split` back into chip files. Works on files only — you program the chips yourself |
 | `diff_fw.py` | diff two firmware images |
 | `verify.py` | integrity/verification helper |
 | `can_probe.sh` / `display_probe.sh` | on-car CAN bus / display probes |
