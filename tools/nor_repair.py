@@ -12,7 +12,7 @@ files for you to program yourself.
   check   walk every region of a merged image and say whether it is intact.
           IFS1/Emergency and IFS2 checksum themselves, so this works even on a
           build we have no update disc for. --disc also matches each region
-          against the OEM CRC records of an extracted update disc.
+          against an update disc (an .ISO or an extracted folder).
   splice  replace ONE region with a known-good copy (an OEM .ifs file or the
           same region of a donor image). Unit-specific regions are refused.
   split   merged image -> two chip files, the exact inverse of merge.
@@ -26,419 +26,233 @@ Typical repair (corrupt IFS2):
   python nor_repair.py split fixed.bin -o fixedA.bin fixedB.bin
   # keep the original dumps; program fixedA/fixedB to the same chips they came from
 
-Flash map (from the ADR<address> folders of the OEM update disc):
-
-  0x0000000 IPL          0x0100000 FPGA         0x01C0000 IFS1
-  0x0BC0000 EMERGENCY    0x0FC0000 IFS2         0x3000000 HBPERSISTENCE
-  0x3F00000 UPDATEHISTORY
-  (the no-HDD LOW variant has DEBUG at 0x2B40000 and HBPERSISTENCE at 0x2E00000)
+Reading and checking a dump -- the flash map, the chip layouts, the region
+checks, disc matching -- is PCM-Explorer's (pcmexplorer/nor.py), which also
+shows all of it in its desktop UI. This tool adds only the writing half that
+a read-only browser must not have. It needs a PCM-Explorer clone: either
+importable, named by the PCM_EXPLORER environment variable, or checked out
+next to this PCM-Forge checkout.
 
 HBPERSISTENCE holds this unit's own VIN, activation and coding. Never copy it
 from another unit -- splice refuses unless --force-unit-data is given.
 """
 import argparse
 import json
-import struct
+import os
 import sys
-import zlib
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "PCM4" / "tools"))
-from lzo1x import decompress_stream  # noqa: E402  (pure Python, MIT, same author)
-
-CHIP_SIZE = 32 * 1024 * 1024
-FULL_SIZE = 2 * CHIP_SIZE
-
-QNX_STARTUP = b"\xeb\x7e\xff\x00"     # startup_header signature 0x00ff7eeb (LE)
-HBCIFS = b"hbcifs\x00\x00"
-EFS = b"\x10\x00\x4c\xff"
-FPGA = b".HDG"
-
-# name, start, end, magic (None = no magic known), unit_specific
-MAP_STD = [
-    ("IPL",           0x0000000, 0x0100000, None,        False),
-    ("FPGA",          0x0100000, 0x01C0000, FPGA,        False),
-    ("IFS1",          0x01C0000, 0x0BC0000, QNX_STARTUP, False),
-    ("EMERGENCY",     0x0BC0000, 0x0FC0000, QNX_STARTUP, False),
-    ("IFS2",          0x0FC0000, 0x3000000, HBCIFS,      False),
-    ("HBPERSISTENCE", 0x3000000, 0x3F00000, EFS,         True),
-    ("UPDATEHISTORY", 0x3F00000, 0x4000000, EFS,         True),
-]
-MAP_LOW = [
-    ("IPL",           0x0000000, 0x0100000, None,        False),
-    ("FPGA",          0x0100000, 0x01C0000, FPGA,        False),
-    ("IFS1",          0x01C0000, 0x0BC0000, QNX_STARTUP, False),
-    ("EMERGENCY",     0x0BC0000, 0x0FC0000, QNX_STARTUP, False),
-    ("IFS2",          0x0FC0000, 0x2B40000, HBCIFS,      False),
-    ("DEBUG",         0x2B40000, 0x2E00000, EFS,         True),
-    ("HBPERSISTENCE", 0x2E00000, 0x3F00000, EFS,         True),
-    ("UPDATEHISTORY", 0x3F00000, 0x4000000, EFS,         True),
-]
-# Every magic both maps share, used to score candidate layouts.
-PROBES = [(0x0100000, FPGA), (0x01C0000, QNX_STARTUP), (0x0BC0000, QNX_STARTUP),
-          (0x0FC0000, HBCIFS), (0x3000000, EFS), (0x2E00000, EFS), (0x3F00000, EFS)]
+EXPLORER_URL = "https://github.com/dspl1236/PCM-Explorer"
 
 
-def flash_map(img):
-    return MAP_LOW if img[0x2E00000:0x2E00004] == EFS and img[0x3000000:0x3000004] != EFS else MAP_STD
-
-
-# ---------------------------------------------------------------- layouts
-# A layout is (kind, width, first, swap16):
-#   kind "interleave": units of `width` bytes alternate between the chips,
-#                      chip `first` supplies the lower address of each pair
-#   kind "concat":     chip `first` is the low 32 MB, the other the high 32 MB
-#   swap16:            each chip dump has its bytes swapped within 16-bit
-#                      words (some programmers read x16 parts big-endian)
-
-def _swap16(b):
-    a = bytearray(b)
-    a[0::2], a[1::2] = b[1::2], b[0::2]
-    return bytes(a)
-
-
-def combine(chips, layout):
-    kind, width, first, swap = layout
-    a, b = chips[first], chips[1 - first]
-    if swap:
-        a, b = _swap16(a), _swap16(b)
-    if kind == "concat":
-        return a + b
-    out = bytearray(len(a) + len(b))
-    step = 2 * width
-    for k in range(width):
-        out[k::step] = a[k::width]
-        out[width + k::step] = b[k::width]
-    return bytes(out)
-
-
-def separate(img, layout):
-    kind, width, first, swap = layout
-    half = len(img) // 2
-    if kind == "concat":
-        a, b = img[:half], img[half:]
-    else:
-        a, b = bytearray(half), bytearray(half)
-        step = 2 * width
-        for k in range(width):
-            a[k::width] = img[k::step]
-            b[k::width] = img[width + k::step]
-        a, b = bytes(a), bytes(b)
-    if swap:
-        a, b = _swap16(a), _swap16(b)
-    chips = [None, None]
-    chips[first], chips[1 - first] = a, b
-    return chips
-
-
-def candidate_layouts():
-    for swap in (False, True):
-        for first in (0, 1):
-            yield ("concat", 0, first, swap)
-            for width in (1, 2, 4):
-                yield ("interleave", width, first, swap)
-
-
-def score(chips, layout):
-    """Count the known magics a layout puts in the right place, without
-    building the full image: fetch just the probed bytes."""
-    kind, width, first, swap = layout
-    hits = 0
-    for addr, magic in PROBES:
-        got = bytearray()
-        for i in range(len(magic)):
-            p = addr + i
-            if kind == "concat":
-                c, off = (first, p) if p < CHIP_SIZE else (1 - first, p - CHIP_SIZE)
-            else:
-                unit, within = divmod(p, width)
-                c = first if unit % 2 == 0 else 1 - first
-                off = (unit // 2) * width + within
-            if swap:
-                off ^= 1
-            got.append(chips[c][off])
-        hits += bytes(got) == magic
-    return hits
-
-
-def describe(layout):
-    kind, width, first, swap = layout
-    names = "AB"[first] + "AB"[1 - first]
-    s = f"concat ({names[0]} low, {names[1]} high)" if kind == "concat" else \
-        f"{width * 8}-bit interleave ({names[0]} at even units)"
-    return s + (", 16-bit byte swap" if swap else "")
-
-
-def chip_location(addr, layout):
-    """Which input chip, and where in it, a flash address came from."""
-    kind, width, first, swap = layout
-    if kind == "concat":
-        c, off = (first, addr) if addr < CHIP_SIZE else (1 - first, addr - CHIP_SIZE)
-    else:
-        unit, within = divmod(addr, width)
-        c = first if unit % 2 == 0 else 1 - first
-        off = (unit // 2) * width + within
-    if swap:
-        off ^= 1
-    return "AB"[c], off
-
-
-# ---------------------------------------------------------------- checks
-
-def wordsum(buf):
-    n = len(buf) // 4 * 4
+def _import_explorer():
+    """pcmexplorer.nor (+ UpdateDisc), from wherever a PCM-Explorer clone is."""
     try:
-        import numpy as np
-        return int(np.frombuffer(buf[:n], "<u4").sum(dtype=np.uint64) & 0xFFFFFFFF)
+        import pcmexplorer.nor  # noqa: F401
     except ImportError:
-        return sum(struct.unpack(f"<{n // 4}I", buf[:n])) & 0xFFFFFFFF
+        forge = Path(__file__).resolve().parent.parent
+        for cand in (os.environ.get("PCM_EXPLORER"),
+                     forge.parent / "PCM-Explorer", forge.parent / "pcm-explorer"):
+            if cand and (Path(cand) / "pcmexplorer" / "__init__.py").exists():
+                sys.path.insert(0, str(cand))
+                break
+        else:
+            sys.exit("nor_repair.py reads dumps with PCM-Explorer, which was not found.\n"
+                     "  git clone %s\n"
+                     "next to this PCM-Forge checkout, or set PCM_EXPLORER to the clone."
+                     % EXPLORER_URL)
+    try:
+        from pcmexplorer import nor
+        from pcmexplorer.updatedisc import UpdateDisc
+    except ImportError:
+        sys.exit("this PCM-Explorer has no NOR support (pcmexplorer/nor.py) -- "
+                 "git pull it to a version from 2026-11 or later.")
+    return nor, UpdateDisc
 
 
-def check_region(img, name, start, end, magic):
-    """Return (status, detail, used_len). status: OK / BAD / ERASED / UNVERIFIED."""
-    reg = img[start:end]
-    if reg.count(0xFF) == len(reg):
-        return "ERASED", "all 0xFF", 0
-    if magic is not None and reg[:len(magic)] != magic:
-        return "BAD", f"expected magic {magic.hex()} at 0x{start:07X}, found {reg[:8].hex()}", 0
-
-    if magic == QNX_STARTUP:
-        stored = struct.unpack_from("<I", reg, 0x24)[0]
-        if not 0 < stored <= len(reg):
-            return "BAD", f"startup stored_size 0x{stored:X} does not fit the region", 0
-        s = wordsum(reg[:stored])
-        if s:
-            return "BAD", f"QNX word checksum over 0x{stored:X} bytes is 0x{s:08X}, must be 0", stored
-        return "OK", f"QNX image 0x{stored:X} bytes, checksum good", stored
-
-    if magic == HBCIFS:
-        dsize, csize = struct.unpack_from("<II", reg, 8)
-        if not 0 < csize <= len(reg) - 0x40:
-            return "BAD", f"hbcifs compressed size 0x{csize:X} does not fit the region", 0
-        out, ip, why = decompress_stream(reg, 0x40)
-        used = 0x40 + csize
-        if why.startswith("error") or len(out) != dsize:
-            at = start + ip
-            return "BAD", (f"LZO stream broke ({why}) after {len(out):,} of {dsize:,} bytes; "
-                           f"input stopped at flash 0x{at:07X} -- the damage is at or a little "
-                           f"before that address"), used
-        isz = struct.unpack_from("<I", out, 8)[0] if out[:7] == b"imagefs" else 0
-        if not isz:
-            return "BAD", "decompressed data does not start with an imagefs header", used
-        s = wordsum(bytes(out[:isz]))
-        if s:
-            return "BAD", f"decompressed imagefs word checksum is 0x{s:08X}, must be 0", used
-        return "OK", f"hbcifs {csize:,} -> {dsize:,} bytes, decompresses and checksums", used
-
-    if magic == EFS:
-        return "UNVERIFIED", "QNX EFS (flash filesystem); no image checksum to test", 0
-    return "UNVERIFIED", "no self-check known; use --disc to compare with an OEM image", 0
+nor, UpdateDisc = _import_explorer()
 
 
-def load_disc(disc):
-    """{start_address: [(crc, length, label)]} from <disc>/*/HEADUNIT/CRC/*.CRC32."""
-    recs = {}
-    for f in Path(disc).rglob("*.CRC32"):
-        for line in f.read_text(errors="replace").splitlines():
-            parts = [p.strip() for p in line.split(",")]
-            if line.startswith("#") or len(parts) != 4 or not parts[0].startswith("/dev/fs0"):
-                continue
-            try:
-                start, length, crc = (int(p, 16) for p in parts[1:])
-            except ValueError:
-                continue
-            label = f"{f.parent.parent.parent.name}/{f.stem}"
-            recs.setdefault(start, []).append((crc, length, label))
-    # The disc has no CRC record for some regions (IPL, FPGA): hash the image
-    # files in the ADR<address> folders themselves.
-    for d in Path(disc).rglob("ADR*"):
-        try:
-            start = int(d.name[3:], 16)
-        except ValueError:
-            continue
-        for f in d.iterdir():
-            if f.is_file():
-                data = f.read_bytes()
-                label = f"{d.parent.parent.name}/{f.name}"
-                recs.setdefault(start, []).append((zlib.crc32(data), len(data), label))
-    return recs
-
-
-def disc_match(img, start, end, recs):
-    hits, seen = [], {}
-    for crc, length, label in recs.get(start, []):
-        if start + length > end:
-            continue
-        if length not in seen:
-            seen[length] = zlib.crc32(img[start:start + length])
-        if seen[length] == crc:
-            hits.append(label)
-    return sorted(set(hits))
-
-
-# ---------------------------------------------------------------- commands
-
-def read_chips(pa, pb):
-    a, b = Path(pa).read_bytes(), Path(pb).read_bytes()
-    for p, d in ((pa, a), (pb, b)):
-        if len(d) != CHIP_SIZE:
-            sys.exit(f"{p}: {len(d):,} bytes, expected {CHIP_SIZE:,} (one S29GL256N = 32 MB)")
-    return [a, b]
-
-
-def cmd_merge(args):
-    chips = read_chips(args.chip_a, args.chip_b)
-    if args.layout:
-        layout = tuple(json.loads(Path(args.layout).read_text())["layout"])
-        best = score(chips, layout)
-    else:
-        ranked = sorted(((score(chips, l), l) for l in candidate_layouts()), key=lambda t: -t[0])
-        best, layout = ranked[0]
-        ties = [l for s, l in ranked if s == best]
-        print(f"layout: {best} region magics in place (6 expected) -> {describe(layout)}")
-        if best < 4:
-            sys.exit("no layout puts the region magics in place -- are these both chips of a PCM 3.1?")
-        if len(ties) > 1:
-            print("warning: several layouts score the same:", *map(describe, ties), sep="\n  ")
-    img = combine(chips, layout)
-    assert separate(img, layout) == chips, "layout does not round-trip"
-    Path(args.output).write_bytes(img)
-    Path(args.output + ".layout.json").write_text(json.dumps(
-        {"layout": list(layout), "description": describe(layout),
-         "chip_a": str(args.chip_a), "chip_b": str(args.chip_b)}, indent=2))
-    print(f"wrote {args.output} ({len(img):,} bytes) and {args.output}.layout.json")
-
+# ---------------------------------------------------------------- layout file
 
 def layout_for(image_path):
     p = Path(str(image_path) + ".layout.json")
     return tuple(json.loads(p.read_text())["layout"]) if p.exists() else None
 
 
+def read_layout(path):
+    return tuple(json.loads(Path(path).read_text())["layout"])
+
+
+def write_layout(image_path, layout, chips=None):
+    rec = {"layout": list(layout), "description": nor.describe_layout(layout)}
+    if chips:
+        rec["chip_a"], rec["chip_b"] = map(str, chips)
+    Path(str(image_path) + ".layout.json").write_text(json.dumps(rec, indent=2))
+
+
+def open_image(path, layout=None):
+    try:
+        return nor.NorImage(path, layout=layout or layout_for(path))
+    except (OSError, ValueError) as e:
+        sys.exit(str(e))
+
+
+# ---------------------------------------------------------------- commands
+
+def cmd_merge(args):
+    if args.layout:
+        layout = read_layout(args.layout)
+        chips = []
+        for p in (args.chip_a, args.chip_b):
+            d = Path(p).read_bytes()
+            if len(d) != nor.CHIP_SIZE:
+                sys.exit("%s: %d bytes, expected %d (one S29GL256N = 32 MB)"
+                         % (p, len(d), nor.CHIP_SIZE))
+            chips.append(d)
+        data = nor.combine(chips, layout)
+        print("layout (given): %s" % nor.describe_layout(layout))
+    else:
+        try:
+            img = nor.NorImage.from_chips(args.chip_a, args.chip_b)
+        except (OSError, ValueError) as e:
+            sys.exit(str(e))
+        layout, data = img.layout, img.data
+        print("layout: %d region headers in place (%d expected) -> %s"
+              % (img.layout_score, nor.PROBES_EXPECTED, nor.describe_layout(layout)))
+        if len(img.layout_ties) > 1:
+            print("warning: several layouts fit equally well:",
+                  *map(nor.describe_layout, img.layout_ties), sep="\n  ")
+    Path(args.output).write_bytes(data)
+    write_layout(args.output, layout, (args.chip_a, args.chip_b))
+    print("wrote %s (%d bytes) and %s.layout.json" % (args.output, len(data), args.output))
+
+
 def cmd_check(args):
-    img = Path(args.image).read_bytes()
-    if len(img) != FULL_SIZE:
-        sys.exit(f"{args.image}: {len(img):,} bytes, expected {FULL_SIZE:,}")
-    layout = layout_for(args.image)
-    recs = load_disc(args.disc) if args.disc else {}
-    fmap = flash_map(img)
-    print(f"{args.image}: {'LOW (no-HDD) map' if fmap is MAP_LOW else 'standard map'}"
-          + (f", layout {describe(layout)}" if layout else ""))
-    bad = 0
-    for name, start, end, magic, unit in fmap:
-        status, detail, _ = check_region(img, name, start, end, magic)
-        line = f"  {name:<14} 0x{start:07X}  {status:<10} {detail}"
-        if recs:
-            hits = disc_match(img, start, end, recs)
-            line += f"\n{'':32}OEM match: {', '.join(hits)}" if hits else \
-                f"\n{'':32}OEM match: none on this disc"
-        print(line)
-        if status == "BAD":
-            bad += 1
-            if layout and "flash 0x" in detail:
-                at = int(detail.split("flash 0x")[1].split()[0], 16)
-                chip, off = chip_location(at, layout)
-                print(f"{'':32}that address is chip {chip} offset 0x{off:07X}")
-    print("result:", "all self-checking regions good" if not bad else f"{bad} region(s) BAD")
+    img = open_image(args.image)
+    matches = None
+    if args.disc:
+        print("matching against %s ..." % args.disc)
+        try:
+            disc = UpdateDisc(args.disc)
+            try:
+                matches = img.match_disc(disc)
+            finally:
+                disc.close()
+        except Exception as e:
+            sys.exit("could not read the disc: %s" % e)
+    print("%s: %s" % (args.image, img.describe()))
+    for r in img.regions:
+        img.check(r)
+        print("  %-14s 0x%07X  %-10s %s" % (r.name, r.start, r.status, r.detail))
+        if matches is not None:
+            m = matches.get(r.name)
+            print("%32sdisc: %s" % ("", nor.compact_matches(m) if m else "no match"))
+    bad = [r.name for r in img.regions if r.status == "BAD"]
+    print("result:", "BAD: " + ", ".join(bad) if bad else "all self-checking regions good")
     return 1 if bad else 0
 
 
 def cmd_splice(args):
-    img = bytearray(Path(args.image).read_bytes())
-    fmap = flash_map(img)
-    regs = {r[0]: r for r in fmap}
-    name = args.region.upper()
-    if name not in regs:
-        sys.exit(f"unknown region {args.region}; one of {', '.join(regs)}")
-    _, start, end, magic, unit = regs[name]
-    if unit and not args.force_unit_data:
-        sys.exit(f"{name} holds this unit's own VIN, activation and coding -- refusing to "
-                 f"overwrite it (pass --force-unit-data only if you know why)")
-    if name == "IPL" and not args.force_ipl:
-        sys.exit("IPL is the bootloader; a bad IPL means no boot at all. Pass --force-ipl to replace it.")
+    img = open_image(args.image)
+    r = img.region(args.region)
+    if r is None:
+        sys.exit("unknown region %s; one of %s"
+                 % (args.region, ", ".join(x.name for x in img.regions)))
+    if r.unit and not args.force_unit_data:
+        sys.exit("%s holds this unit's own VIN, activation and coding -- refusing to "
+                 "overwrite it (pass --force-unit-data only if you know why)" % r.name)
+    if r.name == "IPL" and not args.force_ipl:
+        sys.exit("IPL is the bootloader; a bad IPL means no boot at all. "
+                 "Pass --force-ipl to replace it.")
 
     if args.donor:
         donor = Path(args.donor).read_bytes()
-        if len(donor) != FULL_SIZE:
-            sys.exit(f"{args.donor}: donor must be a merged {FULL_SIZE:,}-byte image")
-        new = donor[start:end]
-        src = f"donor {args.donor}"
+        if len(donor) != nor.FULL_SIZE:
+            sys.exit("%s: donor must be a merged %d-byte image" % (args.donor, nor.FULL_SIZE))
+        new, src = donor[r.start:r.end], "donor %s" % args.donor
     else:
-        new = Path(args.with_image).read_bytes()
-        src = args.with_image
-        if len(new) > end - start:
-            sys.exit(f"{src}: {len(new):,} bytes does not fit {name} ({end - start:,} bytes)")
-    status, detail, _ = check_region(new + b"\xff" * (end - start - len(new)), name, 0, end - start, magic)
-    if status == "BAD":
-        sys.exit(f"replacement {src} fails its own check: {detail}")
+        new, src = Path(args.with_image).read_bytes(), args.with_image
+        if len(new) > r.size:
+            sys.exit("%s: %d bytes does not fit %s (%d bytes)" % (src, len(new), r.name, r.size))
 
-    old = bytes(img[start:end])
-    img[start:start + len(new)] = new
-    if not args.no_pad:
-        img[start + len(new):end] = b"\xff" * (end - start - len(new))  # as the erase leaves it
-    status, detail, _ = check_region(bytes(img), name, start, end, magic)
-    diffs = [i for i, (x, y) in enumerate(zip(old, img[start:end])) if x != y]
-    print(f"{name}: replaced from {src}; {len(diffs):,} bytes changed; now {status}: {detail}")
+    old = img.region_bytes(r)
+    data = bytearray(img.data)
+    data[r.start:r.start + len(new)] = new
+    if not args.no_pad:                       # as the erase before a write leaves it
+        data[r.start + len(new):r.end] = b"\xff" * (r.size - len(new))
+    out = nor.NorImage(args.output, data=bytes(data), layout=img.layout)
+    r2 = out.check(out.region(r.name))
+    # only this region changed, so a failure here is the replacement's own
+    if r2.status == "BAD":
+        sys.exit("replacement %s fails its own check: %s" % (src, r2.detail))
+
+    diffs = [i for i, (x, y) in enumerate(zip(old, data[r.start:r.end])) if x != y]
+    print("%s: replaced from %s; %d bytes changed; now %s: %s"
+          % (r.name, src, len(diffs), r2.status, r2.detail))
     # Where the changed bytes were tells you which chip is failing. Only
     # meaningful when the replacement is the same build as what was there.
-    layout = layout_for(args.image)
     if diffs and len(diffs) <= 64:
         for i in diffs:
             loc = ""
-            if layout:
-                chip, off = chip_location(start + i, layout)
-                loc = f"  (chip {chip} offset 0x{off:07X})"
-            print(f"  0x{start + i:07X}: {old[i]:02X} -> {img[start + i]:02X}{loc}")
-    elif diffs and layout:
-        per = {"A": 0, "B": 0}
+            if img.layout:
+                c, off = nor.chip_location(r.start + i, img.layout)
+                loc = "  (chip %s offset 0x%07X)" % ("AB"[c], off)
+            print("  0x%07X: %02X -> %02X%s" % (r.start + i, old[i], data[r.start + i], loc))
+    elif diffs and img.layout:
+        per = [0, 0]
         for i in diffs:
-            per[chip_location(start + i, layout)[0]] += 1
-        print(f"  changed bytes per chip: A {per['A']:,}, B {per['B']:,} "
-              f"(a different build changes most bytes; a few flips on one chip points at that chip)")
-    Path(args.output).write_bytes(img)
-    lay = Path(str(args.image) + ".layout.json")
-    if lay.exists():
-        Path(args.output + ".layout.json").write_text(lay.read_text())
-    print(f"wrote {args.output}")
+            per[nor.chip_location(r.start + i, img.layout)[0]] += 1
+        print("  changed bytes per chip: A %d, B %d (a different build changes most "
+              "bytes; a few flips on one chip points at that chip)" % tuple(per))
+    Path(args.output).write_bytes(bytes(data))
+    if img.layout:
+        write_layout(args.output, img.layout)
+    print("wrote %s" % args.output)
 
 
 def cmd_split(args):
     img = Path(args.image).read_bytes()
-    if len(img) != FULL_SIZE:
-        sys.exit(f"{args.image}: {len(img):,} bytes, expected {FULL_SIZE:,}")
-    layout = tuple(json.loads(Path(args.layout).read_text())["layout"]) if args.layout \
-        else layout_for(args.image)
+    if len(img) != nor.FULL_SIZE:
+        sys.exit("%s: %d bytes, expected %d" % (args.image, len(img), nor.FULL_SIZE))
+    layout = read_layout(args.layout) if args.layout else layout_for(args.image)
     if not layout:
-        sys.exit(f"no {args.image}.layout.json -- pass --layout from the merge step")
-    a, b = separate(img, layout)
-    assert combine([a, b], layout) == img
+        sys.exit("no %s.layout.json -- pass --layout from the merge step" % args.image)
+    a, b = nor.separate(img, layout)
+    assert nor.combine([a, b], layout) == img
     Path(args.output[0]).write_bytes(a)
     Path(args.output[1]).write_bytes(b)
-    print(f"layout {describe(layout)}\nwrote chip A -> {args.output[0]}, chip B -> {args.output[1]}")
+    print("layout %s\nwrote chip A -> %s, chip B -> %s"
+          % (nor.describe_layout(layout), args.output[0], args.output[1]))
     print("program each file to the SAME physical chip its original dump came from")
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("merge", help="two chip dumps -> one 64 MB image")
-    p.add_argument("chip_a"); p.add_argument("chip_b")
+    p.add_argument("chip_a")
+    p.add_argument("chip_b")
     p.add_argument("-o", "--output", required=True)
     p.add_argument("--layout", help="reuse a .layout.json instead of auto-detecting")
     p.set_defaults(fn=cmd_merge)
 
     p = sub.add_parser("check", help="verify every region of a merged image")
     p.add_argument("image")
-    p.add_argument("--disc", help="extracted OEM update disc folder, to match regions by CRC")
+    p.add_argument("--disc", help="update disc (.ISO or extracted folder) to match regions")
     p.set_defaults(fn=cmd_check)
 
     p = sub.add_parser("splice", help="replace one region with a known-good copy")
-    p.add_argument("image"); p.add_argument("region", help="IFS1, IFS2, EMERGENCY, FPGA, ...")
+    p.add_argument("image")
+    p.add_argument("region", help="IFS1, IFS2, EMERGENCY, FPGA, ...")
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--image", dest="with_image", help="OEM image file, e.g. PCM3_IFS2.ifs")
     src.add_argument("--donor", help="merged image of a donor unit (same build!)")
     p.add_argument("-o", "--output", required=True)
-    p.add_argument("--no-pad", action="store_true", help="keep old bytes after the new image instead of 0xFF")
+    p.add_argument("--no-pad", action="store_true",
+                   help="keep old bytes after the new image instead of 0xFF")
     p.add_argument("--force-unit-data", action="store_true")
     p.add_argument("--force-ipl", action="store_true")
     p.set_defaults(fn=cmd_splice)
