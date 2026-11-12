@@ -106,8 +106,18 @@ def cmd_merge(args):
         chips = []
         for p in (args.chip_a, args.chip_b):
             d = Path(p).read_bytes()
-            if len(d) != nor.CHIP_SIZE:
-                sys.exit("%s: %d bytes, expected %d (one S29GL256N = 32 MB)"
+            if hasattr(nor, "normalise_chip"):
+                # trims a programmer's wrap-around over-read (32 MB + 256 bytes
+                # repeating the chip's start), refuses anything else
+                try:
+                    d, note = nor.normalise_chip(d, Path(p).name)
+                except ValueError as e:
+                    sys.exit(str(e))
+                if note:
+                    print("note: %s" % note)
+            elif len(d) != nor.CHIP_SIZE:    # a PCM-Explorer clone from before the trim
+                sys.exit("%s: %d bytes, expected %d (one S29GL256N = 32 MB); git pull "
+                         "PCM-Explorer to accept a programmer's 256-byte over-read"
                          % (p, len(d), nor.CHIP_SIZE))
             chips.append(d)
         data = nor.combine(chips, layout)
@@ -118,6 +128,8 @@ def cmd_merge(args):
         except (OSError, ValueError) as e:
             sys.exit(str(e))
         layout, data = img.layout, img.data
+        for note in getattr(img, "notes", []):
+            print("note: %s" % note)
         print("layout: %d region headers in place (%d expected) -> %s"
               % (img.layout_score, nor.PROBES_EXPECTED, nor.describe_layout(layout)))
         if len(img.layout_ties) > 1:
