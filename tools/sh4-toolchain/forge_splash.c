@@ -2,7 +2,7 @@
  * forge_splash.c -- PCM 3.1 RUNNING -> DONE status splash with a live progress
  * bar, and a NO-BLACK restore of the OEM screen.
  *
- * v2 (2026-11-12): animated. While RUNNING it redraws ~4 times a second:
+ * v2 (2026-11-12): animated. While RUNNING it redraws twice a second:
  *   - the three dots in "RUNNING . . ." pulse in turn (the screen is alive);
  *   - a progress row: the current step on the left, "n/m  m:ss" on the right;
  *   - a progress bar: filled n/m when the running module reports progress,
@@ -11,9 +11,18 @@
  * On DONE it shows the DONE image with a full bar and the total time.
  *
  * Progress comes from a text file next to the done-flag: <dir of flagfile>/
- * forge_progress, one line, "n/m label" (bar + label) or just "label". Any
- * module can write it; SysInfo does (mark() in sysinfo_dump.sh). A stale one
+ * forge_progress, one line:
+ *   "n/m label"    bar at n/m; m==100 shows "n%" instead of "n/m"
+ *   "a-b/m label"  a long step: the bar starts at a and creeps towards b
+ *                  (never reaching it), so it keeps moving during the step
+ *   "label"        indeterminate: a sweeping block
+ * The bar never moves backwards. Any module can write the file; SysInfo does
+ * (mark() in sysinfo_dump.sh, weighted by measured step times). A stale one
  * from an earlier run is deleted at start.
+ *
+ * v2.1: the elapsed time comes from time() (the frame count ran ~40% slow:
+ * drawing a frame takes ~160 ms on the SH4), and 2 fps instead of 4 halves the
+ * CPU the splash takes from the job it reports on.
  *
  * Unchanged from v1: one 480x240 layer, getvfb FRESH for every frame (the VFB
  * is double-buffered, so every frame redraws everything), the OEM-cid discovery
@@ -36,6 +45,7 @@ extern int  devctl(int, int, void*, unsigned, int*);
 extern unsigned sleep(unsigned);
 extern int  usleep(unsigned);
 extern int  unlink(const char*);
+extern long time(long*);
 typedef void (*sighandler_t)(int);
 extern sighandler_t signal(int, sighandler_t);
 extern void _exit(int);
@@ -85,8 +95,8 @@ extern int  gf_context_free(void*);
 
 /* ---- progress display: layout for the 480x240 layer (running.bin keeps all
    its content above row 181; the band below is ours) ---- */
-#define FRAME_US   250000      /* 4 frames a second */
-#define FRAME_MS   250
+#define FRAME_US   500000      /* 2 frames a second: a frame costs ~160 ms of SH4 time
+                                  to draw (measured on a 958.2), so 4 fps took ~40% CPU */
 #define COL_BG     0xff0a0a0cu /* the image's own background */
 #define COL_GOLD   0xffc8a44eu /* the image's gold */
 #define COL_DIM    0xff4a3e22u /* a resting dot */
@@ -101,7 +111,8 @@ extern int  gf_context_free(void*);
 #define BAR_Y2     229
 #define ADV        (FONT_W+1)  /* text advance per character */
 #define SWEEP_W    80
-#define SWEEP_STEP 18
+#define SWEEP_STEP 36
+#define CREEP_SHIFT 7          /* range steps: close 1/128 of the gap per frame (~85 s time constant at the measured ~0.66 s/frame) */
 /* the three dots of "RUNNING . . ." in running.bin: 11x11 at these x, y 168..178 */
 static const int DOT_X[3]={301,367,433};
 #define DOT_Y      168
@@ -213,9 +224,23 @@ static unsigned G_cid, g_surf=0;
 static char g_prog_path[192];
 static char g_label[64];
 static int  g_n=-1, g_m=0;          /* g_n<0: no n/m -> indeterminate bar */
-static unsigned g_elapsed_ms=0;
-static int  g_dot=0, g_dot_tick=0;  /* active dot 0..2, frames on it */
+static int  g_b=-1;                 /* "a-b/m": the step runs from a towards b (creep) */
+static unsigned g_elapsed=0;        /* seconds, from the real clock (see tick_clock) */
+static long g_last_now=-1;
+static int  g_fill_fp=0;            /* bar fill in pixels << 8, only ever grows */
+static int  g_dot=0;                /* active dot 0..2 */
 static int  g_sweep=0, g_sweep_dir=1;
+#define INNER ((BAR_X2-1)-(BAR_X1+1)+1)
+
+/* elapsed seconds from time(): the frame count is no clock (drawing takes time).
+   Steps of < 0 s or > 30 s between frames are treated as the clock being SET,
+   not time passing, and ignored; if time() fails, count 0.5 s per frame. */
+static void tick_clock(int frame){
+  long now=time(0);
+  if(now<0){ if(frame&1) g_elapsed++; return; }
+  if(g_last_now>=0){ long d=now-g_last_now; if(d>0 && d<=30) g_elapsed+=(unsigned)d; }
+  g_last_now=now;
+}
 
 static void rct(unsigned c,int x1,int y1,int x2,int y2){
   if(x1<0)x1=0; if(y1<0)y1=0; if(x2>G_W-1)x2=G_W-1; if(y2>G_H-1)y2=G_H-1;
@@ -255,34 +280,44 @@ static void make_prog_path(const char*flagp){
   for(i=0;i<=cut;i++) g_prog_path[i]=flagp[i];
   { const char*s="forge_progress"; int k=0; while(s[k]){ g_prog_path[cut+1+k]=s[k]; k++; } g_prog_path[cut+1+k]=0; }
 }
-/* re-read the progress line; keep the last good one if the file is missing */
+/* re-read the progress line; keep the last good one if the file is missing.
+   Format: "n/m label", "a-b/m label" (a step expected to take a while: the bar
+   creeps from a towards b), or just "label" (indeterminate). */
 static void read_progress(void){
-  char b[96]; int f,r,i,p=0,n=0,m=0,ok=0,k;
+  char b[96]; int f,r,i,p=0,n=0,e=-1,m=0,ok=0,k;
   if(!g_prog_path[0]) return;
   f=open(g_prog_path,O_RDONLY,0); if(f<0) return;
   r=read(f,b,95); close(f); if(r<=0) return; b[r]=0;
   if(b[0]>='0'&&b[0]<='9'){
     i=0; while(b[i]>='0'&&b[i]<='9'&&n<100000){ n=n*10+(b[i]-'0'); i++; }
+    if(b[i]=='-'&&b[i+1]>='0'&&b[i+1]<='9'){ i++; e=0; while(b[i]>='0'&&b[i]<='9'&&e<100000){ e=e*10+(b[i]-'0'); i++; } }
     if(b[i]=='/'&&b[i+1]>='0'&&b[i+1]<='9'){ i++; while(b[i]>='0'&&b[i]<='9'&&m<100000){ m=m*10+(b[i]-'0'); i++; }
       if(m>0){ ok=1; p=i; while(b[p]==' ') p++; } }
   }
-  if(ok){ if(n>m) n=m; } else { n=-1; m=0; p=0; }
+  if(ok){ if(n>m) n=m; if(e>m) e=m; if(e>=0 && e<n) e=-1; } else { n=-1; e=-1; m=0; p=0; }
   { char nl[64]; for(k=0;k<63&&b[p+k]&&b[p+k]!='\n'&&b[p+k]!='\r';k++){ char c=b[p+k]; nl[k]=(c>=32&&c<=126)?c:'?'; } nl[k]=0;
     /* log a change of step once, so the USB log shows how the run went */
-    if(n!=g_n||m!=g_m||!str_at((const unsigned char*)g_label,64,0,nl)||slen(g_label)!=k){
-      lg("  progress ["); lgdec(g_elapsed_ms/1000); lg("s] "); if(ok){ lgdec((unsigned)n); lg("/"); lgdec((unsigned)m); lg(" "); } lg(nl); lg("\n");
+    if(n!=g_n||m!=g_m||e!=g_b||!str_at((const unsigned char*)g_label,64,0,nl)||slen(g_label)!=k){
+      lg("  progress ["); lgdec(g_elapsed); lg("s] ");
+      if(ok){ lgdec((unsigned)n); if(e>=0){ lg("-"); lgdec((unsigned)e); } lg("/"); lgdec((unsigned)m); lg(" "); }
+      lg(nl); lg("\n");
     }
     for(i=0;i<=k;i++) g_label[i]=nl[i];
   }
-  g_n=n; g_m=m;
+  g_n=n; g_m=m; g_b=e;
+  /* the bar never moves backwards: a new step starts at max(current, its own start) */
+  if(g_n>=0){ int base=muldiv(INNER,g_n,g_m)<<8; if(base>g_fill_fp) g_fill_fp=base; }
 }
 
 /* the band under the image: label + "n/m  m:ss", then the bar */
 static void draw_progress(int done){
-  char right[24], lab[64]; int rp=0, rw, maxc, i, inner;
-  unsigned secs=g_elapsed_ms/1000, mins=secs/60, ss=secs-mins*60;
+  char right[24], lab[64]; int rp=0, rw, maxc, i, inner, fill=g_fill_fp>>8;
+  unsigned secs=g_elapsed, mins=secs/60, ss=secs-mins*60;
   rct(COL_BG,0,184,G_W-1,G_H-1);
-  if(!done && g_n>=0){ rp=put_dec(right,rp,(unsigned)g_n); right[rp++]='/'; rp=put_dec(right,rp,(unsigned)g_m); right[rp++]=' '; right[rp++]=' '; }
+  if(!done && g_n>=0){
+    if(g_m==100){ rp=put_dec(right,rp,(unsigned)muldiv(fill,100,INNER)); right[rp++]='%'; }   /* weighted: show percent */
+    else { rp=put_dec(right,rp,(unsigned)g_n); right[rp++]='/'; rp=put_dec(right,rp,(unsigned)g_m); }
+    right[rp++]=' '; right[rp++]=' '; }
   rp=put_dec(right,rp,mins); right[rp++]=':'; right[rp++]=(char)('0'+ss/10); right[rp++]=(char)('0'+ss%10); right[rp]=0;
   rw=rp*ADV;
   text(BAR_X2+1-rw,TXT_Y,COL_TEXT2,right);
@@ -295,7 +330,7 @@ static void draw_progress(int done){
   rct(COL_TRACK,BAR_X1+1,BAR_Y1+1,BAR_X2-1,BAR_Y2-1);
   inner=(BAR_X2-1)-(BAR_X1+1)+1;
   if(done) rct(COL_GOLD,BAR_X1+1,BAR_Y1+1,BAR_X2-1,BAR_Y2-1);
-  else if(g_n>=0){ int f=muldiv(inner,g_n,g_m); if(f>0) rct(COL_GOLD,BAR_X1+1,BAR_Y1+1,BAR_X1+f,BAR_Y2-1); }
+  else if(g_n>=0){ if(fill>inner) fill=inner; if(fill>0) rct(COL_GOLD,BAR_X1+1,BAR_Y1+1,BAR_X1+fill,BAR_Y2-1); }
   else rct(COL_GOLD,BAR_X1+1+g_sweep,BAR_Y1+1,BAR_X1+g_sweep+SWEEP_W,BAR_Y2-1);
 }
 /* dim the two resting dots of "RUNNING . . ." (the active one stays as drawn) */
@@ -308,8 +343,12 @@ static void draw_dots(void){
   }
 }
 static void advance_animation(void){
-  if(++g_dot_tick>=2){ g_dot_tick=0; if(++g_dot>=3) g_dot=0; }        /* a dot every 0.5 s */
-  { int span=(BAR_X2-1)-(BAR_X1+1)+1-SWEEP_W;                          /* ping-pong sweep */
+  if(++g_dot>=3) g_dot=0;                                              /* a dot per frame = 0.5 s */
+  if(g_n>=0 && g_b>=0){                                                /* range step: creep towards b */
+    int target=muldiv(INNER,g_b,g_m)<<8;
+    if(target>g_fill_fp) g_fill_fp+=(target-g_fill_fp)>>CREEP_SHIFT;
+  }
+  { int span=INNER-SWEEP_W;                                            /* ping-pong sweep */
     g_sweep+=g_sweep_dir*SWEEP_STEP;
     if(g_sweep>=span){ g_sweep=span; g_sweep_dir=-1; } else if(g_sweep<=0){ g_sweep=0; g_sweep_dir=1; } }
 }
@@ -373,7 +412,8 @@ int main(int argc,char**argv){
   unsigned dev=0,ctx=0;
   unsigned char devinfo[256];
   int fd,rc,i,cid=0x6003,W=0,H=0,maxwait,hold,seen;
-  unsigned rW,rH,rStride,rFmt,dW,dH,dStride,dFmt,limit_ms;
+  unsigned rW,rH,rStride,rFmt,dW,dH,dStride,dFmt;
+  int frame;
   unsigned char *rpx,*dpx;
   const char *runp,*donep,*flagp;
   static const int SZ[][2]={{480,240},{400,240},{320,240}};
@@ -422,18 +462,18 @@ int main(int argc,char**argv){
   read_and_log_lmgr("after-RUNNING-show");   /* diagnostic: our layer + OEM state */
 
   /* animate until the done-flag appears or maxwait runs out */
-  seen=0; limit_ms=(unsigned)maxwait*1000u;
+  seen=0; frame=0; tick_clock(frame);
   for(;;){
     int ff=open(flagp,O_RDONLY,0);
     if(ff>=0){ close(ff); seen=1; break; }
-    if(g_elapsed_ms>=limit_ms) break;
-    usleep(FRAME_US); g_elapsed_ms+=FRAME_MS;
+    if(g_elapsed>=(unsigned)maxwait) break;
+    usleep(FRAME_US); tick_clock(++frame);
     read_progress();
     advance_animation();
     present(rpx,rW,rH,rStride,rFmt,0,0);
   }
   lg(seen?">>> done-flag seen -> DONE after ":">>> timeout, no done-flag -> teardown after ");
-  lgdec(g_elapsed_ms/1000); lg("s\n");
+  lgdec(g_elapsed); lg("s ("); lgdec((unsigned)frame); lg(" frames)\n");
 
   if(seen && dpx){
     present(dpx,dW,dH,dStride,dFmt,"DONE",1);

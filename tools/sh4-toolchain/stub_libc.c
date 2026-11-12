@@ -10,6 +10,7 @@ int  close(int a)                                 { return 0; }
 unsigned sleep(unsigned s)                        { return 0; }
 int  usleep(unsigned u)                           { return 0; }
 int  unlink(const char *p)                         { return -1; }
+long time(long *t)                                { return -1; }
 void _exit(int c)                                 { for (;;) ; }
 typedef void (*sighandler_t)(int);
 sighandler_t signal(int a, sighandler_t h)        { return h; }
