@@ -193,6 +193,10 @@ It covers codes and the activation/diagnostic sticks; the Toolkit modules and th
 tab stay in the web app. The exe is unsigned, so SmartScreen warns on first run: **More
 info → Run anyway**. From source: `python pcm_forge_offline.py` (Python 3 with Tk).
 
+## Back Up, Check, Recover
+
+Before any update or experiment, back up the PCM's whole 64 MB flash — the engineering menu can write it to a USB stick, no programmer needed. **[RECOVERY.md](RECOVERY.md)** covers backing up, checking a backup or a chip dump with [PCM-Explorer](https://github.com/dspl1236/PCM-Explorer), restoring one region with the PCM's own `flashit`, and bringing back a unit that boot-loops at the logo — worked out with **@Auto1**.
+
 ## Command Line
 
 `generate_codes.py` does everything the web app does, from a terminal. Same algorithm, same
