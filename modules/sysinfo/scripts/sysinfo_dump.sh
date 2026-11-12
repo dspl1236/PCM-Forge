@@ -4,7 +4,7 @@
 #
 # Part of PCM-Forge: github.com/dspl1236/PCM-Forge
 
-USB="/fs/usb0"
+USB="${1:-/fs/usb0}"     # run.sh passes the stick's real mount point
 LOG="$USB/sysinfo.log"
 DUMPDIR="$USB/sysinfo_dump"
 rm -rf "$DUMPDIR" 2>/dev/null; mkdir -p "$DUMPDIR" 2>/dev/null
@@ -15,6 +15,15 @@ echo "=== PCM-Forge System Info ===" > "$LOG"
 # uninterpretable, and telling "written this boot" from "written months ago" is
 # the whole game for amp/persistence questions.
 TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs
+# Progress: one line per section in pcm_ran.txt, so a stick pulled early shows
+# how far the run got (it is several minutes long now -- wait for DONE on the
+# screen). The latest line also goes to $TMPD/forge_progress for the status
+# splash to show.
+mark() {
+    echo "  sysinfo: $1" >> "$USB/pcm_ran.txt" 2>/dev/null
+    echo "$1" > "$TMPD/forge_progress" 2>/dev/null
+}
+mark "started"
 echo x > "$TMPD/.forge_now" 2>/dev/null
 echo "Now (unit clock):" >> "$LOG"
 ls -la "$TMPD/.forge_now" >> "$LOG" 2>&1
@@ -35,22 +44,26 @@ sloginfo < /dev/null > "$DUMPDIR/sloginfo.txt" 2>&1
 sloginfo -s 3 < /dev/null > "$DUMPDIR/sloginfo-errors.txt" 2>&1
 
 # === 1. FIRMWARE VERSION ===
+mark "1. Firmware"
 echo "--- 1. Firmware ---" >> "$LOG"
 cat /mnt/ifs1/HBproject/version.txt >> "$LOG" 2>&1
 cat /HBproject/version.txt >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 2. PROCESS LIST ===
+mark "2. Processes"
 echo "--- 2. Processes ---" >> "$LOG"
 pidin ar >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 3. DISK SPACE ===
+mark "3. Disk Space"
 echo "--- 3. Disk Space ---" >> "$LOG"
 df >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 4. DISPLAY STACK ===
+mark "4. Display Stack"
 echo "--- 4. Display Stack ---" >> "$LOG"
 echo "  /dev/layermanager:" >> "$LOG"
 ls -la /dev/layermanager >> "$LOG" 2>&1
@@ -68,6 +81,7 @@ done
 echo "" >> "$LOG"
 
 # === 5. BOOT SCREENS ===
+mark "5. Boot Screens"
 echo "--- 5. Boot Screens ---" >> "$LOG"
 echo "  HDD (/mnt/share/bootscreens/):" >> "$LOG"
 ls -la /mnt/share/bootscreens/ >> "$LOG" 2>&1
@@ -81,6 +95,7 @@ done
 echo "" >> "$LOG"
 
 # === 6. PERSISTENCE ===
+mark "6. Persistence"
 echo "--- 6. Persistence ---" >> "$LOG"
 
 # persdump2 usage
@@ -113,11 +128,13 @@ echo "  Copied $COUNT CVALUE files" >> "$LOG"
 echo "" >> "$LOG"
 
 # Full HBpersistence listing
+mark "7. /HBpersistence/"
 echo "--- 7. /HBpersistence/ ---" >> "$LOG"
 ls -laR /HBpersistence/ >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # Copy key persistence files
+mark "8. Persistence Files"
 echo "--- 8. Persistence Files ---" >> "$LOG"
 mkdir -p "$DUMPDIR/Early" "$DUMPDIR/Normal" 2>/dev/null
 for f in /HBpersistence/EarlyPersistencyFiles/*; do
@@ -135,6 +152,7 @@ echo "" >> "$LOG"
 # NB: the PCM autorun shell has NO awk/head/find on PATH, so the old
 # `find /mnt ... | head -1` + `awk '{print $5}'` produced nothing. Scan the
 # known tool dirs directly and print the `ls -la` line (already shows size).
+mark "9. Debug Tools"
 echo "--- 9. Debug Tools ---" >> "$LOG"
 for t in taco persdump2 showScreen mmecli mmexplore vi ping qdbc qconn sqlite_console find fdisk dinit hbhogs ipgrabber which cksum; do
     for d in /mnt/data/tools /mnt/ifs1/HBbin /HBbin /usr/sbin /usr/bin /proc/boot /HBpersistence/QNXTools; do
@@ -144,6 +162,7 @@ done
 echo "" >> "$LOG"
 
 # === 10. NETWORK ===
+mark "10. Network"
 echo "--- 10. Network ---" >> "$LOG"
 ifconfig -a >> "$LOG" 2>&1
 echo "" >> "$LOG"
@@ -158,6 +177,7 @@ cat /etc/hosts >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 11. VIN & ACTIVATION ===
+mark "11. VIN & Activation"
 echo "--- 11. VIN & Activation ---" >> "$LOG"
 echo "  VIN:" >> "$LOG"
 cat /HBpersistence/vin >> "$LOG" 2>&1
@@ -188,6 +208,7 @@ ls -la /HBpersistence/DBGModeActive >> "$LOG" 2>&1
 echo "" >> "$LOG"
 
 # === 12. HYBRID DATA ===
+mark "12. hybrid.bin"
 echo "--- 12. hybrid.bin ---" >> "$LOG"
 [ -f "/HBpersistence/hybrid.bin" ] && {
     ls -la /HBpersistence/hybrid.bin >> "$LOG" 2>&1
@@ -196,6 +217,7 @@ echo "--- 12. hybrid.bin ---" >> "$LOG"
 echo "" >> "$LOG"
 
 # === 13. BT/AUX FIX STATE + AUDIO SOURCE (support diagnosis) ===
+mark "13. BT/AUX Fix State + Audio Source"
 echo "--- 13. BT/AUX Fix State + Audio Source ---" >> "$LOG"
 echo "  [boot hook] /HBpersistence/debugTools.sh" >> "$LOG"
 echo "  A 'PCM-Forge bt_fix' block below = the patch RE-APPLIES every boot" >> "$LOG"
@@ -222,6 +244,7 @@ echo "" >> "$LOG"
 # (folded in from the standalone "Enhanced Diagnostic + CAN Probe" so sysinfo is
 #  the single comprehensive diag. The /dev/ipc, /dev/dsi, /dev/name and /srv
 #  nodes below are what the SPHKeyInput / SPHSound DSI work maps against.)
+mark "14. Hardware / IPC / CAN / DSI Probe"
 echo "--- 14. Hardware / IPC / CAN / DSI Probe ---" >> "$LOG"
 echo "" >> "$LOG"
 echo "  [mount points]" >> "$LOG"
@@ -337,6 +360,7 @@ echo "" >> "$LOG"
 # service that started or failed, amplifier detection, watchdog events. It is
 # RAM-resident and cleared on every reboot, so this is the only chance to keep
 # it. Saved whole as its own file, with the highlights inlined here.
+mark "16. System log"
 echo "--- 16. System log ---" >> "$LOG"
 # sloginfo reads a RAM ring buffer that keeps rolling, so capture it ONCE to a
 # file and grep that file. Reading the ring repeatedly gives views of different
@@ -371,6 +395,7 @@ echo "" >> "$LOG"
 # The SOP starter runs two `dumper` instances -- one to /mnt/data/log and an
 # early-boot one to /HBpersistence (before the HDD mounts) -- plus libbacktrace
 # and libmalloc text dumps. Empty on a healthy unit; when not, this is the answer.
+mark "16b. Crash record"
 echo "--- 16b. Crash record ---" >> "$LOG"
 mkdir -p "$DUMPDIR/crash" 2>/dev/null
 echo "  [is the dumper attached? if /proc/dumper is absent no core is EVER written," >> "$LOG"
@@ -392,6 +417,7 @@ echo "" >> "$LOG"
 # Which amplifier profile the unit resolved to, and the files that decide it.
 # Checksums rather than contents: the mixer files are several KB each and only
 # their identity matters for comparing one car against another.
+mark "17. Audio / amplifier"
 echo "--- 17. Audio / amplifier ---" >> "$LOG"
 CKSUM=""
 for c in /HBpersistence/QNXTools/cksum /mnt/data/tools/cksum /usr/bin/cksum; do
@@ -449,6 +475,7 @@ echo "" >> "$LOG"
 # === 18. VEHICLE DATA (odometer / logbook) ===
 # Odometer lives in the driver's-logbook database in 0.1 km units.
 # Queried on a COPY so the live database is never locked or touched.
+mark "18. Vehicle data"
 echo "--- 18. Vehicle data ---" >> "$LOG"
 LB=/HBpersistence/logbook/LogBookSql.db
 ls -la /HBpersistence/logbook/ >> "$LOG" 2>&1
@@ -472,6 +499,7 @@ fi
 echo "" >> "$LOG"
 
 # === 19. SERVICE MANAGER + LISTENING PORTS ===
+mark "19. Service manager / open ports"
 echo "--- 19. Service manager / open ports ---" >> "$LOG"
 echo "  [SOP process manager]" >> "$LOG"
 ls -la /dev/starter/ >> "$LOG" 2>&1
@@ -495,6 +523,7 @@ echo "" >> "$LOG"
 # SPHKeyInput) globally registered, or only ever resolved inside the process?
 # Everything about a brick-safe source switch or touch-input client depends on
 # the answer, and it costs one read.
+mark "19b. DSI service registry"
 echo "--- 19b. DSI service registry ---" >> "$LOG"
 if [ -e /srv/servicebroker ]; then
     echo "  [/srv/servicebroker -- live registry]" >> "$LOG"
@@ -515,6 +544,7 @@ echo "" >> "$LOG"
 # The chain is serfpga -> phone db -> PSSBSSProcess (/dev/scp_pss) -> mediabt,
 # and package 20 PHONE_AND_BLUETOOTH ships RequestState=STOP, so none of it
 # starts on its own. These are the states that say how far it got and when.
+mark "19c. Bluetooth bring-up chain"
 echo "--- 19c. Bluetooth bring-up chain ---" >> "$LOG"
 for n in /dev/serfpga4 /tmp/phone_db_ready /dev/scp_pss /tmp/graphicready /fs/tmpfs; do
     if [ -e "$n" ]; then
@@ -552,6 +582,7 @@ echo "" >> "$LOG"
 # /UpdateHistory is a flash partition holding the unit's reflash record: which
 # software and nav packages were written, when, and with what result. version.txt
 # says what it runs now; this says how it got there.
+mark "20. Software identity / update history"
 echo "--- 20. Software identity / update history ---" >> "$LOG"
 echo "  [/UpdateHistory]" >> "$LOG"
 ls -laR /UpdateHistory/ >> "$LOG" 2>&1
@@ -576,6 +607,7 @@ echo "" >> "$LOG"
 
 # === 21. PERSONAL DATA IN THIS DUMP ===
 # Say plainly what leaves the car, so the owner can decide what to share.
+mark "21. Personal data notice"
 echo "--- 21. Personal data notice ---" >> "$LOG"
 echo "  This dump contains personal information. Before sharing it publicly:" >> "$LOG"
 echo "    - vin                          your VIN" >> "$LOG"
@@ -595,6 +627,7 @@ echo "" >> "$LOG"
 # (nav destinations, phone pairings, VIN) -- and so does sysinfo.log -- so keep
 # BOTH private and redact the VIN before sharing for support. No tar/gzip/sync on
 # the unit, so this is a plain recursive copy (~4MB; fine even on a tiny stick).
+mark "15. Full /HBpersistence backup"
 echo "--- 15. Full /HBpersistence backup ---" >> "$LOG"
 BK="$USB/HBpersistence_backup"
 rm -rf "$BK" 2>/dev/null
@@ -635,6 +668,7 @@ echo "" >> "$LOG"
 # A failing 2.5" drive is the most common hardware fault on these units, and the
 # reason most people end up replacing one. Best-effort: the tool is not on every
 # build.
+mark "22. Drive health"
 echo "--- 22. Drive health ---" >> "$LOG"
 SMART=""
 for c in /tools/readsmart /mnt/data/tools/readsmart /usr/sbin/readsmart /proc/boot/readsmart; do
@@ -661,3 +695,4 @@ ls -la "$DUMPDIR"/ >> "$LOG" 2>&1
 # If this line is missing the report is TRUNCATED and must not be read as complete.
 echo "" >> "$LOG"
 echo "=== END OF REPORT -- if you do not see this line, the run was cut short ===" >> "$LOG"
+mark "complete"
