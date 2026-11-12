@@ -90,6 +90,8 @@ def prng_next(state):
 ## Engineering Menu Access (After Activation)
 
 Once the ENGINEERING activation code is accepted and `DBGModeActive` exists, the engineering menu should be accessible. Reported access methods:
-- Hold **both rotary knobs** simultaneously for 5 seconds
-- **Tuner + Info** button combination
-- Some firmware versions: **Source + Sound** combo
+- **SOURCE + OPTION** pressed together — bench-confirmed 2026-08-07 (see
+  [FEATURES.md](../FEATURES.md)). Without the activation it answers "function not
+  available": that is the gate, not a wrong combination.
+- Earlier reports (both rotary knobs for 5 s, Tuner + Info, Source + Sound) were
+  not confirmed and are superseded.

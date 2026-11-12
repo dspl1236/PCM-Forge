@@ -23,9 +23,9 @@ Unlocks the hidden engineering and diagnostic menu on the PCM. This is the most 
 - SWDL (software download) state information
 - Flash status and firmware version details
 
-**How to access:** Press **SOURCE + SOUND** buttons simultaneously (both physical buttons below the screen). The engineering menu appears only if the ENGINEERING activation code is present in PagSWAct.002.
+**How to access:** Press **SOURCE + OPTION** simultaneously (bench-confirmed 2026-08-07, see [FEATURES.md](../FEATURES.md)). The engineering menu appears only if the ENGINEERING activation code is present in PagSWAct.002.
 
-**Note:** Without the activation code, pressing SOURCE + SOUND does nothing — the feature must be activated first.
+**Note:** Without the activation code, SOURCE + OPTION answers "function not available" — that is the activation gate refusing, not a wrong combination. The feature must be activated first.
 
 ---
 
@@ -343,7 +343,7 @@ The activation file `PagSWAct.002` stores all active features as 28-byte records
 ## PCM 3.1 Button Combinations
 
 ### Engineering Menu
-**Buttons:** Press **SOURCE + SOUND** simultaneously  
+**Buttons:** Press **SOURCE + OPTION** simultaneously (bench-confirmed 2026-08-07, see [FEATURES.md](../FEATURES.md))  
 **Requirement:** ENGINEERING (SWID 0x010b) must be activated  
 **Result:** Opens the hidden engineering diagnostics menu with ESD screens, variant coding, CAN data, and system info.
 

@@ -320,7 +320,7 @@ slider
 4. Screen appears in the appropriate category submenu
 
 ### GEM Access
-- **PCM 3.1:** Press **SOURCE + SOUND** simultaneously (requires ENGINEERING activation)
+- **PCM 3.1:** Press **SOURCE + OPTION** simultaneously (requires ENGINEERING activation; bench-confirmed 2026-08-07, see [FEATURES.md](../../FEATURES.md))
 - **PCM 4/MHI2:** Press **CAR + TUNER** for 5 seconds
 - ESD persistence: `per 3` on PCM 3.1, `per 30` on PCM 4
 
