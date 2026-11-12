@@ -13,6 +13,28 @@
     "lib_activating_done_png": "core/lib/activating-done.png"
   },
   "modules": {
+    "flash-backup": {
+      "status": "beta",
+      "description": "Copies the PCM's whole 64 MB flash (bootloader, system images and /HBpersistence) to the USB stick as pcm_flash.bin, plus the activation file and stored VIN next to it. Read-only -- it is the same read the PCM's own engineering menu does (CustomerService option 05), without needing the menu. Make one before any update or experiment, then check it on a computer with PCM-Explorer (python explorer.py pcm_flash.bin check). Never overwrites an earlier backup; a copy that comes out short (stick full) is deleted and reported. The file holds your VIN and activations, so don't post it. See RECOVERY.md.",
+      "standalone": true,
+      "run_script": "flash_backup.sh",
+      "script_dir": "/scripts/FlashBackup",
+      "installs_to_flash": false,
+      "compatible": [
+        "PCM3.1"
+      ],
+      "options": {},
+      "files": [
+        {
+          "path": "module.json",
+          "size": 905
+        },
+        {
+          "path": "scripts/flash_backup.sh",
+          "size": 2970
+        }
+      ]
+    },
     "ioc-probe": {
       "status": "ready",
       "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
@@ -61,7 +83,7 @@
       "files": [
         {
           "path": "module.json",
-          "size": 1515
+          "size": 1529
         },
         {
           "path": "scripts/sysinfo_dump.sh",

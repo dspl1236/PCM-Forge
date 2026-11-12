@@ -1,0 +1,14 @@
+{
+    "name": "flash-backup",
+    "version": "1.0.0",
+    "description": "Copies the PCM's whole 64 MB flash (bootloader, system images and /HBpersistence) to the USB stick as pcm_flash.bin, plus the activation file and stored VIN next to it. Read-only -- it is the same read the PCM's own engineering menu does (CustomerService option 05), without needing the menu. Make one before any update or experiment, then check it on a computer with PCM-Explorer (python explorer.py pcm_flash.bin check). Never overwrites an earlier backup; a copy that comes out short (stick full) is deleted and reported. The file holds your VIN and activations, so don't post it. See RECOVERY.md.",
+    "author": "dspl1236",
+    "status": "beta",
+    "compatible": [
+        "PCM3.1"
+    ],
+    "standalone": true,
+    "run_script": "flash_backup.sh",
+    "script_dir": "/scripts/FlashBackup",
+    "installs_to_flash": false
+}
