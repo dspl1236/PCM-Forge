@@ -570,13 +570,17 @@ function parseBackup(data){
   return recs;
 }
 
-// pcm_debug_*.log: the VIN is the first line after "=== VIN ===", the unit's
-// software build the first line after "System_CD:".
+// The diagnostic stick's pcm_debug_*.log and the SysInfo module's sysinfo.log:
+// the VIN is the first line after "=== VIN ===" (diagnostic) or after "VIN:"
+// in "--- 11. VIN & Activation ---" (SysInfo); the unit's software build is
+// the first line after "System_CD:" in both.
 function parseDiagLog(text){
   const lines=text.split(/\r?\n/).map(l=>l.trim());
-  const after=(marker)=>{const i=lines.indexOf(marker);if(i<0)return '';
+  const after=(i)=>{if(i<0)return '';
     for(let j=i+1;j<lines.length&&j<i+4;j++){if(lines[j]&&lines[j]!=='#')return lines[j]}return ''};
-  return {vin:after('=== VIN ===').toUpperCase(),build:after('System_CD:')};
+  let vi=lines.indexOf('=== VIN ===');
+  if(vi<0){const s=lines.findIndex(l=>/^--- 11\. VIN/.test(l));if(s>=0&&lines[s+1]==='VIN:')vi=s+1}
+  return {vin:after(vi).toUpperCase(),build:after(lines.indexOf('System_CD:'))};
 }
 
 function _readFile(f,asText){
@@ -592,11 +596,16 @@ async function handleBackupFiles(fileList){
   const files=[...(fileList||[])];
   if(!files.length)return;
   const base=n=>n.split('/').pop();
-  // The newest backup if a stick holds several (one per run).
-  const backups=files.filter(f=>/\.(002|bin)$/i.test(base(_fileName(f)))&&f.size&&f.size%28===0)
-    .sort((a,b)=>(/PagSWAct_backup/i.test(base(_fileName(b)))-/PagSWAct_backup/i.test(base(_fileName(a))))||(b.lastModified-a.lastModified));
+  // The activation file: any .002, or a .bin explicitly named PagSWAct* (a
+  // SysInfo dump also holds boot-screen and hybrid .bin files). Prefer the
+  // diagnostic stick's PagSWAct_backup_*, then a plain PagSWAct.002 (SysInfo),
+  // then the newest.
+  const rank=f=>{const n=base(_fileName(f));return /^PagSWAct_backup/i.test(n)?2:(/^PagSWAct/i.test(n)?1:0)};
+  const backups=files.filter(f=>{const n=base(_fileName(f));
+      return (/\.002$/i.test(n)||(/\.bin$/i.test(n)&&/^PagSWAct/i.test(n)))&&f.size&&f.size%28===0})
+    .sort((a,b)=>(rank(b)-rank(a))||(b.lastModified-a.lastModified));
   const vinFile=files.find(f=>base(_fileName(f))==='vin'&&f.size<=64);
-  const logs=files.filter(f=>/^pcm_debug_.*\.log$/i.test(base(_fileName(f)))).sort((a,b)=>b.lastModified-a.lastModified);
+  const logs=files.filter(f=>/^(pcm_debug_.*|sysinfo)\.log$/i.test(base(_fileName(f)))).sort((a,b)=>b.lastModified-a.lastModified);
   const zone=document.getElementById('drop-zone');
   let recs=null;
   if(backups.length){recs=parseBackup(new Uint8Array(await _readFile(backups[0],false)))}
@@ -607,7 +616,7 @@ async function handleBackupFiles(fileList){
   }
   if(logs.length){
     const info=parseDiagLog(await _readFile(logs[0],true));
-    if(!pcm.vin&&VIN_RE.test(info.vin)){pcm.vin=info.vin;pcm.source=_fileName(logs[0])+' (=== VIN ===)'}
+    if(!pcm.vin&&VIN_RE.test(info.vin)){pcm.vin=info.vin;pcm.source=_fileName(logs[0])+' (VIN section)'}
     pcm.build=info.build;
   }
   if(!recs&&!pcm.vin){zone.style.borderColor='var(--red)';
@@ -656,7 +665,7 @@ function renderPcmIdentity(){
     h+=row('VIN stored in the PCM','<span style="font-family:var(--mono);font-size:15px;color:var(--accent)">'+esc(backupPcm.vin)+'</span>');
     h+=row('read from','<code>'+esc(backupPcm.source)+'</code>');
   }else{
-    h+=row('VIN stored in the PCM','<span style="color:var(--text2)">not on what you dropped \u2014 it is in <code>pcm_dump_&lt;date&gt;/vin</code> and <code>pcm_debug_&lt;date&gt;.log</code> on the diagnostic stick</span>');
+    h+=row('VIN stored in the PCM','<span style="color:var(--text2)">not on what you dropped \u2014 it is in <code>pcm_dump_&lt;date&gt;/vin</code> and <code>pcm_debug_&lt;date&gt;.log</code> on a diagnostic stick, or <code>sysinfo_dump/vin</code> and <code>sysinfo.log</code> on a SysInfo stick</span>');
   }
   if(backupPcm.build)h+=row('software build','<code>'+esc(backupPcm.build)+'</code>'+(/_LOW_/.test(backupPcm.build)?' <span style="color:var(--text2)">(factory no-hard-drive version)</span>':''));
   if(backupRecords.length){

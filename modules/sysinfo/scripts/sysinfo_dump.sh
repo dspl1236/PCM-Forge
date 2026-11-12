@@ -164,10 +164,20 @@ cat /HBpersistence/vin >> "$LOG" 2>&1
 echo "" >> "$LOG"
 echo "  PagSWAct.002 (activation records, 28 bytes each):" >> "$LOG"
 ls -la /HBpersistence/PagSWAct.002 >> "$LOG" 2>&1
-# The 16-char activation codes are plain hex text inside the record table, so
-# grep alone recovers them -- no decoder needed on-car.
-echo "  [unlock codes present]:" >> "$LOG"
-grep -aoE "[0-9a-f]{16}" /HBpersistence/PagSWAct.002 >> "$LOG" 2>&1
+# Copy the activation file and the VIN the PCM stores, byte for byte, HERE --
+# early in the run -- rather than relying on the full backup in section 15,
+# which comes last: a run cut short (stick pulled, a slow fdisk) still delivers
+# them. These are what the web app's Backup tab reads ("This PCM": the stored
+# VIN, which VIN the codes were signed for, which ones the PCM marked active).
+# No grep here: QNX's grep has no -a/-o, so it cannot list codes from a binary
+# file (it printed "illegal option -- a"); decode the copy off-car instead
+# (Backup tab, or generate_codes.py --show).
+echo "  [copied to sysinfo_dump/ for the Backup tab: PagSWAct.002, .bak, vin]:" >> "$LOG"
+for f in /HBpersistence/PagSWAct.002 /HBpersistence/PagSWAct.002.bak /HBpersistence/vin; do
+    if [ -f "$f" ]; then
+        cp "$f" "$DUMPDIR/" 2>> "$LOG" && echo "    ${f##*/}" >> "$LOG"
+    fi
+done
 echo "  [other activation artefacts]:" >> "$LOG"
 ls -la /HBpersistence/PagSWAct* /HBpersistence/diskid.txt /HBpersistence/CsiConfig1.csi /HBpersistence/PDL.dat >> "$LOG" 2>&1
 for f in /HBpersistence/PagSWAct.csv /HBpersistence/diskid.txt; do
