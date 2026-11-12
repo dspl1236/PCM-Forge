@@ -6,6 +6,8 @@
 
 🌐 **Web tool:** [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/) — activation codes, USB stick builder, and modular diagnostic toolkit.
 
+💻 **Offline (Windows):** [PCM-Forge-Offline.exe](https://github.com/dspl1236/PCM-Forge/releases/download/offline-latest/PCM-Forge-Offline.exe) — codes and USB sticks with no internet. See [Offline App](#offline-app-windows).
+
 📋 **What can I activate?** → See [FEATURES.md](FEATURES.md) for the full list of 26 features with descriptions, retail costs, and hardware requirements.
 
 ## Supported Vehicles
@@ -127,7 +129,7 @@ already present at power-on is treated as plain media storage and the script nev
 
 ## ⚡ Quick Start
 
-> **Important:** Always use the [web app](https://dspl1236.github.io/PCM-Forge/) to build your USB stick. Do NOT download `copie_scr.sh` directly from GitHub — the PCM requires a special XOR-encoded version that only the web app generates. Raw files from the repo will not trigger the autorun.
+> **Important:** Always build your USB stick with the [web app](https://dspl1236.github.io/PCM-Forge/) (or the [offline app](#offline-app-windows) / `generate_codes.py`, which write the same bytes). Do NOT download `copie_scr.sh` directly from GitHub — the PCM requires a special XOR-encoded version that only the web app generates. Raw files from the repo will not trigger the autorun.
 
 ### Step 1: Run Diagnostics First
 1. Open [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/)
@@ -169,6 +171,25 @@ If you installed a used PCM from another car, codes made for your own VIN won't 
 **Or move the PCM to your own VIN (not yet bench-verified).** Activate **ENGINEERING** (GEM) with the donor VIN, open the menu with **SOURCE + OPTION**, change the stored VIN to your car's, then re-run PCM-Forge with your real VIN. We have not confirmed the VIN-change step on a bench yet, so prefer the route above.
 
 Units without a hard drive (the factory `LOW` build, e.g. Korean-market cars) work the same way: the VIN and the activation file live in the PCM's flash, not on the drive.
+
+## Offline App (Windows)
+
+**[Download PCM-Forge-Offline.exe](https://github.com/dspl1236/PCM-Forge/releases/download/offline-latest/PCM-Forge-Offline.exe)**
+([release page](https://github.com/dspl1236/PCM-Forge/releases/tag/offline-latest), with its SHA256)
+— the USB Stick tab as a desktop program, for a workshop PC or a laptop in the garage with
+no internet. Nothing is sent anywhere.
+
+- Enter the VIN and pick the model: every activation code appears, double-click to copy.
+- **Build activation stick…** — tick the features, pick the USB stick: `copie_scr.sh`,
+  `run.sh`, `PagSWAct.002` and the progress splash, exactly as the web app writes them.
+- **Build diagnostic stick…** — read-only; the PCM writes its stored VIN and a backup of
+  its activations to the stick.
+- **Open returned stick…** — shows what the PCM has activated and the VIN it stores, and
+  with one click uses that VIN and ticks those features, so a new stick keeps them.
+
+It covers codes and the activation/diagnostic sticks; the Toolkit modules and the Backup
+tab stay in the web app. The exe is unsigned, so SmartScreen warns on first run: **More
+info → Run anyway**. From source: `python pcm_forge_offline.py` (Python 3 with Tk).
 
 ## Command Line
 

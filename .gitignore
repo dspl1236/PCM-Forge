@@ -4,3 +4,8 @@ __pycache__/
 
 # Arbeitsnotizen: offene Punkte und Messergebnisse, nicht Teil des Projekts
 Todo.md
+
+# PCM-Forge Offline exe build (pcm_forge_offline.spec)
+/build/
+/dist/
+/_build.py
