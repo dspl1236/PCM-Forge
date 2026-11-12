@@ -149,19 +149,26 @@ already present at power-on is treated as plain media storage and the script nev
 ⚠️ The activation file (`PagSWAct.002`) **replaces all existing activations**. Only the features you select will be active — anything not selected gets deactivated. Always use **Select all** and then add new features on top.
 
 ### Step 3: Verify
-Press **SOURCE + SOUND** simultaneously — if the ENGINEERING feature is activated, the hidden engineering menu will appear. This confirms your activation codes are working.
+Press **SOURCE + OPTION** simultaneously — if the ENGINEERING feature is activated, the hidden engineering menu will appear. This confirms your activation codes are working. Without ENGINEERING the unit answers "function not available": that is the activation gate, not a wrong button combination.
 
 ### Just Need Codes? (for PIWIS / manual entry)
 Use the **Codes** tab — enter your VIN, get all 26 activation codes instantly. No USB stick needed — enter codes manually via PIWIS or the engineering menu.
 
 ## Replacement / Used PCMs
 
-If you installed a used PCM from another car, activation codes won't work because the PCM validates against its internally stored VIN (the donor car's VIN). Fix this with PCM-Forge alone — no dealer needed:
+If you installed a used PCM from another car, codes made for your own VIN won't work: the PCM checks every code against the VIN stored inside it, which is still the donor car's. Fix this with PCM-Forge alone — no dealer needed.
 
-1. Run **Diagnostic Mode** via USB to pull the donor VIN from the PCM
-2. Enter the donor VIN in PCM-Forge and activate **ENGINEERING** (GEM)
-3. In the Engineering menu, update the VIN to your car's VIN (under SW Activations)
-4. Re-run PCM-Forge with your real VIN to activate all features
+**1. Find the donor VIN.** Run **Diagnostic Mode** via USB. When the stick comes back, the VIN the PCM has stored is in:
+- `pcm_dump_<date>/vin` — a copy of the PCM's `/HBpersistence/vin`, the 17 characters on their own
+- `pcm_debug_<date>.log`, under `=== VIN ===`
+
+`PagSWAct_backup_<date>.002` on the same stick is the activation file already on the PCM. `python generate_codes.py <VIN> --show PagSWAct_backup_<date>.002` tells you whether its codes were made for that VIN.
+
+**2. Activate with the donor VIN (recommended).** Build the activation stick as above, but enter the **donor VIN** instead of your car's, and choose **your car's model**. The codes then match what the PCM has stored and the features activate. Nothing on the unit has to change.
+
+**Or move the PCM to your own VIN (not yet bench-verified).** Activate **ENGINEERING** (GEM) with the donor VIN, open the menu with **SOURCE + OPTION**, change the stored VIN to your car's, then re-run PCM-Forge with your real VIN. We have not confirmed the VIN-change step on a bench yet, so prefer the route above.
+
+Units without a hard drive (the factory `LOW` build, e.g. Korean-market cars) work the same way: the VIN and the activation file live in the PCM's flash, not on the drive.
 
 ## Command Line
 
