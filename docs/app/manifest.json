@@ -61,11 +61,11 @@
       "files": [
         {
           "path": "module.json",
-          "size": 1529
+          "size": 1515
         },
         {
           "path": "scripts/sysinfo_dump.sh",
-          "size": 33002
+          "size": 33472
         },
         {
           "path": "scripts/sysinfo_run.sh",
