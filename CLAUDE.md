@@ -91,6 +91,10 @@ python generate_codes.py --list-models                 # show all model keys
 The RSA-64 keys (`N`, `E`, `D`) and per-feature SWID/SubID tables live at the top of the file.
 The ksh payloads the stick carries live in `payloads/` as real `.sh` files, so
 `.gitattributes` keeps them LF; `copie_scr.sh` is generated and XOR-encoded at write time.
+`pcm_forge_offline.py` is a Tkinter window over the same functions (codes, activation and
+diagnostic sticks, reading a returned stick), packaged as `PCM-Forge-Offline.exe` by
+`pcm_forge_offline.spec` + `.github/workflows/build-offline.yml` (rolling `offline-latest`
+release); `tests/test_offline_app.py` holds it byte-identical to the CLI.
 `tools/prepare_usb.py` is an older, narrower wrapper around the same algorithm and predates
 all of the above. The algorithm write-up is in
 `research/ALGORITHM_CRACKED.md`; the full feature list with costs/hardware requirements is in

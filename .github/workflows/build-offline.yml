@@ -1,0 +1,128 @@
+name: Build PCM-Forge Offline (Windows exe)
+
+# PCM-Forge-Offline.exe: the USB Stick tab as a desktop app -- codes, the
+# activation stick, the diagnostic stick and reading a returned stick, with no
+# internet. Every push to main that touches what the exe carries rebuilds it
+# and refreshes the rolling "offline-latest" download.
+#
+# Tests run first, and the built exe must pass its own --selftest (it builds
+# both stick kinds from its bundled payloads) before it becomes a download.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "generate_codes.py"
+      - "pcm_forge_offline.py"
+      - "pcm_forge_offline.spec"
+      - "payloads/**"
+      - "core/bin/forge_splash"
+      - "core/lib/running.bin"
+      - "core/lib/done.bin"
+      - "tests/**"
+      - ".github/workflows/build-offline.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "generate_codes.py"
+      - "pcm_forge_offline.py"
+      - "pcm_forge_offline.spec"
+      - "payloads/**"
+      - "core/bin/forge_splash"
+      - "core/lib/running.bin"
+      - "core/lib/done.bin"
+      - "tests/**"
+      - ".github/workflows/build-offline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-offline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Tests
+        run: |
+          pip install pytest
+          python -m pytest tests/ -q
+
+      # Stamp the build so the title bar names the exact commit.
+      - name: Stamp build id
+        id: ver
+        shell: pwsh
+        run: |
+          $sha = "${{ github.sha }}".Substring(0,7)
+          "COMMIT = `"$sha`"" | Out-File -Encoding ascii _build.py
+          "commit=$sha" | Out-File -Append $env:GITHUB_OUTPUT
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build
+        run: pyinstaller --noconfirm pcm_forge_offline.spec
+
+      # The windowed exe has no console: the self-test reports through its
+      # exit code and selftest.txt.
+      - name: Self-test the built exe
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "selftest"
+          $p = Start-Process dist\PCM-Forge-Offline.exe -ArgumentList "--selftest", $out -Wait -PassThru
+          Get-Content (Join-Path $out "selftest.txt")
+          if ($p.ExitCode -ne 0) { Write-Error "self-test failed ($($p.ExitCode))"; exit 1 }
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash dist\PCM-Forge-Offline.exe -Algorithm SHA256).Hash
+          "$h  PCM-Forge-Offline.exe" | Out-File -Encoding ascii dist\PCM-Forge-Offline.exe.sha256
+          Write-Host "SHA256: $h"
+          $mb = [math]::Round((Get-Item dist\PCM-Forge-Offline.exe).Length / 1MB, 1)
+          Write-Host "Size: $mb MB"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PCM-Forge-Offline-windows
+          path: |
+            dist/PCM-Forge-Offline.exe
+            dist/PCM-Forge-Offline.exe.sha256
+          retention-days: 14
+
+      - name: Update "offline-latest" download
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: offline-latest
+          name: PCM-Forge Offline (Windows)
+          prerelease: false
+          make_latest: true
+          files: |
+            dist/PCM-Forge-Offline.exe
+            dist/PCM-Forge-Offline.exe.sha256
+          body: |
+            **PCM-Forge Offline** — the web app's USB Stick tab as a Windows program
+            that works with no internet. Build `${{ steps.ver.outputs.commit }}`.
+
+            - enter the VIN, pick the model: every activation code, live
+            - **Build activation stick…** — the ticked features, with the progress splash
+            - **Build diagnostic stick…** — read-only; brings back the PCM's VIN and a
+              backup of its activations
+            - **Open returned stick…** — shows what the PCM has, and ticks it for you
+
+            No Python needed — download and run. The exe is unsigned, so SmartScreen
+            warns on first run: **More info → Run anyway**. Verify it against the
+            SHA256 file if you prefer, or run `python pcm_forge_offline.py` from source.
+
+            The online app is at https://dspl1236.github.io/PCM-Forge/ — the two make
+            byte-identical sticks.
