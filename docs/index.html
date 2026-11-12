@@ -198,15 +198,18 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="panel-header">
       <h2>&#128194; Manage Backup</h2>
       <div class="panel-desc">
-        Upload your <code>PagSWAct_backup.002</code> from the diagnostic USB to see what's activated, then add features and download a merged file.
+        Drop the diagnostic USB stick (the whole folder) to see which VIN the PCM stores and what's activated, then add features and download a merged file. Just the <code>PagSWAct_backup.002</code> works too.
       </div>
     </div>
-    <div style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;margin-bottom:20px;cursor:pointer;transition:border-color .2s" id="drop-zone" onclick="document.getElementById('file-upload').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBackupFile(event.dataTransfer.files[0])">
+    <div style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;margin-bottom:20px;cursor:pointer;transition:border-color .2s" id="drop-zone" onclick="document.getElementById('file-upload').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleBackupDrop(event.dataTransfer)">
       <div style="font-size:28px;margin-bottom:8px">&#128194;</div>
-      <div style="color:var(--text2);font-size:14px">Drop <code>PagSWAct_backup.002</code> here or click to browse</div>
-      <input type="file" id="file-upload" accept=".002,.bin" style="display:none" onchange="handleBackupFile(this.files[0])">
+      <div style="color:var(--text2);font-size:14px" id="drop-msg">Drop the diagnostic stick's folder, or <code>PagSWAct_backup.002</code>, here &mdash; or click to browse</div>
+      <input type="file" id="file-upload" accept=".002,.bin,.log" multiple style="display:none" onchange="handleBackupFiles(this.files)">
+      <input type="file" id="folder-upload" webkitdirectory multiple style="display:none" onchange="handleBackupFiles(this.files)">
+      <button class="btn" style="margin-top:12px" onclick="event.stopPropagation();document.getElementById('folder-upload').click()">&#128193; Choose the stick folder&hellip;</button>
     </div>
     <div id="backup-info" style="display:none">
+      <div id="pcm-identity"></div>
       <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">CURRENT FEATURES</div>
       <div id="backup-features"></div>
       <div style="margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">ADD FEATURES</div>
@@ -532,30 +535,152 @@ const FEATS = (function(){
 const FEAT_SWMAP={};FEATS.forEach(f=>{FEAT_SWMAP[(f.sw<<16|f.su)>>>0]=f});
 const FEAT_SWONLY={};FEATS.forEach(f=>{if(!FEAT_SWONLY[f.sw])FEAT_SWONLY[f.sw]=f});
 let backupRecords=[];
+// What the diagnostic stick says about the PCM itself (pcm_dump_*/vin and
+// pcm_debug_*.log). A used PCM still stores its donor car's VIN, and every
+// activation code is checked against that -- so this is the VIN codes for
+// this unit must be made for.
+let backupPcm={vin:'',build:'',source:''};
 
-function handleBackupFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const data=new Uint8Array(e.target.result);
-    if(data.length%28!==0||data.length===0){
-      document.getElementById('drop-zone').style.borderColor='var(--red)';
-      return;
-    }
-    backupRecords=[];
-    for(let i=0;i<data.length;i+=28){
-      const code=String.fromCharCode(...data.slice(i,i+16));
-      const sw=data[i+18]|(data[i+19]<<8);
-      const su=data[i+20]|(data[i+21]<<8);
-      const active=data[i+22];
-      backupRecords.push({code,sw,su,active,key:(sw<<16|su)>>>0});
-    }
-    renderBackup();
-  };
-  reader.readAsArrayBuffer(file);
+const VIN_RE=/^[A-HJ-NPR-Z0-9]{17}$/;
+function vinHashHex(vin){return vinToNumber(vin).toString(16).padStart(8,'0')}
+// The VIN hash a code was signed for: decrypt with the public exponent; the
+// plaintext interleaves the 8 feature-hex digits with the 8 VIN-hash digits
+// (generate_codes.backup_vin_hash does the same).
+function signedVinHash(code){
+  if(!/^[0-9a-fA-F]{16}$/.test(code))return null;
+  const pt=modpow(BigInt('0x'+code),E,N).toString(16).padStart(16,'0');
+  let h='';for(let i=1;i<16;i+=2)h+=pt[i];
+  return h;
+}
+function backupSignedHash(){
+  const hs=new Set(backupRecords.map(r=>signedVinHash(r.code)).filter(Boolean));
+  return hs.size===1?[...hs][0]:(hs.size>1?'mixed':null);
+}
+
+function parseBackup(data){
+  if(data.length%28!==0||data.length===0)return null;
+  const recs=[];
+  for(let i=0;i<data.length;i+=28){
+    const code=String.fromCharCode(...data.slice(i,i+16));
+    const sw=data[i+18]|(data[i+19]<<8);
+    const su=data[i+20]|(data[i+21]<<8);
+    const active=data[i+22];
+    recs.push({code,sw,su,active,key:(sw<<16|su)>>>0});
+  }
+  return recs;
+}
+
+// pcm_debug_*.log: the VIN is the first line after "=== VIN ===", the unit's
+// software build the first line after "System_CD:".
+function parseDiagLog(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim());
+  const after=(marker)=>{const i=lines.indexOf(marker);if(i<0)return '';
+    for(let j=i+1;j<lines.length&&j<i+4;j++){if(lines[j]&&lines[j]!=='#')return lines[j]}return ''};
+  return {vin:after('=== VIN ===').toUpperCase(),build:after('System_CD:')};
+}
+
+function _readFile(f,asText){
+  return new Promise((ok,bad)=>{const r=new FileReader();r.onload=e=>ok(e.target.result);r.onerror=bad;
+    asText?r.readAsText(f):r.readAsArrayBuffer(f)});
+}
+function _fileName(f){return (f.webkitRelativePath||f.relPath||f.name||'').replace(/\\/g,'/')}
+
+// Kept for anything that still hands over a single file.
+function handleBackupFile(file){if(file)handleBackupFiles([file])}
+
+async function handleBackupFiles(fileList){
+  const files=[...(fileList||[])];
+  if(!files.length)return;
+  const base=n=>n.split('/').pop();
+  // The newest backup if a stick holds several (one per run).
+  const backups=files.filter(f=>/\.(002|bin)$/i.test(base(_fileName(f)))&&f.size&&f.size%28===0)
+    .sort((a,b)=>(/PagSWAct_backup/i.test(base(_fileName(b)))-/PagSWAct_backup/i.test(base(_fileName(a))))||(b.lastModified-a.lastModified));
+  const vinFile=files.find(f=>base(_fileName(f))==='vin'&&f.size<=64);
+  const logs=files.filter(f=>/^pcm_debug_.*\.log$/i.test(base(_fileName(f)))).sort((a,b)=>b.lastModified-a.lastModified);
+  const zone=document.getElementById('drop-zone');
+  let recs=null;
+  if(backups.length){recs=parseBackup(new Uint8Array(await _readFile(backups[0],false)))}
+  const pcm={vin:'',build:'',source:''};
+  if(vinFile){
+    const v=(await _readFile(vinFile,true)).trim().toUpperCase();
+    if(VIN_RE.test(v)){pcm.vin=v;pcm.source=_fileName(vinFile)}
+  }
+  if(logs.length){
+    const info=parseDiagLog(await _readFile(logs[0],true));
+    if(!pcm.vin&&VIN_RE.test(info.vin)){pcm.vin=info.vin;pcm.source=_fileName(logs[0])+' (=== VIN ===)'}
+    pcm.build=info.build;
+  }
+  if(!recs&&!pcm.vin){zone.style.borderColor='var(--red)';
+    document.getElementById('drop-msg').textContent='Nothing usable found \u2014 drop the diagnostic stick\u2019s folder or a PagSWAct_backup .002 file';return}
+  // A lone vin/log file adds to what is already loaded. A new backup on its
+  // own replaces the backup and forgets the old PCM details, which may have
+  // come from a different stick.
+  if(recs)backupRecords=recs;
+  if(pcm.vin||pcm.build)backupPcm=pcm;
+  else if(recs)backupPcm={vin:'',build:'',source:''};
+  renderBackup();
+}
+
+// Folders dropped from the file manager arrive as directory entries.
+async function handleBackupDrop(dt){
+  const items=[...(dt.items||[])].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+  if(!items.some(e=>e.isDirectory)){handleBackupFiles(dt.files);return}
+  const out=[];
+  async function walk(entry,path,depth){
+    if(entry.isFile){const f=await new Promise((ok,bad)=>entry.file(ok,bad));f.relPath=path+entry.name;out.push(f);return}
+    if(!entry.isDirectory||depth>3)return;
+    const rd=entry.createReader();let batch;
+    do{batch=await new Promise((ok,bad)=>rd.readEntries(ok,bad));
+      for(const e of batch)await walk(e,path+entry.name+'/',depth+1)}while(batch.length);
+  }
+  for(const e of items)await walk(e,'',0);
+  handleBackupFiles(out);
+}
+
+function usePcmVin(){
+  if(!backupPcm.vin)return;
+  const el=document.getElementById('vin1');el.value=backupPcm.vin;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  renderBackup();
+}
+
+function renderPcmIdentity(){
+  const box=document.getElementById('pcm-identity');
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const signed=backupSignedHash();
+  const entered=_getCV();
+  const row=(k,v)=>'<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0"><div style="flex:0 0 180px;color:var(--text2)">'+k+'</div><div style="flex:1 1 220px;min-width:0;overflow-wrap:anywhere">'+v+'</div></div>';
+  const note=(cls,t)=>'<div style="margin-top:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--'+cls+');color:var(--text)">'+t+'</div>';
+  let h='<div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px">THIS PCM</div><div class="card" style="margin-bottom:20px">';
+  if(backupPcm.vin){
+    h+=row('VIN stored in the PCM','<span style="font-family:var(--mono);font-size:15px;color:var(--accent)">'+esc(backupPcm.vin)+'</span>');
+    h+=row('read from','<code>'+esc(backupPcm.source)+'</code>');
+  }else{
+    h+=row('VIN stored in the PCM','<span style="color:var(--text2)">not on what you dropped \u2014 it is in <code>pcm_dump_&lt;date&gt;/vin</code> and <code>pcm_debug_&lt;date&gt;.log</code> on the diagnostic stick</span>');
+  }
+  if(backupPcm.build)h+=row('software build','<code>'+esc(backupPcm.build)+'</code>'+(/_LOW_/.test(backupPcm.build)?' <span style="color:var(--text2)">(factory no-hard-drive version)</span>':''));
+  if(backupRecords.length){
+    let st;
+    if(signed==='mixed')st='<span style="color:var(--red)">\u26a0 signed for more than one VIN</span>';
+    else if(!signed)st='<span style="color:var(--text2)">cannot tell</span>';
+    else if(backupPcm.vin)st=signed===vinHashHex(backupPcm.vin)?'<span style="color:var(--green)">\u2713 this PCM\u2019s VIN</span>':'<span style="color:var(--red)">\u26a0 a different VIN</span>';
+    else st='VIN hash <code>'+signed+'</code>';
+    h+=row('backup codes made for',st);
+  }
+  if(backupPcm.vin&&signed&&signed!=='mixed'&&signed!==vinHashHex(backupPcm.vin)){
+    h+=note('red','<strong>The PCM is ignoring these codes.</strong> They were made for a different VIN than the one it stores. Don\u2019t merge them: build a fresh stick on the <strong>USB Stick</strong> tab with the VIN above and your car\u2019s model.');
+  }
+  if(backupPcm.vin&&entered!==backupPcm.vin){
+    h+=note('accent',(entered
+      ?'The VIN entered at the top (<code>'+esc(entered)+'</code>) is not the one this PCM stores. If this is a <strong>used PCM from another car</strong>, codes must be made for the PCM\u2019s VIN above, not your car\u2019s (or check for a typo).'
+      :'Codes for this PCM must be made for the VIN it stores.')
+      +'<div style="margin-top:10px"><button class="btn btn-accent" onclick="usePcmVin()">Use this PCM\u2019s VIN</button></div>');
+  }
+  box.innerHTML=h+'</div>';
 }
 
 function renderBackup(){
+  renderPcmIdentity();
   const existKeys=new Set(backupRecords.map(r=>r.key));
   const bf=document.getElementById('backup-features');
   const af=document.getElementById('add-features');
@@ -564,7 +689,10 @@ function renderBackup(){
     const feat=FEAT_SWMAP[rec.key]||FEAT_SWONLY[rec.sw];
     const name=feat?feat.nm:'Unknown (0x'+rec.sw.toString(16).padStart(4,'0')+')';
     const desc=feat?feat.ds:'';
-    bf.innerHTML+='<div class="ft on" style="opacity:0.85"><input type="checkbox" checked disabled><div><div class="feat-name">\u2705 '+name+'</div><div class="feat-desc">'+desc+'</div><div class="ft-info">'+rec.code+'</div></div></div>';
+    // the PCM rewrites this flag after checking the code
+    const mark=rec.active?'\u2705 ':'\u26aa ';
+    const state=rec.active?'':' <span style="color:var(--text2);font-weight:normal">(marked inactive by the PCM)</span>';
+    bf.innerHTML+='<div class="feat-item'+(rec.active?' on':'')+'" style="opacity:0.85;margin-bottom:8px;cursor:default"><input type="checkbox"'+(rec.active?' checked':'')+' disabled><div><div class="feat-name">'+mark+name+state+'</div><div class="feat-desc">'+desc+'</div><div class="feat-code">'+rec.code+'</div></div></div>';
   }
   if(!backupRecords.length) bf.innerHTML='<div style="color:var(--text2);font-size:13px">No features found in backup</div>';
   let hasNew=false;
@@ -572,16 +700,28 @@ function renderBackup(){
     const key=(f.sw<<16|f.su)>>>0;
     if(existKeys.has(key))continue;
     hasNew=true;
-    af.innerHTML+='<label class="ft"><input type="checkbox" data-fh="'+f.fh+'" data-sw="'+f.sw+'" data-su="'+f.su+'" onchange="this.closest(\x27.ft\x27).classList.toggle(\x27on\x27,this.checked)"><div><div class="feat-name">'+f.nm+'</div><div class="feat-desc">'+f.ds+'</div></div></label>';
+    af.innerHTML+='<label class="feat-item" style="margin-bottom:8px"><input type="checkbox" data-fh="'+f.fh+'" data-sw="'+f.sw+'" data-su="'+f.su+'" onchange="this.closest(\x27.feat-item\x27).classList.toggle(\x27on\x27,this.checked)"><div><div class="feat-name">'+f.nm+'</div><div class="feat-desc">'+f.ds+'</div></div></label>';
   }
   if(!hasNew) af.innerHTML='<div style="color:var(--green);font-size:13px">\u2713 All features already activated!</div>';
   document.getElementById('backup-info').style.display='block';
   document.getElementById('drop-zone').style.borderColor='var(--green)';
-  document.getElementById('drop-zone').querySelector('div:last-child').textContent='Loaded: '+backupRecords.length+' features ('+backupRecords.length*28+' bytes)';
+  document.getElementById('drop-msg').textContent=backupRecords.length
+    ?'Loaded: '+backupRecords.length+' features ('+backupRecords.length*28+' bytes)'+(backupPcm.vin?' + the PCM\u2019s VIN':'')
+    :'Loaded the PCM\u2019s VIN \u2014 drop PagSWAct_backup .002 as well to see its features';
 }
 
 function buildMerged(){
   var CV=_getCV();if(!CV){document.getElementById('sm-manage').className='sm bad';document.getElementById('sm-manage').textContent='\u26a0 Enter a VIN at the top first';return null}
+  // Same guard as generate_codes.py --from-backup: the backup's codes were
+  // signed for one car, the new ones would be signed for CV. Mixing two
+  // cars in one file gives a file the PCM rejects.
+  const signed=backupSignedHash();
+  if(signed==='mixed'||(signed&&signed!==vinHashHex(CV))){
+    const sm=document.getElementById('sm-manage');sm.className='sm bad';
+    sm.textContent='\u26a0 The backup\u2019s codes were made for a different VIN than '+CV+'. Mixing codes from two cars gives a file the PCM rejects'
+      +(backupPcm.vin&&backupPcm.vin!==CV?' \u2014 this PCM stores '+backupPcm.vin+'.':'. Build a fresh stick on the USB Stick tab instead.');
+    return null;
+  }
   const recs=[...backupRecords.map(r=>{const d=new Uint8Array(28);for(let i=0;i<16;i++)d[i]=r.code.charCodeAt(i);d[18]=r.sw&0xFF;d[19]=(r.sw>>8)&0xFF;d[20]=r.su&0xFF;d[21]=(r.su>>8)&0xFF;d[22]=1;d[24]=1;return d})];
   let added=0;
   document.querySelectorAll('#add-features input:checked').forEach(cb=>{
@@ -750,6 +890,8 @@ function downloadPagSWAct() {
 }
 
 document.getElementById('vin1').addEventListener('keydown', e => { if (e.key === 'Enter') generateCodes(); });
+// keep the Backup tab's "This PCM" comparison in step with the VIN at the top
+document.getElementById('vin1').addEventListener('input', () => { if (backupRecords.length || backupPcm.vin) renderPcmIdentity(); });
 
 // ===== TAB 2: USB Stick Builder =====
 
