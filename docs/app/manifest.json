@@ -13,59 +13,9 @@
     "lib_activating_done_png": "core/lib/activating-done.png"
   },
   "modules": {
-    "bt-aux-fix": {
-      "status": "paused",
-      "description": "PAUSED + CARPLAY WARNING - do NOT install this if you run an aftermarket CarPlay adapter (GTA CarKits, and likely Ottocast / CarlinKit): those feed CarPlay audio into the PCM's wired AUX input and require AUX enabled with AUX-Bluetooth DISABLED. Steering the source toward BT/A2DP makes the phone bond to the PCM's native Bluetooth for media, which blocks wireless CarPlay's BT->WiFi handoff, so the CarPlay handshake stalls and never connects (confirmed in the field on a 958 Cayenne with a GTA kit). If CarPlay already broke: turn AUX-Bluetooth OFF in the PCM (insert a CD -> DISC -> OPTION -> SET AUX), forget the PCM pairing on the phone, then re-pair only the adapter. Separately, the boot-source fix has been measured inert at boot: the byte it flips lives in the LastMode persistence handler, which PCM3Root never reaches at startup (the boot decision is made elsewhere and falls to FM before Bluetooth is up). So it does NOT reliably keep the unit on Bluetooth, and has been disabled to prevent accidental installs while a brick-safe replacement - a DSI source-switch that rides the phone-connect event - is in development. This entry now offers only 'Revert to stock': use it to cleanly remove a previously-applied fix and its /HBpersistence boot hook. Never touches the read-only flash. Builds on WillCoder's PCM_31_AUX-BT research.",
-      "standalone": true,
-      "run_script": "bt_fix_run.sh",
-      "script_dir": "/scripts/BtAuxFix",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {
-        "mode": {
-          "label": "Action",
-          "type": "select",
-          "default": "revert",
-          "values": [
-            {
-              "value": "revert",
-              "label": "Revert to stock - remove any previously-applied fix + boot hook"
-            }
-          ]
-        }
-      },
-      "files": [
-        {
-          "path": "README.md",
-          "size": 4246
-        },
-        {
-          "path": "module.json",
-          "size": 1924
-        },
-        {
-          "path": "bin/bt_fix",
-          "size": 67172
-        },
-        {
-          "path": "scripts/bt_boot.sh",
-          "size": 845
-        },
-        {
-          "path": "scripts/bt_fix_run.sh",
-          "size": 4303
-        },
-        {
-          "path": "scripts/bt_hook_uninstall.sh",
-          "size": 835
-        }
-      ]
-    },
     "ioc-probe": {
       "status": "ready",
-      "description": "IOC CAN channel probe \u00e2\u20ac\u201d maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
+      "description": "IOC CAN channel probe \u2014 maps /dev/ipc/ioc interface, captures CAN bus data, dumps persistence addresses and factory ESD files. Replaces NDR probe.",
       "standalone": true,
       "run_script": "ioc_probe_run.sh",
       "script_dir": "/scripts/IocProbe",
@@ -97,70 +47,6 @@
         }
       ]
     },
-    "lte-setup": {
-      "status": "deprecated",
-      "description": "[DEPRECATED \u2014 use the 'usb-net' module] LTE/router connectivity over USB ethernet. Superseded by usb-net, which ships the universal ASIX driver (incl. AX88772B/C) and an 'lte' mode that does the same DNS setup. The old 'AX88772B Override' never worked on io-net and has been removed.",
-      "standalone": true,
-      "run_script": "lte_setup.sh",
-      "script_dir": "/scripts/LTE",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {
-        "lte-mode": {
-          "label": "Configuration",
-          "type": "select",
-          "default": "dhcp",
-          "values": [
-            {
-              "value": "dhcp",
-              "label": "DHCP \u2014 Auto (AX88772/772A)"
-            },
-            {
-              "value": "static",
-              "label": "Static 172.16.42.1 \u2014 Direct connection"
-            }
-          ]
-        }
-      },
-      "files": [
-        {
-          "path": "module.json",
-          "size": 991
-        },
-        {
-          "path": "scripts/lte_setup.sh",
-          "size": 3133
-        }
-      ]
-    },
-    "service-reset": {
-      "status": "beta",
-      "description": "Service interval TEST (read-only / dry-run): reads VIN + odometer (km & miles) from the logbook, shows service history, and SIMULATES the oil/inspection UDS reset -- logs the exact frames but SENDS NOTHING. Ships no sender binary, so it cannot touch the cluster. Safe for anyone. The armed reset stays in tools/ until Autel-confirmed.",
-      "standalone": true,
-      "run_script": "service_reset_run.sh",
-      "script_dir": "/scripts/ServiceReset",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {},
-      "files": [
-        {
-          "path": "module.json",
-          "size": 653
-        },
-        {
-          "path": "service_log.sample.txt",
-          "size": 353
-        },
-        {
-          "path": "scripts/service_reset_run.sh",
-          "size": 4335
-        }
-      ]
-    },
     "sysinfo": {
       "status": "ready",
       "description": "Full system dump: takes several minutes, so wait for DONE on the screen before pulling the stick (each finished section is listed in pcm_ran.txt, so an early pull shows how far it got). For a quick VIN and activation check, use the USB Stick tab's Diagnostic mode instead. Comprehensive PCM 3.1 diagnostic. Captures the system log (full + severity-filtered) with boot sequence, boot gates, errors and amplifier detection; the crash record; storage map with partition tables and drive geometry; amplifier resolution (which sound profile is actually live, and whether it matches the flag); odometer and vehicle data; activation codes; software identity and update history; service manager and listening ports; a full restorable /HBpersistence backup; plus the hardware/IPC/CAN/DSI device-tree probe. Read-only -- nothing on the car is modified. Also dumps the DSI service registry from /srv/servicebroker -- the broker's entire live list of registered interfaces and their versions, which no devctl can enumerate -- and the Bluetooth bring-up chain (serfpga, phone-db gate, scp_pss, address-book size, boot-hook and trace-profile presence), which is what determines whether the unit can pick Bluetooth at startup at all.",
@@ -175,7 +61,7 @@
       "files": [
         {
           "path": "module.json",
-          "size": 1515
+          "size": 1529
         },
         {
           "path": "scripts/sysinfo_dump.sh",
@@ -189,7 +75,7 @@
     },
     "telnet": {
       "status": "tested",
-      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u00e2\u20ac\u201d session-only, re-run after reboot.",
+      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u2014 session-only, re-run after reboot.",
       "standalone": true,
       "run_script": "telnet_enable.sh",
       "script_dir": "/scripts/Telnet",
@@ -211,7 +97,7 @@
     },
     "usb-net": {
       "status": "tested",
-      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or static), and enables telnet. Loads from USB only \u00e2\u20ac\u201d never modifies the read-only firmware.",
+      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or static), and enables telnet. Loads from USB only \u2014 never modifies the read-only firmware.",
       "standalone": true,
       "run_script": "usb_net_run.sh",
       "script_dir": "/scripts/USBNet",
@@ -229,15 +115,15 @@
           "values": [
             {
               "value": "dhcp",
-              "label": "DHCP \u00e2\u20ac\u201d from your router/switch"
+              "label": "DHCP \u2014 from your router/switch"
             },
             {
               "value": "static",
-              "label": "Static 172.16.42.1 \u00e2\u20ac\u201d direct cable to a PC"
+              "label": "Static 172.16.42.1 \u2014 direct cable to a PC"
             },
             {
               "value": "lte",
-              "label": "LTE/internet \u00e2\u20ac\u201d DHCP + DNS (replaces lte-setup)"
+              "label": "LTE/internet \u2014 DHCP + DNS (replaces lte-setup)"
             }
           ]
         }

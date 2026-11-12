@@ -4,7 +4,11 @@
 >
 > On-car testing (ours and WillCoder's) showed this byte-flip is **inert at boot**. The byte it flips lives in the **LastMode persistence handler**, but the boot source decision is made in a different function (`CPOnOffPresCtrl`) that is never reached that way at startup — at boot Bluetooth isn't connected yet, so the unit correctly falls to FM, and **nothing re-evaluates the source when the phone connects a few seconds later**. That's why it reverts to FM / lands on silent AUX.
 >
-> **The fix has to ride the *connect* event, not patch the boot decision.** A brick-safe replacement — a user-space DSI client that re-selects the source once Bluetooth connects — is in development. Until then this module is greyed out in the web toolkit and offers **only "Revert to stock"**, so anyone who already applied the old fix can cleanly roll it back.
+> **The fix has to ride the *connect* event, not patch the boot decision.** A brick-safe replacement — a user-space DSI client that re-selects the source once Bluetooth connects — is in development.
+>
+> **REMOVED from the web toolkit (2026-11-12).** Only the revert is kept, here: if you applied the old *persistent* fix, run [`bt_hook_uninstall.sh`](bt_hook_uninstall.sh) on the car (copy it to the stick, then `ksh /fs/usb0/bt_hook_uninstall.sh` over the shell). It strips the hook from `/HBpersistence/debugTools.sh` and deletes `/HBpersistence/bt_boot.sh`. A *runtime*-only apply needs nothing: it clears on reboot.
+>
+> **If CarPlay broke after applying it** (aftermarket adapters such as GTA CarKits feed audio into the wired AUX input): turn AUX-Bluetooth OFF in the PCM (insert a CD → DISC → OPTION → SET AUX), forget the PCM pairing on the phone, then re-pair only the adapter.
 
 Stops a Porsche **PCM 3.1** defaulting to **FM radio** at startup and routes a connected phone to **Bluetooth (A2DP)** instead — no FM blast, no manual AUX→BT toggle.
 

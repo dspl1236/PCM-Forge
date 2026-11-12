@@ -4,7 +4,8 @@
 >
 > **Measured on a car (WillCoder, 2026-06-22): `PCM3Root` already held `0x07` at the
 > patch site and the unit still booted to FM.** The byte-flip is inert. The
-> `bt-aux-fix` module has been paused and offers only *Revert to stock*.
+> `bt-aux-fix` module has been removed from the web toolkit (2026-11-12); to undo an
+> earlier persistent install, run [`tools/bt-aux-fix/bt_hook_uninstall.sh`](../tools/bt-aux-fix/bt_hook_uninstall.sh).
 >
 > **Why it cannot work.** The patched instruction lives in the **LastMode persistence
 > handler**. On power-off the unit stores LastMode = **10 (Default)** — never 7 — and at
@@ -145,7 +146,7 @@ The fix ships as a self-locating runtime patcher (`bin/bt_fix`), not a reflash:
 - **Runtime patch** — writes `PCM3Root`'s *live* memory via `/proc/<pid>/as`. A reboot restores the stock flash image. The read-only firmware is never touched, so it **cannot brick**.
 - **Self-locating** — scans `PCM3Root`'s own code range `[0x08040000, 0x08700000]` for the signature (its image loads at a fixed vaddr, non-PIE), so no per-build address is needed.
 - **Fail-safe** — writes **only** when it finds *exactly one* signature match **and** the current byte is `0x01`. Zero matches (v1.00 / unknown build) or more than one → no write.
-- **Modes** — *Runtime* (one-shot; reverts on reboot) or *Persistent* (a `/HBpersistence` boot hook re-applies each boot; reversible via the uninstall script).
+- **Modes** — *Runtime* (one-shot; reverts on reboot) or *Persistent* (a `/HBpersistence` boot hook re-applies each boot; reversible via [`tools/bt-aux-fix/bt_hook_uninstall.sh`](../tools/bt-aux-fix/bt_hook_uninstall.sh)).
 
 ## Credits
 

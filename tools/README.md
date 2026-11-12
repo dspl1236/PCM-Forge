@@ -41,7 +41,8 @@ signature verdict), `scan_all_firmware.py` (the batch harness behind the
 Source, build scripts, and engineering-definition files behind the matching
 `modules/`:
 
-- **`service-reset/`** — `uds_send.c` + build + the UDS/`.esd` engineering defs
+- **`service-reset/`** — `uds_send.c` + build + the UDS/`.esd` engineering defs (its Toolkit module was retired 2026-11-12; the reset itself lives in PAG-DIAG)
+- **`bt-aux-fix/`** — the retired BT/AUX boot fix: `bt_hook_uninstall.sh` reverts an earlier persistent install
 - **`ioc-probe/`** — BAP/CAN channel-scan scripts + IOC engineering defs
 - **`sysinfo/`** — system-info dump scripts
 - **`bench-dongle/`** — the bench-harness dongle firmware (`.ino`)
