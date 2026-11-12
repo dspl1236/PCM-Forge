@@ -1229,7 +1229,7 @@ async function tkFetchManifest() {
     tkManifest = { modules: {
       'sysinfo': { status: 'ready', description: 'Full system dump: takes several minutes, so wait for DONE on the screen before pulling the stick (each finished section is listed in pcm_ran.txt, so an early pull shows how far it got). For a quick VIN and activation check, use the USB Stick tab’s Diagnostic mode instead. Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
       'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
-      'flash-backup': { status: 'beta', description: 'Copies the PCM’s whole 64 MB flash to the stick as pcm_flash.bin, plus the activation file and stored VIN. Read-only (the same read as the engineering menu’s CustomerService option 05). Make one before any update; check it with PCM-Explorer.', run_script: 'flash_backup.sh', script_dir: '/scripts/FlashBackup', files: [{path:'scripts/flash_backup.sh'}] },
+      'flash-backup': { status: 'beta', description: 'Takes 30–40 minutes (the PCM writes to USB slowly): leave the stick in until DONE. Copies the PCM’s whole 64 MB flash to the stick as pcm_flash.bin, plus the activation file and stored VIN. Read-only (the same read as the engineering menu’s CustomerService option 05). Make one before any update; check it with PCM-Explorer.', run_script: 'flash_backup.sh', script_dir: '/scripts/FlashBackup', files: [{path:'scripts/flash_backup.sh'}] },
       'usb-net': { status: 'tested', description: 'Universal ASIX USB-Ethernet (AX88772 / 772A / 772B / 772C) + telnet. Loads from USB, never touches the read-only flash. Modes: dhcp / static / lte.', run_script: 'usb_net_run.sh', script_dir: '/scripts/USBNet', files: [{path:'scripts/usb_net_run.sh'},{path:'bin/devn-asix-universal.so'}] },
 
       'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe + BAP cluster discovery. Maps /dev/ipc/ioc channels, scans for BAP cluster on CAN 0x490/0x491, tests showScreen slay+restart. Read-only, safe.', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'bin/bap_a0.bin'},{path:'scripts/ch6_capture.sh'}] },
@@ -1316,11 +1316,17 @@ function tkGenerateRunSh(selected, manifest) {
     '#     screen and restores the OEM screen when we finish -- replaces the',
     '#     Audi showScreen that fails on Porsche V1) ---',
     'FS_FLAG="${TMPD}/forge_done"; rm -f "$FS_FLAG"; FS_PID=""',
+    '# a stick pulled and plugged back in starts this again: stop the old splash',
+    '# first (SIGTERM -> it unregisters its layer) so two never fight over the screen',
+    '[ -f "${TMPD}/forge_splash.pid" ] && kill "$(cat "${TMPD}/forge_splash.pid")" 2>/dev/null',
     'if [ -f "${USBROOT}/bin/forge_splash" ] && [ -f "${USBROOT}/lib/running.bin" ]; then',
     '    waitfor /dev/layermanager 15 2>/dev/null',
     '    cp "${USBROOT}/bin/forge_splash" "${TMPD}/forge_splash" 2>/dev/null && chmod +x "${TMPD}/forge_splash"',
-    '    "${TMPD}/forge_splash" "${USBROOT}/lib/running.bin" "${USBROOT}/lib/done.bin" "$FS_FLAG" 600 4 >>"${USBROOT}/splash.log" 2>&1 &',
+    '    # max wait 3600 s: a Flash Backup takes over half an hour on the PCM\'s slow USB;',
+    '    # the splash still closes the moment the job touches the done-flag',
+    '    "${TMPD}/forge_splash" "${USBROOT}/lib/running.bin" "${USBROOT}/lib/done.bin" "$FS_FLAG" 3600 4 >>"${USBROOT}/splash.log" 2>&1 &',
     '    FS_PID=$!',
+    '    echo "$FS_PID" > "${TMPD}/forge_splash.pid"',
     'fi',
     '',
     'echo "PCM-Forge Toolkit: ' + selected.join(', ') + '" > "${USBROOT}/pcm_ran.txt"',
@@ -1355,6 +1361,7 @@ function tkGenerateRunSh(selected, manifest) {
   lines.push('# --- status splash: flip to DONE, then restore the OEM screen ---');
   lines.push('touch "$FS_FLAG"');
   lines.push('[ -n "$FS_PID" ] && wait "$FS_PID" 2>/dev/null');
+  lines.push('rm -f "${TMPD}/forge_splash.pid"');
 
   return lines.join('\n') + '\n';
 }
