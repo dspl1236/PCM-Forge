@@ -78,7 +78,9 @@ def build_manifest():
         if not os.path.exists(mod_json_path):
             continue
 
-        with open(mod_json_path) as f:
+        # explicit UTF-8: the platform default on Windows is cp1252, which turned
+        # every em dash in a description into "â€”" on the live site
+        with open(mod_json_path, encoding='utf-8') as f:
             mod_meta = json.load(f)
 
         files = walk_module(mod_dir)
@@ -104,6 +106,6 @@ def build_manifest():
 if __name__ == '__main__':
     os.makedirs(OUT_DIR, exist_ok=True)
     manifest = build_manifest()
-    with open(OUT_FILE, 'w') as f:
+    with open(OUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, indent=2)
     print(f'  Written to {OUT_FILE}')

@@ -53,7 +53,7 @@ clean slate.
 | file | purpose |
 |------|---------|
 | `lmgr_probe.c` | reverse-engineered layermanager connect/register probe — proves the cross-build runs and whether a 2nd display layer is free |
-| `bt_fix.c` | universal self-locating BT/AUX boot patcher (see `../../modules/bt-aux-fix` and `research/BT_AUX_BOOT_FIX.md`) |
+| `bt_fix.c` | universal self-locating BT/AUX boot patcher (retired; see `../bt-aux-fix` for the revert script and `research/BT_AUX_BOOT_FIX.md`) |
 | `ch8read.c` | reads the raw Harman input stream off `/dev/ipc/ioc/ch8` |
 | `dsi_probe.c` | attaches to the `KeyInput.SPHKeyInput` service via the DSI servicebroker |
 | `dsi_client.c` | full staged DSI input listener (touch/key), diagnostic-first |

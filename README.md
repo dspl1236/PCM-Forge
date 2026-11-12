@@ -291,9 +291,8 @@ PCM-Forge/
 │   ├── bootscreens/             #   Boot-logo PNGs offered in the USB builder
 │   └── fonts/                   #   Self-hosted webfonts
 ├── modules/                     # Toolkit modules — each a self-contained USB tool
-│   ├── bt-aux-fix/              #   FM->A2DP boot fix (module.json + scripts/ + bin/)
 │   ├── usb-net/                 #   universal ASIX USB-ethernet
-│   └── sysinfo/ telnet/ ioc-probe/ service-reset/ lte-setup/
+│   └── sysinfo/ telnet/ ioc-probe/
 ├── builder/generate_manifest.py # Regenerates docs/app/manifest.json from modules/
 ├── core/                        # Shared USB payload assets
 │   ├── bin/                     #   SH4 helpers (showScreen, forge_splash, ndr_probe)
