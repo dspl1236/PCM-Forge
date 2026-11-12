@@ -19,9 +19,14 @@ TMPD=/tmp; [ -d /fs/tmpfs ] && TMPD=/fs/tmpfs
 # how far the run got (it is several minutes long now -- wait for DONE on the
 # screen). The latest line also goes to $TMPD/forge_progress for the status
 # splash to show.
+# "n/m label" is what forge_splash v2 turns into its progress bar: 27 marks
+# (started, the 25 sections, complete) = steps 0..26.
+MARK_N=0
+MARK_TOTAL=26
 mark() {
     echo "  sysinfo: $1" >> "$USB/pcm_ran.txt" 2>/dev/null
-    echo "$1" > "$TMPD/forge_progress" 2>/dev/null
+    echo "$MARK_N/$MARK_TOTAL $1" > "$TMPD/forge_progress" 2>/dev/null
+    MARK_N=$((MARK_N + 1))
 }
 mark "started"
 echo x > "$TMPD/.forge_now" 2>/dev/null
