@@ -281,6 +281,34 @@ FEATURELEVEL_SWID = 0x010e
 
 SUBID_WILDCARD = 0xffff  # record header value meaning "any SubID"
 
+# Map databases (SWID 0x2001-0x200b) carry an "upgrade level" in the SubID
+# (PCM3Root: "check upgrade level => %s (dataBase = %d / unlockCode = %d)").
+# 0x00ff unlocks every level; it is what this tool makes and what most factory
+# codes carry (15 of 17 NavDBNorthAmerica in research/firmware/PagSWAct.csv).
+# A dealer map update can leave a one-level code instead, so a car's own NavDB
+# code can differ from a generated one and still be valid.
+NAVDB_SWIDS = range(0x2001, 0x200c)
+NAVDB_ALL_LEVELS = 0x00ff
+
+
+def signed_feature(code):
+    """The (SWID, SubID) a code was signed for, or None if it isn't hex."""
+    try:
+        plain = f"{pow(int(code, 16), E, N):016x}"
+    except ValueError:
+        return None
+    feat = plain[0::2]
+    return int(feat[:4], 16), int(feat[4:], 16)
+
+
+def map_level(code):
+    """The single map level a NavDB code unlocks, or None (every level, or not
+    a map database)."""
+    signed = signed_feature(code)
+    if not signed or signed[0] not in NAVDB_SWIDS or signed[1] == NAVDB_ALL_LEVELS:
+        return None
+    return signed[1]
+
 XOR_SEED_INIT = 0x001be3ac
 
 def xor_encode(data):
@@ -693,6 +721,9 @@ def show_pagswact(path, vin=None):
             # Not a variant of anything: every car has its own value here.
             model = MODEL_BY_SUBID.get(subid)
             notes.append(model if model else f'unknown model 0x{subid:04x}')
+        elif swid in NAVDB_SWIDS and map_level(code) is not None:
+            notes.append(f'map level {map_level(code)} (a generated code unlocks every '
+                         f'level; both work)')
         elif subid == SUBID_WILDCARD:
             if signed_subid is not None:
                 notes.append(f'wildcard header, signed 0x{signed_subid:04x}')

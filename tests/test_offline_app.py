@@ -83,10 +83,10 @@ def test_returned_stick_round_trip(tmp_path):
     (stick / "pcm_dump_20261112" / "vin").write_text(VIN + "\n")
 
     assert gc.vin_from_diagnostics(str(stick))[0] == VIN
-    names, model, kept = app.car_features(str(stick))
+    names, model, kept, levels = app.car_features(str(stick))
     assert names == {"ENGINEERING", "UMS", "FeatureLevel"}
     assert model == "cayenne-se"
-    assert kept == []
+    assert kept == [] and levels == []
     rc, text = app.capture(gc.show_pagswact, str(stick), VIN)
     assert rc == 0 and "MATCH" in text
 
@@ -95,9 +95,29 @@ def test_variant_record_is_reported_not_changed(tmp_path):
     rec = gc.build_record(VIN, *next((f[1], f[2]) for f in gc.features_for(0x0043)
                                      if f[0] == "NavDBEurope"), 0x0007)
     (tmp_path / "PagSWAct.002").write_bytes(bytes(rec))
-    names, _model, kept = app.car_features(str(tmp_path))
+    names, _model, kept, levels = app.car_features(str(tmp_path))
     assert names == {"NavDBEurope"}
-    assert kept == ["NavDBEurope variant 0x0007"]
+    assert kept == ["NavDBEurope variant 0x0007"] and levels == []
+
+
+def test_map_level_record_is_explained(tmp_path):
+    """A one-level NavDB code (a dealer map update) is valid for the car: it is
+    listed as a map level, not as a record the tool can't carry over, and the
+    CLI's --show says the same."""
+    rec = gc.build_record(VIN, "20020006", 0x2002, 0x0006)
+    (tmp_path / "PagSWAct.002").write_bytes(bytes(rec))
+    names, _model, kept, levels = app.car_features(str(tmp_path))
+    assert names == {"NavDBNorthAmerica"}
+    assert kept == [] and levels == ["NavDBNorthAmerica level 6"]
+    rc, text = app.capture(gc.show_pagswact, str(tmp_path), VIN)
+    assert rc == 0 and "map level 6" in text
+
+
+def test_map_level_helper():
+    assert gc.map_level(gc.generate_code(VIN, "20020006")) == 6
+    assert gc.map_level(gc.generate_code(VIN, "200200ff")) is None      # every level
+    assert gc.map_level(gc.generate_code(VIN, "01090000")) is None      # not a map
+    assert gc.map_level("not-hex-at-all!!") is None
 
 
 def test_no_backup_on_stick(tmp_path):

@@ -579,7 +579,8 @@ class TestShow:
         capsys.readouterr()  # discard the build output; only --show matters here
         gc.main(['--show', str(tmp_path)])
         out = [l for l in capsys.readouterr().out.splitlines() if 'NavDBEurope' in l]
-        assert out and 'variant' in out[0].lower(), out
+        # A map database's SubID is its map level (generate_codes.map_level).
+        assert out and 'map level 1' in out[0].lower(), out
 
     def test_reports_an_unknown_swid_rather_than_hiding_it(self, tmp_path, capsys):
         rec = bytearray(gc.build_record(VIN, '09990000', 0x0999, 0x0000))
@@ -1084,7 +1085,7 @@ class TestShowNamesTheModel:
         gc.main([VIN, str(tmp_path), '--quiet', '--subid', 'NavDBEurope=0x0001'])
         capsys.readouterr()
         gc.main(['--show', str(tmp_path)])
-        assert 'variant' in self._row(capsys, 'NavDBEurope').lower()
+        assert 'map level 1' in self._row(capsys, 'NavDBEurope').lower()
 
 
 REAL_VIN = 'WP0ZZZ98ZFS110814'          # from a diagnostic run on a 981 Boxster

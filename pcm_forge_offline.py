@@ -63,19 +63,22 @@ def build_activation(vin, model_key, names, out):
 
 def car_features(path):
     """What a returned stick (or a folder with PagSWAct.002) says the car has:
-    (feature names, model key or None, [records not carried over as-is]) or None.
+    (feature names, model key or None, [records not carried over as-is],
+    [map databases at a single level]) or None.
 
     A stick built here signs each feature with its standard SubID, so a record
     with another variant, or a SWID this tool doesn't know, is listed rather
-    than silently changed."""
+    than silently changed. A map database at one level (a dealer map update)
+    is listed apart: the stick's code unlocks every level, which also works."""
     try:
         recs = gc.load_records(gc.resolve_pagswact(path))
     except (OSError, ValueError):
         return None
     known = {f[2]: f for f in gc.features_for(0x0003)}
-    names, model_key, kept = set(), None, []
+    names, model_key, kept, levels = set(), None, [], []
     for swid, rec in recs:
         subid = int.from_bytes(rec[0x14:0x16], "little")
+        code = rec[:16].decode("ascii", "replace")
         entry = known.get(swid)
         if not entry:
             kept.append("unknown 0x%04x" % swid)
@@ -85,9 +88,11 @@ def car_features(path):
             model_key = next((k for k, (s, _d) in gc.MODELS.items() if s == subid), None)
             if not model_key:
                 kept.append("FeatureLevel 0x%04x (unknown model)" % subid)
+        elif swid in gc.NAVDB_SWIDS and gc.map_level(code) is not None:
+            levels.append("%s level %d" % (entry[0], gc.map_level(code)))
         elif subid not in (entry[3], gc.SUBID_WILDCARD):
             kept.append("%s variant 0x%04x" % (entry[0], subid))
-    return names, model_key, kept
+    return names, model_key, kept, levels
 
 
 def build_diagnostic(out):
@@ -210,6 +215,11 @@ def run_gui():
     sb = ttk.Scrollbar(body, orient="vertical", command=codes.yview)
     sb.grid(row=1, column=2, rowspan=2, sticky="ns")
     codes.configure(yscrollcommand=sb.set)
+    ttk.Label(body, style="Dim.TLabel", wraplength=620, justify="left",
+              text="NavDB codes here unlock every map level (255), like most factory codes. If the "
+                   "car's own NavDB code differs, it is probably a one-level code from a dealer map "
+                   "update: both work. 'Open returned stick...' shows the level.").grid(
+        row=3, column=1, sticky="w", pady=(4, 0))
 
     def current():
         """(vin or None, model key)."""
@@ -311,7 +321,7 @@ def run_gui():
             def use():
                 if found_vin:
                     vin_var.set(found_vin)
-                names, model_key, kept = have or (set(), None, [])
+                names, model_key, kept, levels = have or (set(), None, [], [])
                 if model_key:
                     model_var.set(next(l for l, k in choices if k == model_key))
                 if names:
@@ -327,6 +337,10 @@ def run_gui():
                     msg.append("Not carried over (a stick here uses the standard variant): %s -- "
                                "use generate_codes.py --from-backup to keep them exactly."
                                % ", ".join(kept))
+                if levels:
+                    msg.append("Map databases at one level (likely a dealer map update): %s. "
+                               "A stick from here unlocks every level instead, which also works."
+                               % ", ".join(levels))
                 status.set(" ".join(msg))
             label = "Use this PCM's VIN + features" if found_vin and have else \
                     "Use this PCM's VIN" if found_vin else "Tick these features"
