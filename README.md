@@ -172,6 +172,8 @@ If you installed a used PCM from another car, codes made for your own VIN won't 
 
 Units without a hard drive (the factory `LOW` build, e.g. Korean-market cars) work the same way: the VIN and the activation file live in the PCM's flash, not on the drive.
 
+**Hybrid screens, steering side, model.** A used PCM also keeps the donor car's variant coding, so a non-hybrid PCM in a hybrid shows no hybrid screens. The engineering menu can change it on the unit itself (PAG.Diagnosis → Writing Variant Coding), with no tester. Step by step: [guides/DONOR-SWAP.md](guides/DONOR-SWAP.md).
+
 ## Offline App (Windows)
 
 **[Download PCM-Forge-Offline.exe](https://github.com/dspl1236/PCM-Forge/releases/download/offline-latest/PCM-Forge-Offline.exe)**
@@ -318,6 +320,7 @@ PCM-Forge/
 ├── core/                        # Shared USB payload assets
 │   ├── bin/                     #   SH4 helpers (showScreen, forge_splash, ndr_probe)
 │   └── lib/                     #   status images (running/done/activating .png + .bin)
+├── guides/                      # How-to guides (DONOR-SWAP.md: fitting a used PCM)
 ├── generate_codes.py            # CLI code generator — byte-for-byte parity with the web app
 ├── payloads/                    # ksh scripts the CLI writes to the stick (run_*.sh)
 ├── tests/test_generate_codes.py # pytest: web-app parity + factory-code check
