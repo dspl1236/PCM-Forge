@@ -552,6 +552,23 @@ function signedVinHash(code){
   let h='';for(let i=1;i<16;i+=2)h+=pt[i];
   return h;
 }
+// ...and the other half: the SWID + SubID the code was signed for.
+function signedFeat(code){
+  if(!/^[0-9a-fA-F]{16}$/.test(code))return null;
+  const pt=modpow(BigInt('0x'+code),E,N).toString(16).padStart(16,'0');
+  let h='';for(let i=0;i<16;i+=2)h+=pt[i];
+  return {sw:parseInt(h.slice(0,4),16),su:parseInt(h.slice(4),16)};
+}
+// Map databases (SWID 0x2001-0x200b) carry an "upgrade level" in the SubID:
+// 0x00ff unlocks every level and is what PCM-Forge makes (and what most
+// factory codes carry); a dealer map update can leave one level instead, so a
+// car's own NavDB code can differ from ours and still be valid.
+function navLevelNote(rec){
+  if(rec.sw<0x2001||rec.sw>0x200b)return '';
+  const s=signedFeat(rec.code);
+  if(!s||s.sw!==rec.sw||s.su===0xff)return '';
+  return '<div class="feat-desc" style="color:var(--accent);margin-top:4px">Map level '+s.su+': this code unlocks one map level, likely from a dealer map update. A code made here unlocks every level (255), like most factory codes, so it will differ from this one. Both work.</div>';
+}
 function backupSignedHash(){
   const hs=new Set(backupRecords.map(r=>signedVinHash(r.code)).filter(Boolean));
   return hs.size===1?[...hs][0]:(hs.size>1?'mixed':null);
@@ -690,7 +707,10 @@ function renderPcmIdentity(){
 
 function renderBackup(){
   renderPcmIdentity();
-  const existKeys=new Set(backupRecords.map(r=>r.key));
+  // By SWID alone: a car's record may carry another SubID (a map level, the
+  // 0xffff wildcard), and adding the feature again would give the file two
+  // records for it.
+  const existSw=new Set(backupRecords.map(r=>r.sw));
   const bf=document.getElementById('backup-features');
   const af=document.getElementById('add-features');
   bf.innerHTML='';af.innerHTML='';
@@ -701,13 +721,12 @@ function renderBackup(){
     // the PCM rewrites this flag after checking the code
     const mark=rec.active?'\u2705 ':'\u26aa ';
     const state=rec.active?'':' <span style="color:var(--text2);font-weight:normal">(marked inactive by the PCM)</span>';
-    bf.innerHTML+='<div class="feat-item'+(rec.active?' on':'')+'" style="opacity:0.85;margin-bottom:8px;cursor:default"><input type="checkbox"'+(rec.active?' checked':'')+' disabled><div><div class="feat-name">'+mark+name+state+'</div><div class="feat-desc">'+desc+'</div><div class="feat-code">'+rec.code+'</div></div></div>';
+    bf.innerHTML+='<div class="feat-item'+(rec.active?' on':'')+'" style="opacity:0.85;margin-bottom:8px;cursor:default"><input type="checkbox"'+(rec.active?' checked':'')+' disabled><div><div class="feat-name">'+mark+name+state+'</div><div class="feat-desc">'+desc+'</div><div class="feat-code">'+rec.code+'</div>'+navLevelNote(rec)+'</div></div>';
   }
   if(!backupRecords.length) bf.innerHTML='<div style="color:var(--text2);font-size:13px">No features found in backup</div>';
   let hasNew=false;
   for(const f of FEATS){
-    const key=(f.sw<<16|f.su)>>>0;
-    if(existKeys.has(key))continue;
+    if(existSw.has(f.sw))continue;
     hasNew=true;
     af.innerHTML+='<label class="feat-item" style="margin-bottom:8px"><input type="checkbox" data-fh="'+f.fh+'" data-sw="'+f.sw+'" data-su="'+f.su+'" onchange="this.closest(\x27.feat-item\x27).classList.toggle(\x27on\x27,this.checked)"><div><div class="feat-name">'+f.nm+'</div><div class="feat-desc">'+f.ds+'</div></div></label>';
   }
@@ -836,6 +855,13 @@ function generateCodes() {
       hdr.className = 'cat-hdr' + (i > 0 ? ' mt' : '');
       hdr.textContent = c.cat === 'core' ? 'Core features' : 'Navigation databases';
       list.appendChild(hdr);
+      if (c.cat === 'nav') {
+        const note = document.createElement('div');
+        note.className = 'code-desc';
+        note.style.cssText = 'margin:-4px 0 10px;grid-column:1/-1';
+        note.textContent = 'These unlock every map level (255), like most factory codes. If your car’s own NavDB code differs, it is probably a one-level code from a dealer map update: both work. The Backup tab shows the level.';
+        list.appendChild(note);
+      }
     }
     const row = document.createElement('div');
     row.className = 'code-row';
