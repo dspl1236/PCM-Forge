@@ -162,10 +162,15 @@ The firmware's own engineering menu calls it *DriversLog*. Earlier versions of t
 Unlocks access to the Porsche-internal engineering/diagnostic menu. Similar to Audi's "Green Menu" on MMI. Contains voltage readings, software version info, per-module status, GPS diagnostics, CAN bus scopes.
 
 
-**Access: SOURCE + OPTION together.** Confirmed on the bench 2026-08-07 --
-pressing them on an unactivated unit produces "function not available", which is
-the gate refusing, not the combo being wrong. (This supersedes the earlier
-"MENU + TUNER, varies by firmware" guess.)
+**Access: SOUND + SOURCE together.** Confirmed on a real car (2026-11-14), and it
+is the pair the HMI's key mapper checks (PCM3Reload, `CHBKey2MSMEventMapper`, from
+0x08634b64): with SOURCE held, SOUND raises `EVENT_ENGINEERING`, but only once the
+engineering menu has been enabled. Until then SOUND just opens the SOUND menu.
+
+The SOURCE + OPTION entry of 2026-08-07 was wrong: the HMI ignores that pair (both
+keys are swallowed, no event). SOURCE + MAP is a separate one, the PAG engineering
+menu, which the unit enables only through diagnosis. (This also supersedes the
+earlier "MENU + TUNER, varies by firmware" guess.)
 
 Entry is **two-step**, and the firmware names every part of the gate:
 

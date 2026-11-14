@@ -41,7 +41,7 @@ the recommended route.
 
 ## 3. Match the variant coding
 
-Press **SOURCE + OPTION** to open the engineering menu, then open **PAG.Diagnosis**. It shows the
+Press **SOUND + SOURCE** to open the engineering menu, then open **PAG.Diagnosis**. It shows the
 PCM's variant coding:
 
 ![PAG.Diagnosis variant coding page](img/pag-diagnosis-variant-coding.jpg)
@@ -98,7 +98,7 @@ Reports are welcome; open an issue.
 ## 4. Check
 
 - The boot logo matches your car.
-- **SOURCE + OPTION** opens the engineering menu, which shows the activation worked.
+- **SOUND + SOURCE** opens the engineering menu, which shows the activation worked.
 - A hybrid shows the hybrid pages in the **CAR** menu, filled in once the car is running.
 
 ## Notes
