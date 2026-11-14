@@ -28,10 +28,10 @@
 ### Access Methods (reported)
 1. **USB boot stick** — Primary method. Prepared USB stick triggers
    engineering mode on boot. File structure TBD.
-2. **SOURCE + OPTION** — the button combo, bench-confirmed 2026-08-07
-   (see [FEATURES.md](../FEATURES.md)). Requires the ENGINEERING activation
-   (SWID 0x010b); without it the unit answers "function not available".
-   Earlier reports of "Source + Sound" were wrong.
+2. **SOUND + SOURCE** — the button combo (see [FEATURES.md](../FEATURES.md)).
+   Requires the ENGINEERING activation (SWID 0x010b); without it SOUND just
+   opens the SOUND menu. The SOURCE + OPTION entry of 2026-08-07 was wrong:
+   the HMI ignores that pair.
 3. **PIWIS** — Porsche dealer tool can enable engineering features.
 
 ### Engineering Menu Features (confirmed by Rennlist users)
@@ -89,7 +89,7 @@ The same UDS stack from MMI3G-Toolkit's diag-tool works here.
 | Code execution entry | SD card (copie_scr.sh) | USB stick (eng. boot) |
 | SD card slots | 2x SDHC | None (USB only) |
 | Touchscreen | Touchpad on knob (3G+) | Full touchscreen |
-| Engineering button | CAR + BACK (hold 5s) | SOURCE + OPTION (needs ENGINEERING) |
+| Engineering button | CAR + BACK (hold 5s) | SOUND + SOURCE (needs ENGINEERING) |
 | Dealer tool | VCDS / ODIS | PIWIS |
 | Map format | HDD + FSC activation | HDD + DVD + license key |
 
