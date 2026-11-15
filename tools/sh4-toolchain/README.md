@@ -67,6 +67,7 @@ clean slate.
 | `app_forge.c` | multi-page toolkit shell (home/oil/info), Show-once + UpdateVfb page switching |
 | `showimg.c` | display a raw image (PNG→`PFIM` blob) on the glass via `gf_surface_attach` + `gf_draw_blit2` — the Porsche-native `showScreen` replacement (`research/SHOWSCREEN_PORSCHE_COMPAT.md`) |
 | `forge_splash.c` | the RUNNING → DONE status splash every USB stick shows (`core/bin/forge_splash`). v2 animates: pulsing dots, the current step, real elapsed time and a progress bar fed from `forge_progress` next to the done-flag (`n/m label`, `a-b/m label` for a long step the bar creeps across, `m`=100 shows a percentage; SysInfo writes time-weighted percentages). Restores the OEM screen with no black. `./build.sh forge_splash.c` reproduces the shipped binary byte for byte |
+| `fcopy.c` | copy with a chosen block size and time it (`fcopy SRC DST BLOCK_KB MAX_SECONDS [MAX_KB]`). Flash Backup ships it (`modules/flash-backup/bin/fcopy`): 1 MB writes make USB-stick writes ~30x faster than `cp`. `./build.sh fcopy.c` reproduces the shipped binary byte for byte. `../usb-speed-test/` is the test that measured it |
 
 ## Images — the PFIM blob tool
 

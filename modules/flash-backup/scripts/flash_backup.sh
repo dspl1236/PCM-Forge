@@ -78,35 +78,77 @@ fi
 cp /HBpersistence/PagSWAct.002 "${OUT%.bin}_PagSWAct.002" 2>/dev/null
 cp /HBpersistence/vin "${OUT%.bin}_vin.txt" 2>/dev/null
 
-say "copying $DEV to ${OUT##*/} (64 MB -- the PCM writes USB slowly, this takes a while)"
+# Writing to the stick is what's slow: each write costs ~0.5 s whatever its
+# size (the PCM mounts sticks commit=high), so cp's small writes manage only
+# ~30 KB/s (35+ minutes). fcopy writes 1 MB at a time, and the stick is
+# remounted commit=low for the copy: ~1 MB/s, about a minute (speed test on a
+# 958.2, 11-2026). Without bin/fcopy it falls back to the slow cp.
+FC=""
+for c in "$USB/bin/fcopy" "$USB/scripts/FlashBackup/fcopy" "$USB/fcopy"; do
+    [ -f "$c" ] && { cp "$c" "$TMPD/fcopy" 2>/dev/null && chmod +x "$TMPD/fcopy" && FC="$TMPD/fcopy"; break; }
+done
+if [ -n "$FC" ]; then                    # it must run here: with no arguments it prints usage, exit 2
+    "$FC" > /dev/null 2>&1
+    [ $? -eq 2 ] || { echo "bin/fcopy does not run on this unit" >> "$LOG"; FC=""; }
+fi
+# the PCM's own load monitor: count its "CPU Load" warnings before and after
+GAU=/mnt/data/log/GauMemory
+loadwarn() { _n=$(grep -c "CPU Load" "$GAU" 2>/dev/null); echo "${_n:-0}"; }
+LW0=$(loadwarn)
+LOWERED=0
+restore_commit() {
+    [ $LOWERED -eq 1 ] || return
+    sync
+    if mount -u -o commit=high "$USB" >> "$LOG" 2>&1; then
+        echo "stick back to commit=high" >> "$LOG"
+    else
+        say "could not put the stick back to commit=high -- pull it and plug it back in"
+    fi
+    LOWERED=0
+}
+
+if [ -n "$FC" ]; then
+    if mount -u -o commit=low "$USB" >> "$LOG" 2>&1; then
+        LOWERED=1; echo "stick remounted commit=low for the copy" >> "$LOG"
+    fi
+    say "copying $DEV to ${OUT##*/} (64 MB, 1 MB writes -- about a minute or two)"
+    "$FC" "$DEV" "$OUT" 1024 0 > "$TMPD/.fb_fcopy" 2>&1 &
+    CP=$!
+else
+    say "bin/fcopy not on the stick: copying with cp (slow, 30-40 minutes)"
+    cp "$DEV" "$OUT" >> "$LOG" 2>&1 &
+    CP=$!
+fi
 prog "3/100 Copying flash: starting"
 
-# The copy runs in the background so the splash can show real progress: the
-# PCM writes to USB at only ~30 KB/s, so a 64 MB copy takes over half an hour,
-# and a bar that never moves looks like nothing is happening.
-cp "$DEV" "$OUT" >> "$LOG" 2>&1 &
-CP=$!
+# The copy runs in the background so the splash can show real progress.
 SLEEP=sleep; [ -x /proc/boot/sleep ] && SLEEP=/proc/boot/sleep
 T=0
 while kill -0 "$CP" 2>/dev/null; do
-    $SLEEP 5; T=$((T + 5))
+    $SLEEP 2; T=$((T + 2))
     S=$(fsize "$OUT")
     MB=$((S / 1048576))
     PCT=$((3 + S / 729444))                  # 3..95 over 64 MB, no 32-bit overflow
     [ $PCT -gt 95 ] && PCT=95
     prog "$PCT/100 Copying flash: $MB of 64 MB"
-    if [ $((T % 60)) -eq 0 ]; then           # a log line a minute: copy speed on this unit
+    if [ $((T % 30)) -eq 0 ]; then           # a log line every 30 s: copy speed on this unit
         echo "  ${T}s: $S bytes ($((S / 1024 / T)) KB/s)" >> "$LOG"
     fi
 done
 wait "$CP"
 RC=$?
-sync
+if [ -n "$FC" ]; then
+    R=$(cat "$TMPD/.fb_fcopy" 2>/dev/null); rm -f "$TMPD/.fb_fcopy"
+    echo "fcopy: $R" >> "$LOG"
+    case "$R" in *stop=eof*) ;; *) RC=1 ;; esac   # anything but a clean end = failed
+fi
+restore_commit
+echo "PCM load-monitor warnings: $LW0 before, $(loadwarn) after" >> "$LOG"
 
 prog "96/100 Checking the copy"
 SIZE=$(fsize "$OUT")
 if [ "$RC" -ne 0 ] || [ "$SIZE" != "$FULL" ]; then
-    say "FAILED: cp returned $RC and the copy is $SIZE bytes, not $FULL (stick full?) -- deleted the partial file"
+    say "FAILED: the copy returned $RC and is $SIZE bytes, not $FULL (stick full?) -- deleted the partial file"
     rm -f "$OUT"
     prog "100/100 Flash backup FAILED (see flash_backup.log)"
     rm -f "$LOCK"
