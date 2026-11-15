@@ -33,15 +33,20 @@ Do this on a working unit, **before** any update or experiment.
 **Flash Backup**, save to a FAT32 stick with 70 MB free, plug it into the running PCM and
 **leave it until the screen says DONE** — the PCM writes to USB slowly (about 30 KB/s
 measured on a 958.2), so the copy takes **30–40 minutes**. The screen shows
-*"Copying flash: 12 of 64 MB"* with the bar moving, so you can see it working; keep the
-car on a charger or running. You get `pcm_flash.bin` (the whole 64 MB flash) plus your
+*"Copying flash: 12 of 64 MB"* with the bar moving, so you can see it working.
+
+**Put the car on a battery charger first** (or keep the engine running). The PCM has to
+stay on for the whole 30–40 minutes. On the battery alone that drains it, and if the car
+switches the PCM off part-way, the copy is cut short and you have to start again.
+
+You get `pcm_flash.bin` (the whole 64 MB flash) plus your
 activation file and stored VIN next to it. It is read-only — the same read as the menu
 option below — and needs no activation. It never overwrites an earlier backup; a copy
 cut short (stick pulled, stick full) is deleted on the next run and reported in
 `flash_backup.log`.
 
 **From the engineering menu (built into the PCM).** Activate **ENGINEERING** with
-PCM-Forge, open the menu with **SOURCE + OPTION**, then **System → CustomerService**
+PCM-Forge, open the menu with **SOUND + SOURCE**, then **System → CustomerService**
 with a FAT32 USB stick inserted:
 
 - **05 Copy 64MB flash contents to USB** — the whole flash, as one 64 MB file ending
@@ -113,6 +118,31 @@ tell it which image to start:
 
 *Still to document: where the UART pads are on the DPEC 4.1 board, the baud rate, and
 how to stop the IPL to type the command. If you know, please add it to issue #11.*
+
+### Updating from a USB stick instead of the disc
+
+What @Auto1 used to reinstall 4.76 on a running unit. Copy these from the update disc
+(`PCM_20150721`, the 4.76 release) to the **root** of a FAT32 stick:
+
+- the folder for your market, e.g. `PCM31RDW400` (rest of world)
+- `HBUPDATE.DEF` and `pcm_update.disc`
+- the matching `.def`, e.g. `PCM31RDW400.def`
+
+Then, in the engineering menu (activate **ENGINEERING**, **SOUND + SOURCE**), open
+**SoftwareDownload**:
+
+- **04 Activate HBUPDATE.def on USB** — choose your market's `.def`. This step matters:
+  the disc's own `HBUPDATE.DEF` lists only the first-generation `01` units (the 2.47
+  release), so a `02` unit (e.g. `PCME02XX1221`) answers *"Wrong update medium!"* until
+  the right `.def` is activated. The PCM keeps the original as `HBUPDATE.def.backup`;
+  **03 Remove HBUPDATE.def from USB** undoes it.
+- **05 Versions of PCME02XX…** — your unit's hardware ID, which the `.def` must list.
+- **01 Start USB-SoftwareUpdate** — runs the update.
+
+The EMERGENCY image (see `boot 80bc0000` above) also looks for `HBUPDATE.DEF` on USB,
+so keep a stick on which option 04 has already activated your market's `.def`: it is
+what recovers a unit that can no longer reach the menu. *(Unconfirmed: whether copying
+the market `.def` over `HBUPDATE.DEF` by hand does the same — tell us in issue #11.)*
 
 ## 5. After an update
 
