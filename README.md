@@ -195,7 +195,7 @@ info → Run anyway**. From source: `python pcm_forge_offline.py` (Python 3 with
 
 ## Back Up, Check, Recover
 
-Before any update or experiment, back up the PCM's whole 64 MB flash — the engineering menu can write it to a USB stick, no programmer needed. **[RECOVERY.md](RECOVERY.md)** covers backing up, checking a backup or a chip dump with [PCM-Explorer](https://github.com/dspl1236/PCM-Explorer), restoring one region with the PCM's own `flashit`, and bringing back a unit that boot-loops at the logo — worked out with **@Auto1**.
+Before any update or experiment, back up the PCM's whole 64 MB flash — the engineering menu can write it to a USB stick, no programmer needed. **[guides/RECOVERY.md](guides/RECOVERY.md)** covers backing up (the Toolkit's **Flash Backup** stick does it without the menu; it takes 30–40 minutes, so put the car on a charger), checking a backup or a chip dump with [PCM-Explorer](https://github.com/dspl1236/PCM-Explorer), restoring one region with the PCM's own `flashit`, and bringing back a unit that boot-loops at the logo — worked out with **@Auto1**.
 
 ## Command Line
 

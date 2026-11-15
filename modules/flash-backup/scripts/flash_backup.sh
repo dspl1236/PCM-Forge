@@ -6,7 +6,7 @@
 # "cp /dev/fs0 /fs/usb0/..."), without needing the menu or the ENGINEERING
 # activation. Make one before any update or experiment; check it on a computer
 # with PCM-Explorer:  python explorer.py pcm_flash.bin check
-# See RECOVERY.md in PCM-Forge.
+# See guides/RECOVERY.md in PCM-Forge.
 #
 # Part of PCM-Forge: github.com/dspl1236/PCM-Forge
 
