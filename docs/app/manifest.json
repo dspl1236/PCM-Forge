@@ -99,28 +99,6 @@
         }
       ]
     },
-    "telnet": {
-      "status": "tested",
-      "description": "Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only \u2014 session-only, re-run after reboot.",
-      "standalone": true,
-      "run_script": "telnet_enable.sh",
-      "script_dir": "/scripts/Telnet",
-      "installs_to_flash": false,
-      "compatible": [
-        "PCM3.1"
-      ],
-      "options": {},
-      "files": [
-        {
-          "path": "module.json",
-          "size": 413
-        },
-        {
-          "path": "scripts/telnet_enable.sh",
-          "size": 1426
-        }
-      ]
-    },
     "usb-net": {
       "status": "tested",
       "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
@@ -252,7 +230,7 @@
       "files": [
         {
           "path": "README.md",
-          "size": 5685
+          "size": 5783
         },
         {
           "path": "module.json",

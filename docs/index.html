@@ -1228,7 +1228,6 @@ async function tkFetchManifest() {
     // Hardcoded fallback
     tkManifest = { modules: {
       'sysinfo': { status: 'ready', description: 'Full system dump: takes several minutes, so wait for DONE on the screen before pulling the stick (each finished section is listed in pcm_ran.txt, so an early pull shows how far it got). For a quick VIN and activation check, use the USB Stick tab’s Diagnostic mode instead. Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
-      'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'flash-backup': { status: 'beta', description: 'Takes about 1–2 minutes: leave the stick in until DONE. Copies the PCM’s whole 64 MB flash to the stick as pcm_flash.bin, plus the activation file and stored VIN. Read-only (the same read as the engineering menu’s CustomerService option 05). Make one before any update; check it with PCM-Explorer.', run_script: 'flash_backup.sh', script_dir: '/scripts/FlashBackup', files: [{path:'scripts/flash_backup.sh'},{path:'bin/fcopy'}] },
       'usb-net': { status: 'tested', description: 'Universal ASIX USB-Ethernet (AX88772 / 772A / 772B / 772C) + telnet. This session: dhcp / static / lte, loaded from USB. Every boot (beta): stays after a restart; remove with the same stick.', run_script: 'usb_net_run.sh', script_dir: '/scripts/USBNet', files: [{path:'scripts/usb_net_run.sh'},{path:'scripts/net_boot_setup.sh'},{path:'scripts/forge_net.sh'},{path:'bin/devn-asix-universal.so'}] },
 
@@ -1239,11 +1238,11 @@ async function tkFetchManifest() {
 }
 
 const TK_ICONS = {
-  'sysinfo': '\u{1F4C4}', 'telnet': '\u{1F5A5}',
+  'sysinfo': '\u{1F4C4}',
   'usb-net': '\u{1F310}', 'ioc-probe': '\u{1F50D}', 'flash-backup': '\u{1F4BE}'
 };
 const TK_NAMES = {
-  'sysinfo': 'System Info', 'telnet': 'Telnet Enabler',
+  'sysinfo': 'System Info',
   'usb-net': 'USB Ethernet', 'ioc-probe': 'IOC Probe', 'flash-backup': 'Flash Backup'
 };
 
