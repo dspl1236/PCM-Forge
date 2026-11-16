@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-15",
+  "generated": "2026-11-16",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -196,7 +196,7 @@
       "files": [
         {
           "path": "README.md",
-          "size": 7051
+          "size": 7185
         },
         {
           "path": "module.json",
@@ -208,7 +208,7 @@
         },
         {
           "path": "scripts/forge_net.sh",
-          "size": 3517
+          "size": 3644
         },
         {
           "path": "scripts/net_boot_setup.sh",
