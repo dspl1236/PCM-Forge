@@ -75,6 +75,28 @@ adapter, sets the address, opens the 2323 shell, and exits.
 - **Remove puts it back:** the first install records how `DBGModeActive` and `incar` were
   (`forge_net.orig`), and Remove restores them that way.
 
+### When a second module needs a boot hook
+
+Today usb-net is the only PCM-Forge feature that runs at boot, and it owns the setup: one line
+in `debugTools.sh`, its own files, and the `DBGModeActive` / `incar` flags. Its Remove deletes
+only lines that mention `forge_net.sh`, so a line another module adds would survive. But Remove
+also puts `DBGModeActive` back the way it found it, which would turn off telnet for a module
+that needs it, and it deletes the shared backup `debugTools.sh.forge-orig`.
+
+So the first time another module needs to run at boot, move to a shared layout:
+- **One hook line for all of PCM-Forge**: `debugTools.sh` runs every script in
+  `/HBpersistence/forge_boot.d/`.
+- **Each module owns one file there** (usb-net: `forge_boot.d/net.sh`). Install drops it in;
+  Remove deletes only that file.
+- **The last module out takes the hook line with it**: when `forge_boot.d/` is empty, the line
+  comes out, and `debugTools.sh` is back to factory.
+- **Shared flags have owners**: each module records which flags it needed (`DBGModeActive`
+  for telnet). A flag goes only when no installed module still needs it, and goes back to the
+  car's own original state.
+
+Moving existing usb-net installs over is a normal reinstall: `net_boot_setup.sh` already writes
+only what changed. Teach it to replace the old `forge_net.sh` line with the shared one.
+
 Only the firmware images are never touched. **Every boot leaves telnet (23) and a root shell
 (2323) open with no password** on whatever network the adapter is cabled to; use it only on a
 network you trust.
