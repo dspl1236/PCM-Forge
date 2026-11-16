@@ -50,14 +50,15 @@ echo "forge_net: $IF up after $((n * 5)) s" >> "$LOG"
 # 2. address
 if [ "$ADDR" = "static" ]; then
     # the PCM puts its own 192.168.0.90 on a 772/772A first: wait for it to have
-    # an address, set ours, and check again 30 s later (seen on a 958.2: the PCM
-    # sets .90 once more after the first change)
+    # an address, set ours (it replaces .90), and check again 30 s later. With the
+    # incar flag the PCM also adds 172.16.250.252 as an alias; that one stays and
+    # stays first, so ifconfig then lists ours as "inet alias $IP".
     k=0
     while [ $k -lt 12 ] && ! ifconfig $IF 2>/dev/null | grep -q "inet "; do $SLEEP 5; k=$((k + 1)); done
     $SLEEP 5
     ifconfig $IF $IP netmask $MASK up >> "$LOG" 2>&1
     $SLEEP 30
-    if ! ifconfig $IF 2>/dev/null | grep -q "inet $IP "; then
+    if ! ifconfig $IF 2>/dev/null | grep -q -e "inet $IP " -e "inet alias $IP "; then
         echo "forge_net: address changed back, setting again" >> "$LOG"
         ifconfig $IF $IP netmask $MASK up >> "$LOG" 2>&1
     fi

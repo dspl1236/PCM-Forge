@@ -62,7 +62,9 @@ stick (`scripts/net_boot_setup.sh`) adds one line to it that starts `forge_net.s
 the settings in `forge_net.conf`. At each boot, `forge_net.sh` waits up to 5 minutes for the
 adapter, sets the address, opens the 2323 shell, and exits.
 - **772 / 772A:** the PCM loads its own driver on plug-in, as en5.
-  - Static: the PCM first gives it 192.168.0.90, then `forge_net.sh` sets your address.
+  - Static: the PCM first gives it 192.168.0.90, then `forge_net.sh` sets your address in its
+    place. The PCM also adds its in-car address 172.16.250.252, which stays, so `ifconfig en5`
+    lists yours as `inet alias`.
   - DHCP: the PCM asks the router itself.
   - The `/HBpersistence/incar` flag decides between the two, so the stick sets or clears it.
 - **772B / 772C:** the PCM doesn't recognise these, so the stick also copies the universal
