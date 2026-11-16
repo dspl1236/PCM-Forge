@@ -44,6 +44,11 @@ which is how units get bricked.)
    If the PCM already had the adapter up (a 772 / 772A, which it loads itself), the stick uses
    that interface and doesn't load the universal driver over it.
 
+**One USB port?** The adapter has to be plugged in while the stick runs. Use a small USB hub
+(adapter + stick together). If the stick finds no adapter, `pcm_ran.txt` says
+`NO ADAPTER FOUND`. Or use *Every boot*, which installs without the adapter: run the stick,
+then plug the adapter in and restart the PCM.
+
 ## This session, or every boot
 
 In the web app's Toolkit, **What to do** picks one of:
@@ -57,6 +62,10 @@ In the web app's Toolkit, **What to do** picks one of:
 Static shows the IP address, netmask and an optional gateway. Under **Advanced**, the adapter
 driver can be forced (Auto-detect is the default).
 
+With Auto-detect, the stick checks the adapter that's plugged in. If none is, it installs with
+the universal driver, which covers every supported adapter (see below), and `pcm_ran.txt` says
+to plug the adapter in and restart.
+
 **How *Every boot* works.** The PCM runs `/HBpersistence/debugTools.sh` on every boot. The
 stick (`scripts/net_boot_setup.sh`) adds one line to it that starts `forge_net.sh`, and keeps
 the settings in `forge_net.conf`. At each boot, `forge_net.sh` waits up to 5 minutes for the
@@ -69,7 +78,9 @@ adapter, sets the address, opens the 2323 shell, and exits.
   - The `/HBpersistence/incar` flag decides between the two, so the stick sets or clears it.
 - **772B / 772C:** the PCM doesn't recognise these, so the stick also copies the universal
   driver to `/HBpersistence`, and `forge_net.sh` loads it when no adapter has come up after a
-  minute. These need the adapter plugged in at boot.
+  minute. These need the adapter plugged in at boot. A boot setup installed with the
+  universal driver also works with a 772 / 772A: the PCM's own driver brings it up first, so
+  the universal one is never loaded.
 - **Telnet at boot:** the stick creates `/HBpersistence/DBGModeActive` if it's missing. That
   flag is what makes the PCM start telnet.
 - **Writes only what changed:** inserting the stick again with the same settings rewrites

@@ -106,14 +106,14 @@
               "label": "Auto adapter \u00b7 DHCP",
               "short": "Every boot \u00b7 DHCP",
               "group": "Every boot \u2014 stays after a restart (beta, PCM 3.1)",
-              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Plug the adapter in while the stick runs (a USB hub works), or run the stick alone, then plug the adapter in and restart. To undo it, build a stick with <i>Remove the boot setup</i>."
             },
             {
               "value": "boot-static",
               "label": "Auto adapter \u00b7 static address",
               "short": "Every boot \u00b7 static",
               "group": "Every boot \u2014 stays after a restart (beta, PCM 3.1)",
-              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Plug the adapter in while the stick runs (a USB hub works), or run the stick alone, then plug the adapter in and restart. To undo it, build a stick with <i>Remove the boot setup</i>."
             },
             {
               "value": "remove",
@@ -196,11 +196,11 @@
       "files": [
         {
           "path": "README.md",
-          "size": 7185
+          "size": 7884
         },
         {
           "path": "module.json",
-          "size": 6133
+          "size": 6049
         },
         {
           "path": "bin/devn-asix-universal.so",
@@ -216,7 +216,7 @@
         },
         {
           "path": "scripts/usb_net_run.sh",
-          "size": 8129
+          "size": 8910
         }
       ]
     }
