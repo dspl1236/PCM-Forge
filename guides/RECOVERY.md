@@ -31,13 +31,14 @@ Do this on a working unit, **before** any update or experiment.
 
 **With a PCM-Forge stick (easiest, beta).** In the web app's **Toolkit** tab, pick
 **Flash Backup**, save to a FAT32 stick with 70 MB free, plug it into the running PCM and
-**leave it until the screen says DONE** — the PCM writes to USB slowly (about 30 KB/s
-measured on a 958.2), so the copy takes **30–40 minutes**. The screen shows
+**leave it until the screen says DONE** — about **1–2 minutes**. The screen shows
 *"Copying flash: 12 of 64 MB"* with the bar moving, so you can see it working.
+(The PCM writes to USB sticks slowly in small pieces; the stick copies the flash in
+1 MB writes with the stick set to `commit=low` for the copy, about 1 MB/s on a 958.2.
+A stick without `bin/fcopy` falls back to `cp`, which takes 30–40 minutes.)
 
-**Put the car on a battery charger first** (or keep the engine running). The PCM has to
-stay on for the whole 30–40 minutes. On the battery alone that drains it, and if the car
-switches the PCM off part-way, the copy is cut short and you have to start again.
+**Keep the PCM on until DONE.** If the car switches the PCM off part-way, the copy is cut
+short and you have to start again (the cut-short file is deleted on the next run).
 
 You get `pcm_flash.bin` (the whole 64 MB flash) plus your
 activation file and stored VIN next to it. It is read-only — the same read as the menu
