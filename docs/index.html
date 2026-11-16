@@ -1230,7 +1230,7 @@ async function tkFetchManifest() {
       'sysinfo': { status: 'ready', description: 'Full system dump: takes several minutes, so wait for DONE on the screen before pulling the stick (each finished section is listed in pcm_ran.txt, so an early pull shows how far it got). For a quick VIN and activation check, use the USB Stick tab’s Diagnostic mode instead. Complete PCM 3.1 diagnostic: version, VIN, processes, network, credentials, CVALUE/persistence backup, display stack, boot screens, debug tools. Read-only, no changes to car.', run_script: 'sysinfo_run.sh', script_dir: '/scripts/SysInfo', files: [{path:'scripts/sysinfo_run.sh'},{path:'scripts/sysinfo_dump.sh'}] },
       'telnet':  { status: 'tested', description: 'Root shell via telnet (port 23) and raw ksh (port 2323). PCM /etc/ is read-only — session-only, re-run after reboot.', run_script: 'telnet_enable.sh', script_dir: '/scripts/Telnet', files: [] },
       'flash-backup': { status: 'beta', description: 'Takes about 1–2 minutes: leave the stick in until DONE. Copies the PCM’s whole 64 MB flash to the stick as pcm_flash.bin, plus the activation file and stored VIN. Read-only (the same read as the engineering menu’s CustomerService option 05). Make one before any update; check it with PCM-Explorer.', run_script: 'flash_backup.sh', script_dir: '/scripts/FlashBackup', files: [{path:'scripts/flash_backup.sh'},{path:'bin/fcopy'}] },
-      'usb-net': { status: 'tested', description: 'Universal ASIX USB-Ethernet (AX88772 / 772A / 772B / 772C) + telnet. Loads from USB, never touches the read-only flash. Modes: dhcp / static / lte.', run_script: 'usb_net_run.sh', script_dir: '/scripts/USBNet', files: [{path:'scripts/usb_net_run.sh'},{path:'bin/devn-asix-universal.so'}] },
+      'usb-net': { status: 'tested', description: 'Universal ASIX USB-Ethernet (AX88772 / 772A / 772B / 772C) + telnet. This session: dhcp / static / lte, loaded from USB. Every boot (beta): stays after a restart; remove with the same stick.', run_script: 'usb_net_run.sh', script_dir: '/scripts/USBNet', files: [{path:'scripts/usb_net_run.sh'},{path:'scripts/net_boot_setup.sh'},{path:'scripts/forge_net.sh'},{path:'bin/devn-asix-universal.so'}] },
 
       'ioc-probe': { status: 'ready', description: 'IOC CAN channel probe + BAP cluster discovery. Maps /dev/ipc/ioc channels, scans for BAP cluster on CAN 0x490/0x491, tests showScreen slay+restart. Read-only, safe.', run_script: 'ioc_probe_run.sh', script_dir: '/scripts/IocProbe', files: [{path:'scripts/ioc_probe_run.sh'},{path:'scripts/ioc_probe.sh'},{path:'bin/bap_a0.bin'},{path:'scripts/ch6_capture.sh'}] },
     }, raw_url_base: TK_RAW_BASE };
@@ -1266,32 +1266,123 @@ async function tkRenderModules() {
     const opacity = (mod.status === 'planned' || mod.status === 'alpha') ? '0.5'
                   : (mod.status === 'paused' || mod.status === 'deprecated') ? '0.6' : '1';
 
-    // Options dropdowns (render all options for each module)
-    let dropdown = '';
-    if (mod.options) {
-      for (const [optKey, opt] of Object.entries(mod.options)) {
-        dropdown += '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)" onclick="event.stopPropagation()">'
-          + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">' + opt.label + '</div>'
-          + '<select id="tk-opt-' + id + '-' + optKey + '" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation()">';
-        for (const v of opt.values) {
-          dropdown += '<option value="' + v.value + '">' + v.label + '</option>';
-        }
-        dropdown += '</select></div>';
-      }
-    }
+    // Settings panel: opens under the card when the module is ticked
+    const panel = mod.options ? tkSettingsPanel(id, mod) : '';
 
-    html += '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' + opacity + '">'
-      + '<input type="checkbox" class="tk-cb" data-id="' + id + '"' + disabled + ' style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">'
+    html += '<div class="tk-card" data-id="' + id + '" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;opacity:' + opacity + '">'
+      + '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:' + (disabled ? 'default' : 'pointer') + '">'
+      + '<input type="checkbox" class="tk-cb" data-id="' + id + '"' + disabled + ' onchange="tkCardToggle(this)" style="accent-color:var(--accent);width:18px;height:18px;margin-top:2px;flex-shrink:0">'
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-weight:600;font-size:14px;margin-bottom:4px">'
       + '<span style="margin-right:6px">' + icon + '</span>' + name
       + '<span style="font-size:10px;font-weight:700;color:' + color + ';border:1px solid ' + color + ';padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle">' + label + '</span>'
       + '</div>'
       + '<div style="font-size:12px;color:var(--text2);line-height:1.5">' + mod.description + '</div>'
-      + dropdown
-      + '</div></label>';
+      + (mod.options ? '<div id="tk-sum-' + id + '" style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:6px"></div>' : '')
+      + '</div></label>'
+      + panel
+      + '</div>';
   }
   container.innerHTML = html;
+  for (const [id, mod] of Object.entries(manifest.modules)) {
+    if (!mod.options) continue;
+    tkLoadSettings(id, mod);
+    tkUpdateSettings(id);
+  }
+}
+
+// ---- module settings (module.json "options") -------------------------------
+// select: values [{value,label,group?,short?,note?}], default; text: default,
+// placeholder, check "ipv4" | "ipv4-optional", show_when {optKey:[values]};
+// advanced:true puts an option under a small "Advanced" fold. Values reach the
+// module's run_script as arguments in options order (hidden ones too).
+const TK_MODS = {};
+function tkSettingsPanel(id, mod) {
+  TK_MODS[id] = mod;
+  const field = (k, o) => {
+    const fid = 'tk-opt-' + id + '-' + k;
+    const upd = ' tkUpdateSettings(&quot;' + id + '&quot;)';
+    let inp;
+    if (o.type === 'text') {
+      inp = '<input type="text" id="' + fid + '" value="' + (o.default || '') + '" placeholder="' + (o.placeholder || '') + '" spellcheck="false" autocomplete="off" oninput="' + upd + '" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono)">';
+    } else {
+      let opts = '', grp = null;
+      for (const v of o.values) {
+        if ((v.group || null) !== grp) { if (grp) opts += '</optgroup>'; grp = v.group || null; if (grp) opts += '<optgroup label="' + grp + '">'; }
+        opts += '<option value="' + v.value + '"' + (v.value === o.default ? ' selected' : '') + '>' + v.label + '</option>';
+      }
+      if (grp) opts += '</optgroup>';
+      inp = '<select id="' + fid + '" onchange="' + upd + '" style="width:100%;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);cursor:pointer">' + opts + '</select>';
+    }
+    return '<div id="tk-row-' + id + '-' + k + '" style="margin-top:8px">'
+      + '<div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em">' + o.label + '</div>'
+      + inp + '<div id="tk-err-' + id + '-' + k + '" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div></div>';
+  };
+  let main = '', adv = '';
+  for (const [k, o] of Object.entries(mod.options)) { if (o.advanced) adv += field(k, o); else main += field(k, o); }
+  return '<div id="tk-panel-' + id + '" style="display:none;padding:2px 16px 14px 46px;border-top:1px solid var(--border)">'
+    + main
+    + '<div id="tk-note-' + id + '" style="font-size:12px;line-height:1.5;margin-top:10px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);color:var(--text2);display:none"></div>'
+    + (adv ? '<details id="tk-adv-' + id + '" style="margin-top:10px"><summary style="font-size:12px;color:var(--text2);cursor:pointer">Advanced</summary>' + adv + '</details>' : '')
+    + '</div>';
+}
+function tkVal(id, k) { const el = document.getElementById('tk-opt-' + id + '-' + k); return el ? el.value.trim() : ''; }
+function tkShown(id, k) {
+  const o = TK_MODS[id].options[k];
+  if (!o.show_when) return true;
+  return Object.entries(o.show_when).every(([dk, vals]) => vals.includes(tkVal(id, dk)) && tkShown(id, dk));
+}
+function tkCheck(o, v) {
+  const ip = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+  if (o.check === 'ipv4' && !ip.test(v)) return 'Enter an address like 192.168.0.95';
+  if (o.check === 'ipv4-optional' && v && !ip.test(v)) return 'Leave it empty, or enter an address like 192.168.0.1';
+  return '';
+}
+function tkSelectAll(on) {
+  document.querySelectorAll('.tk-cb').forEach(cb => { if (!cb.disabled) { cb.checked = on; tkCardToggle(cb); } });
+}
+function tkCardToggle(cb) {
+  const p = document.getElementById('tk-panel-' + cb.dataset.id);
+  if (p) p.style.display = cb.checked ? 'block' : 'none';
+}
+function tkUpdateSettings(id) {
+  const mod = TK_MODS[id]; if (!mod) return;
+  const parts = []; let note = '', bad = false;
+  for (const [k, o] of Object.entries(mod.options)) {
+    const shown = tkShown(id, k);
+    document.getElementById('tk-row-' + id + '-' + k).style.display = shown ? 'block' : 'none';
+    const err = document.getElementById('tk-err-' + id + '-' + k);
+    const v = tkVal(id, k);
+    const e = shown && o.type === 'text' ? tkCheck(o, v) : '';
+    err.textContent = e; err.style.display = e ? 'block' : 'none';
+    if (e) bad = true;
+    if (!shown) continue;
+    if (o.type === 'text') { if (v && o.summary !== false) parts.push((o.short || '') + v); }
+    else {
+      const sel = o.values.find(x => x.value === v);
+      if (sel && !(o.advanced && v === o.default)) parts.push(sel.short || sel.label);
+      if (sel && sel.note) note = sel.note;
+    }
+  }
+  const advEl = document.getElementById('tk-adv-' + id);
+  if (advEl) advEl.style.display = Object.entries(mod.options).some(([k, o]) => o.advanced && tkShown(id, k)) ? 'block' : 'none';
+  const sum = document.getElementById('tk-sum-' + id);
+  if (sum) sum.textContent = '▸ ' + parts.join(' · ');
+  const n = document.getElementById('tk-note-' + id);
+  if (n) { n.innerHTML = note; n.style.display = note ? 'block' : 'none'; }
+  const card = document.querySelector('.tk-card[data-id="' + id + '"]');
+  if (card) card.dataset.invalid = bad ? '1' : '';
+  try { const st = {}; for (const k of Object.keys(mod.options)) st[k] = tkVal(id, k); localStorage.setItem('pcmforge-tk-' + id, JSON.stringify(st)); } catch (e) {}
+}
+function tkLoadSettings(id, mod) {
+  let st = null;
+  try { st = JSON.parse(localStorage.getItem('pcmforge-tk-' + id) || 'null'); } catch (e) {}
+  if (!st) return;
+  for (const [k, o] of Object.entries(mod.options)) {
+    const el = document.getElementById('tk-opt-' + id + '-' + k);
+    if (!el || st[k] === undefined) continue;
+    if (o.type === 'text' || o.values.some(v => v.value === st[k])) el.value = st[k];
+  }
 }
 
 async function tkFetchBinary(url) {
@@ -1322,7 +1413,7 @@ function tkGenerateRunSh(selected, manifest) {
     'if [ -f "${USBROOT}/bin/forge_splash" ] && [ -f "${USBROOT}/lib/running.bin" ]; then',
     '    waitfor /dev/layermanager 15 2>/dev/null',
     '    cp "${USBROOT}/bin/forge_splash" "${TMPD}/forge_splash" 2>/dev/null && chmod +x "${TMPD}/forge_splash"',
-    '    # max wait 3600 s: a Flash Backup takes over half an hour on the PCM\'s slow USB;',
+    '    # max wait 3600 s: covers Flash Backup\'s slow cp fallback (a stick without bin/fcopy);',
     '    # the splash still closes the moment the job touches the done-flag',
     '    "${TMPD}/forge_splash" "${USBROOT}/lib/running.bin" "${USBROOT}/lib/done.bin" "$FS_FLAG" 3600 4 >>"${USBROOT}/splash.log" 2>&1 &',
     '    FS_PID=$!',
@@ -1344,7 +1435,8 @@ function tkGenerateRunSh(selected, manifest) {
     if (mod.options) {
       for (const optKey of Object.keys(mod.options)) {
         const el = document.getElementById('tk-opt-' + modName + '-' + optKey);
-        if (el) { extraArgs += ' "' + el.value + '"'; }
+        const v = (el ? el.value.trim() : (mod.options[optKey].default || '')).replace(/[^A-Za-z0-9._:-]/g, '');
+        extraArgs += ' "' + v + '"';
       }
     }
     lines.push('    ksh "${USBROOT}/scripts/' + mod.run_script + '" "${USBROOT}"' + extraArgs);
@@ -1375,6 +1467,13 @@ async function tkBuild() {
     status.style.display = 'block';
     status.className = 'status info';
     status.textContent = 'Select at least one module';
+    return;
+  }
+  const badCard = selected.find(id => { const c = document.querySelector('.tk-card[data-id="' + id + '"]'); return c && c.dataset.invalid === '1'; });
+  if (badCard) {
+    status.style.display = 'block';
+    status.className = 'status info';
+    status.textContent = 'Check the settings of ' + (TK_NAMES[badCard] || badCard) + ' first';
     return;
   }
 

@@ -27,7 +27,7 @@
       "files": [
         {
           "path": "module.json",
-          "size": 1466
+          "size": 1488
         },
         {
           "path": "bin/fcopy",
@@ -123,11 +123,11 @@
     },
     "usb-net": {
       "status": "tested",
-      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or static), and enables telnet. Loads from USB only \u2014 never modifies the read-only firmware.",
+      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
       "standalone": true,
       "run_script": "usb_net_run.sh",
       "script_dir": "/scripts/USBNet",
-      "installs_to_flash": false,
+      "installs_to_flash": true,
       "compatible": [
         "PCM3.1",
         "MMI3G+",
@@ -135,21 +135,116 @@
       ],
       "options": {
         "mode": {
-          "label": "Addressing",
+          "label": "What to do",
           "type": "select",
           "default": "dhcp",
           "values": [
             {
               "value": "dhcp",
-              "label": "DHCP \u2014 from your router/switch"
+              "label": "DHCP \u2014 from your router/switch",
+              "short": "This session \u00b7 DHCP",
+              "group": "This session only (until a restart)"
             },
             {
               "value": "static",
-              "label": "Static 172.16.42.1 \u2014 direct cable to a PC"
+              "label": "Static address",
+              "short": "This session \u00b7 static",
+              "group": "This session only (until a restart)"
             },
             {
               "value": "lte",
-              "label": "LTE/internet \u2014 DHCP + DNS (replaces lte-setup)"
+              "label": "LTE/internet \u2014 DHCP + DNS (replaces lte-setup)",
+              "short": "This session \u00b7 LTE",
+              "group": "This session only (until a restart)"
+            },
+            {
+              "value": "boot-dhcp",
+              "label": "Auto adapter \u00b7 DHCP",
+              "short": "Every boot \u00b7 DHCP",
+              "group": "Every boot \u2014 stays after a restart (beta, PCM 3.1)",
+              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+            },
+            {
+              "value": "boot-static",
+              "label": "Auto adapter \u00b7 static address",
+              "short": "Every boot \u00b7 static",
+              "group": "Every boot \u2014 stays after a restart (beta, PCM 3.1)",
+              "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+            },
+            {
+              "value": "remove",
+              "label": "Remove the boot setup",
+              "short": "Remove the boot setup",
+              "group": "Undo",
+              "note": "Takes the <i>Every boot</i> files out of /HBpersistence and puts the PCM's own settings back the way they were. After the next restart, no network or telnet unless you run a stick."
+            }
+          ]
+        },
+        "ip": {
+          "label": "IP address",
+          "type": "text",
+          "default": "172.16.42.1",
+          "placeholder": "192.168.0.95",
+          "check": "ipv4",
+          "show_when": {
+            "mode": [
+              "static",
+              "boot-static"
+            ]
+          }
+        },
+        "mask": {
+          "label": "Netmask",
+          "type": "text",
+          "default": "255.255.255.0",
+          "check": "ipv4",
+          "summary": false,
+          "show_when": {
+            "mode": [
+              "static",
+              "boot-static"
+            ]
+          }
+        },
+        "gateway": {
+          "label": "Gateway (optional)",
+          "type": "text",
+          "default": "",
+          "placeholder": "empty = none",
+          "check": "ipv4-optional",
+          "short": "gw ",
+          "show_when": {
+            "mode": [
+              "static",
+              "boot-static"
+            ]
+          }
+        },
+        "adapter": {
+          "label": "Adapter driver",
+          "type": "select",
+          "default": "auto",
+          "advanced": true,
+          "show_when": {
+            "mode": [
+              "boot-dhcp",
+              "boot-static"
+            ]
+          },
+          "values": [
+            {
+              "value": "auto",
+              "label": "Auto-detect (recommended)"
+            },
+            {
+              "value": "stock",
+              "label": "AX88772 / 772A \u2014 the PCM's own driver",
+              "short": "772/772A driver"
+            },
+            {
+              "value": "universal",
+              "label": "AX88772B / 772C \u2014 universal driver",
+              "short": "772B/C driver"
             }
           ]
         }
@@ -157,19 +252,27 @@
       "files": [
         {
           "path": "README.md",
-          "size": 3301
+          "size": 5685
         },
         {
           "path": "module.json",
-          "size": 1204
+          "size": 6133
         },
         {
           "path": "bin/devn-asix-universal.so",
           "size": 75540
         },
         {
+          "path": "scripts/forge_net.sh",
+          "size": 3517
+        },
+        {
+          "path": "scripts/net_boot_setup.sh",
+          "size": 5592
+        },
+        {
           "path": "scripts/usb_net_run.sh",
-          "size": 4595
+          "size": 8129
         }
       ]
     }
