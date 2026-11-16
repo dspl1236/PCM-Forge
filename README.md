@@ -60,12 +60,13 @@ Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules and bu
 | Module | Status | Description |
 |--------|--------|-------------|
 | **System Info** | ✅ Ready | Full PCM dump: version, VIN, mounts, processes, network, partitions, IPC, engineering screens |
-| **Telnet Enabler** | ✅ Tested | Root shell — telnet (port 23) + raw ksh (2323). Session-only, re-run after reboot |
-| **USB Ethernet** | ✅ Tested | Universal ASIX driver (AX88772 / 772A / 772B / 772C) with DHCP / static / LTE. Loads from USB, never touches flash |
+| **Flash Backup** | 🧪 Beta | Copies the whole 64 MB flash to the stick in about a minute; check it with PCM-Explorer. Read-only |
+| **USB Ethernet** | ✅ Tested | Universal ASIX driver (AX88772 / 772A / 772B / 772C) + telnet (23) and a root shell (2323). DHCP / static / LTE for this session, or *Every boot* (beta) to keep it after restarts, with a Remove option |
 | **IOC Probe** | ✅ Ready | Map IPC/CAN channels and discover the BAP instrument-cluster interface. Read-only |
 | **BT / AUX Fix** | 🧪 Experimental | Stops the PCM defaulting to FM at startup — routes a connected phone to Bluetooth (A2DP). Self-locating runtime patch, reboot-reverts |
 | **Service Reset** | 🧪 Alpha | Oil / service interval reset via UDS/BAP CAN. No PIWIS needed |
 | **LTE Setup** | ⚠️ Deprecated | Superseded by USB Ethernet (which includes an LTE mode) |
+| **Telnet Enabler** | ⚠️ Removed | Part of USB Ethernet, which starts telnet and the 2323 shell with the network |
 
 ### Tab 4: Backup
 Upload the `PagSWAct_backup.002` that Diagnostic mode pulls off the PCM to see exactly what's currently activated, then add features on top and download a **merged** `PagSWAct.002` — so you keep every existing activation instead of overwriting them.
