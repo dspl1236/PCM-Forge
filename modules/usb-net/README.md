@@ -41,9 +41,46 @@ which is how units get bricked.)
 3. **Boot the unit fully**, then **insert the stick** (it must be an insert *event* after boot).
 4. Wait ~60–90 s, pull the stick, read `pcm_usbnet_<timestamp>.txt`.
 5. If it shows an `inet` address: `telnet <that IP>` — port 23 (login `root`) or 2323 (raw shell).
+   If the PCM already had the adapter up (a 772 / 772A, which it loads itself), the stick uses
+   that interface and doesn't load the universal driver over it.
 
-`/etc` is read-only, so this is session-only — re-insert the stick after each reboot to
-re-enable.
+## This session, or every boot
+
+In the web app's Toolkit, **What to do** picks one of:
+
+| Choice | What it does |
+|---|---|
+| **This session only**: DHCP / Static / LTE | Loads from the stick, nothing written to the PCM. A restart undoes it; insert the stick again after each restart. |
+| **Every boot**: Auto adapter · DHCP / Auto adapter · static (beta, PCM 3.1) | The same, and it stays after every restart with no stick. |
+| **Remove the boot setup** | Undoes *Every boot* and puts the PCM's own settings back. |
+
+Static shows the IP address, netmask and an optional gateway. Under **Advanced**, the adapter
+driver can be forced (Auto-detect is the default).
+
+**How *Every boot* works.** The PCM runs `/HBpersistence/debugTools.sh` on every boot. The
+stick (`scripts/net_boot_setup.sh`) adds one line to it that starts `forge_net.sh`, and keeps
+the settings in `forge_net.conf`. At each boot, `forge_net.sh` waits up to 5 minutes for the
+adapter, sets the address, opens the 2323 shell, and exits.
+- **772 / 772A:** the PCM loads its own driver on plug-in, as en5.
+  - Static: the PCM first gives it 192.168.0.90, then `forge_net.sh` sets your address.
+  - DHCP: the PCM asks the router itself.
+  - The `/HBpersistence/incar` flag decides between the two, so the stick sets or clears it.
+- **772B / 772C:** the PCM doesn't recognise these, so the stick also copies the universal
+  driver to `/HBpersistence`, and `forge_net.sh` loads it when no adapter has come up after a
+  minute. These need the adapter plugged in at boot.
+- **Telnet at boot:** the stick creates `/HBpersistence/DBGModeActive` if it's missing. That
+  flag is what makes the PCM start telnet.
+- **Writes only what changed:** inserting the stick again with the same settings rewrites
+  nothing. With new settings it updates in place.
+- **Remove puts it back:** the first install records how `DBGModeActive` and `incar` were
+  (`forge_net.orig`), and Remove restores them that way.
+
+Only the firmware images are never touched. **Every boot leaves telnet (23) and a root shell
+(2323) open with no password** on whatever network the adapter is cabled to; use it only on a
+network you trust.
+
+Tested on a 958.2 (PCM 3.1, 15245AS9) with an AX88772A: cold boots with no stick bring up the
+static address, telnet at ~30 s and 2323 at ~60 s after the screen.
 
 ## Blank-EEPROM clones
 A few ultra-cheap clones ship with **no MAC programmed**, so *any* driver reads a garbage MAC
