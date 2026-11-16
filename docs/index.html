@@ -1252,8 +1252,8 @@ async function tkRenderModules() {
   tkRendered = true;
   const manifest = await tkFetchManifest();
   const container = document.getElementById('tk-modules');
-  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', alpha: 'var(--text2)', experimental: 'var(--accent)', planned: 'var(--text2)', paused: 'var(--red)', deprecated: 'var(--red)' };
-  const statusLabels = { ready: 'Ready', tested: 'Tested', alpha: 'Coming Soon', experimental: 'Experimental', planned: 'Planned', paused: 'Paused', deprecated: 'Deprecated' };
+  const statusColors = { ready: 'var(--green)', tested: 'var(--green)', beta: 'var(--accent)', alpha: 'var(--text2)', experimental: 'var(--accent)', planned: 'var(--text2)', paused: 'var(--red)', deprecated: 'var(--red)' };
+  const statusLabels = { ready: 'Ready', tested: 'Tested', beta: 'Beta', alpha: 'Coming Soon', experimental: 'Experimental', planned: 'Planned', paused: 'Paused', deprecated: 'Deprecated' };
 
   let html = '';
   for (const [id, mod] of Object.entries(manifest.modules)) {
@@ -1267,7 +1267,8 @@ async function tkRenderModules() {
                   : (mod.status === 'paused' || mod.status === 'deprecated') ? '0.6' : '1';
 
     // Settings panel: opens under the card when the module is ticked
-    const panel = mod.options ? tkSettingsPanel(id, mod) : '';
+    const hasOpts = !!(mod.options && Object.keys(mod.options).length);   // the manifest gives every module {}
+    const panel = hasOpts ? tkSettingsPanel(id, mod) : '';
 
     html += '<div class="tk-card" data-id="' + id + '" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;opacity:' + opacity + '">'
       + '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:' + (disabled ? 'default' : 'pointer') + '">'
@@ -1278,14 +1279,14 @@ async function tkRenderModules() {
       + '<span style="font-size:10px;font-weight:700;color:' + color + ';border:1px solid ' + color + ';padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle">' + label + '</span>'
       + '</div>'
       + '<div style="font-size:12px;color:var(--text2);line-height:1.5">' + mod.description + '</div>'
-      + (mod.options ? '<div id="tk-sum-' + id + '" style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:6px"></div>' : '')
+      + (hasOpts ? '<div id="tk-sum-' + id + '" style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:6px"></div>' : '')
       + '</div></label>'
       + panel
       + '</div>';
   }
   container.innerHTML = html;
   for (const [id, mod] of Object.entries(manifest.modules)) {
-    if (!mod.options) continue;
+    if (!mod.options || !Object.keys(mod.options).length) continue;
     tkLoadSettings(id, mod);
     tkUpdateSettings(id);
   }
