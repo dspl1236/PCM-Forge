@@ -138,7 +138,8 @@ echo "2323 stream tcp nowait root /bin/ksh ksh -i" > /dev/shmem/inetd_2323.conf
     [ -z "$BOOT" ] && echo "This session only: re-insert the stick after a restart (or use an 'every boot' mode)."
 } >> "$LOG" 2>&1
 
-DONE="usb-net done (mode=$MODE)"
+DONE="usb-net done (mode=$MODE, $IFACE)"
+[ -z "$IFACE" ] && DONE="usb-net: NO ADAPTER FOUND -- the adapter has to be plugged in while the stick runs (a USB hub works: adapter + stick together), then run the stick again"
 if [ -n "$BOOT" ]; then
     # which driver the adapter needs at boot
     DRIVER="$ADAPTER"
@@ -151,10 +152,17 @@ if [ -n "$BOOT" ]; then
             pidin -p io-net mem 2>/dev/null | grep -q "asix-universal" && DRIVER=universal
         elif [ -n "$IFACE" ] && [ $LOADED_UNIVERSAL -eq 1 ]; then
             DRIVER=universal
+        else
+            # no adapter plugged in (one USB port, stick in it): install with the
+            # universal driver. That covers every adapter: at boot a 772/772A comes
+            # up on the PCM's own driver within seconds, and forge_net.sh only loads
+            # the universal one if nothing has appeared after 60 s.
+            DRIVER=universal
+            echo "[..] no adapter plugged in: installing with the universal driver (works for any supported adapter)" >> "$LOG"
         fi
     fi
     if [ -z "$DRIVER" ]; then
-        DONE="boot setup NOT installed: no adapter found -- plug it in and run the stick again"
+        DONE="boot setup NOT installed: no driver chosen"
     else
         ADESC=DHCP; [ "$BOOT" = "static" ] && ADESC="static $STATIC_IP"
         mkdir -p "$TMPD/forge_boot"
@@ -163,7 +171,8 @@ if [ -n "$BOOT" ]; then
         R=$(ksh "$SCR/net_boot_setup.sh" install "$LOG" "$DRIVER" "$BOOT" "$STATIC_IP" "$STATIC_MASK" "$STATIC_GW" "$TMPD/forge_boot" 2>>"$LOG")
         rm -rf "$TMPD/forge_boot"
         case "$R" in
-            installed) DONE="boot setup installed ($DRIVER driver, $ADESC): network + telnet come back after every restart" ;;
+            installed) DONE="boot setup installed ($DRIVER driver, $ADESC): network + telnet come back after every restart"
+                       [ -z "$IFACE" ] && DONE="$DONE -- plug the adapter in and restart the PCM; it comes up about a minute after the screen" ;;
             unchanged) DONE="boot setup already installed with these settings -- nothing rewritten" ;;
             *)         DONE="boot setup FAILED: $R (see the log)" ;;
         esac

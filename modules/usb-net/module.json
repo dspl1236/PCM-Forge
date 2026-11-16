@@ -1,6 +1,6 @@
 {
     "name": "usb-net",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
     "author": "dspl1236",
     "status": "tested",
@@ -56,14 +56,14 @@
                     "label": "Auto adapter · DHCP",
                     "short": "Every boot · DHCP",
                     "group": "Every boot — stays after a restart (beta, PCM 3.1)",
-                    "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+                    "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Plug the adapter in while the stick runs (a USB hub works), or run the stick alone, then plug the adapter in and restart. To undo it, build a stick with <i>Remove the boot setup</i>."
                 },
                 {
                     "value": "boot-static",
                     "label": "Auto adapter · static address",
                     "short": "Every boot · static",
                     "group": "Every boot — stays after a restart (beta, PCM 3.1)",
-                    "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Run the stick with the adapter plugged in, so it can tell which driver your adapter needs. To undo it, build a stick with <i>Remove the boot setup</i>."
+                    "note": "<b>Every boot</b> adds a few small files to /HBpersistence (never the firmware) and leaves telnet (port 23) and a root shell (port 2323) open, <b>with no password</b>, on whatever network the adapter is plugged into, after every restart. Only use it on a network you trust. Plug the adapter in while the stick runs (a USB hub works), or run the stick alone, then plug the adapter in and restart. To undo it, build a stick with <i>Remove the boot setup</i>."
                 },
                 {
                     "value": "remove",
