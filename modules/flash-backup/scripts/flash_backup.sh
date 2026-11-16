@@ -119,28 +119,36 @@ else
     cp "$DEV" "$OUT" >> "$LOG" 2>&1 &
     CP=$!
 fi
-prog "3/100 Copying flash: starting"
-
-# The copy runs in the background so the splash can show real progress.
 SLEEP=sleep; [ -x /proc/boot/sleep ] && SLEEP=/proc/boot/sleep
 T=0
-while kill -0 "$CP" 2>/dev/null; do
-    $SLEEP 2; T=$((T + 2))
-    S=$(fsize "$OUT")
-    MB=$((S / 1048576))
-    PCT=$((3 + S / 729444))                  # 3..95 over 64 MB, no 32-bit overflow
-    [ $PCT -gt 95 ] && PCT=95
-    prog "$PCT/100 Copying flash: $MB of 64 MB"
-    if [ $((T % 30)) -eq 0 ]; then           # a log line every 30 s: copy speed on this unit
-        echo "  ${T}s: $S bytes ($((S / 1024 / T)) KB/s)" >> "$LOG"
-    fi
-done
-wait "$CP"
-RC=$?
 if [ -n "$FC" ]; then
+    # Don't poll the stick during the fast copy: with 1 MB writes it is so busy
+    # that even `ls` on it blocks for many seconds (on a 958.2 the bar sat at 4 %
+    # for the whole minute). The splash creeps the bar on its own instead.
+    prog "3-95/100 Copying flash (about a minute)"
+    wait "$CP"
+    RC=$?
     R=$(cat "$TMPD/.fb_fcopy" 2>/dev/null); rm -f "$TMPD/.fb_fcopy"
     echo "fcopy: $R" >> "$LOG"
     case "$R" in *stop=eof*) ;; *) RC=1 ;; esac   # anything but a clean end = failed
+    T=${R##*secs=}; T=${T%% *}                    # fcopy's own timing
+    case "$T" in ''|*[!0-9]*) T=0 ;; esac
+else
+    # cp takes 30-40 minutes: show real progress from the file size
+    prog "3/100 Copying flash: starting"
+    while kill -0 "$CP" 2>/dev/null; do
+        $SLEEP 5; T=$((T + 5))
+        S=$(fsize "$OUT")
+        MB=$((S / 1048576))
+        PCT=$((3 + S / 729444))              # 3..95 over 64 MB, no 32-bit overflow
+        [ $PCT -gt 95 ] && PCT=95
+        prog "$PCT/100 Copying flash: $MB of 64 MB"
+        if [ $((T % 60)) -eq 0 ]; then       # a log line a minute: copy speed on this unit
+            echo "  ${T}s: $S bytes ($((S / 1024 / T)) KB/s)" >> "$LOG"
+        fi
+    done
+    wait "$CP"
+    RC=$?
 fi
 restore_commit
 echo "PCM load-monitor warnings: $LW0 before, $(loadwarn) after" >> "$LOG"
