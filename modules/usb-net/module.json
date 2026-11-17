@@ -1,7 +1,7 @@
 {
     "name": "usb-net",
-    "version": "1.1.1",
-    "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
+    "version": "1.2.0",
+    "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), sets up internet (default route + DNS) when there is a gateway, and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
     "author": "dspl1236",
     "status": "tested",
     "compatible": [
@@ -25,6 +25,9 @@
         },
         {
             "path": "bin/devn-asix-universal.so"
+        },
+        {
+            "path": "bin/nettest"
         }
     ],
     "options": {
@@ -35,7 +38,7 @@
             "values": [
                 {
                     "value": "dhcp",
-                    "label": "DHCP — from your router/switch",
+                    "label": "DHCP — from your router (internet included)",
                     "short": "This session · DHCP",
                     "group": "This session only (until a restart)"
                 },
@@ -43,12 +46,6 @@
                     "value": "static",
                     "label": "Static address",
                     "short": "This session · static",
-                    "group": "This session only (until a restart)"
-                },
-                {
-                    "value": "lte",
-                    "label": "LTE/internet — DHCP + DNS (replaces lte-setup)",
-                    "short": "This session · LTE",
                     "group": "This session only (until a restart)"
                 },
                 {
@@ -101,10 +98,10 @@
             }
         },
         "gateway": {
-            "label": "Gateway (optional)",
+            "label": "Gateway (your router, for internet)",
             "type": "text",
             "default": "",
-            "placeholder": "empty = none",
+            "placeholder": "empty = local network only",
             "check": "ipv4-optional",
             "short": "gw ",
             "show_when": {

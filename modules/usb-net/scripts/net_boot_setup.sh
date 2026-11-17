@@ -93,7 +93,7 @@ $HOOK" > $P/debugTools.sh; fi
     else
         [ -f $P/incar ] || { touch $P/incar && CHANGED=1 && note "created incar: the PCM uses a fixed address"; }
     fi
-    sync
+    sync 2>/dev/null
     if [ $CHANGED -eq 1 ]; then echo installed; else echo unchanged; fi
     ;;
 
@@ -114,7 +114,7 @@ remove)
         [ "$INCAR_WAS" = "0" ] && [ -f $P/incar ] && rm -f $P/incar && note "removed incar (the car didn't have it)"
         rm -f $P/forge_net.orig
     fi
-    sync
+    sync 2>/dev/null
     echo removed
     ;;
 *)

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-16",
+  "generated": "2026-11-17",
   "branch": "main",
   "raw_url_base": "https://raw.githubusercontent.com/dspl1236/PCM-Forge/main/",
   "core_files": {
@@ -67,7 +67,7 @@
     },
     "usb-net": {
       "status": "tested",
-      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
+      "description": "Universal ASIX USB-Ethernet driver for PCM 3.1 / MMI3G+ / RNS-850. Supports AX88772 / 772A / 772B / 772C (and 88178 + Linksys/NetGear rebadges) by activating Harman's own AX88772B init path from later firmware. Brings up the link, gets DHCP (or your static address), sets up internet (default route + DNS) when there is a gateway, and enables telnet. 'This session only' loads from USB and never modifies the firmware: a restart undoes it. 'Every boot' (beta, PCM 3.1) also keeps the network and telnet after every restart with no stick, by adding a few small files to /HBpersistence; 'Remove the boot setup' takes them out again.",
       "standalone": true,
       "run_script": "usb_net_run.sh",
       "script_dir": "/scripts/USBNet",
@@ -85,7 +85,7 @@
           "values": [
             {
               "value": "dhcp",
-              "label": "DHCP \u2014 from your router/switch",
+              "label": "DHCP \u2014 from your router (internet included)",
               "short": "This session \u00b7 DHCP",
               "group": "This session only (until a restart)"
             },
@@ -93,12 +93,6 @@
               "value": "static",
               "label": "Static address",
               "short": "This session \u00b7 static",
-              "group": "This session only (until a restart)"
-            },
-            {
-              "value": "lte",
-              "label": "LTE/internet \u2014 DHCP + DNS (replaces lte-setup)",
-              "short": "This session \u00b7 LTE",
               "group": "This session only (until a restart)"
             },
             {
@@ -151,10 +145,10 @@
           }
         },
         "gateway": {
-          "label": "Gateway (optional)",
+          "label": "Gateway (your router, for internet)",
           "type": "text",
           "default": "",
-          "placeholder": "empty = none",
+          "placeholder": "empty = local network only",
           "check": "ipv4-optional",
           "short": "gw ",
           "show_when": {
@@ -196,27 +190,31 @@
       "files": [
         {
           "path": "README.md",
-          "size": 7884
+          "size": 8730
         },
         {
           "path": "module.json",
-          "size": 6049
+          "size": 5939
         },
         {
           "path": "bin/devn-asix-universal.so",
           "size": 75540
         },
         {
+          "path": "bin/nettest",
+          "size": 67024
+        },
+        {
           "path": "scripts/forge_net.sh",
-          "size": 3644
+          "size": 4929
         },
         {
           "path": "scripts/net_boot_setup.sh",
-          "size": 5592
+          "size": 5616
         },
         {
           "path": "scripts/usb_net_run.sh",
-          "size": 8910
+          "size": 10375
         }
       ]
     }
