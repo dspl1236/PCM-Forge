@@ -61,10 +61,10 @@ Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules and bu
 |--------|--------|-------------|
 | **System Info** | ✅ Ready | Full PCM dump: version, VIN, mounts, processes, network, partitions, IPC, engineering screens |
 | **Flash Backup** | 🧪 Beta | Copies the whole 64 MB flash to the stick in about a minute; check it with PCM-Explorer. Read-only |
-| **USB Ethernet** | ✅ Tested | Universal ASIX driver (AX88772 / 772A / 772B / 772C) + telnet (23) and a root shell (2323). DHCP / static / LTE for this session, or *Every boot* (beta) to keep it after restarts, with a Remove option |
+| **USB Ethernet** | ✅ Tested | Universal ASIX driver (AX88772 / 772A / 772B / 772C) + telnet (23) and a root shell (2323). DHCP / static for this session (internet included: default route + DNS), or *Every boot* (beta) to keep it after restarts, with a Remove option |
 | **BT / AUX Fix** | 🧪 Experimental | Stops the PCM defaulting to FM at startup — routes a connected phone to Bluetooth (A2DP). Self-locating runtime patch, reboot-reverts |
 | **Service Reset** | 🧪 Alpha | Oil / service interval reset via UDS/BAP CAN. No PIWIS needed |
-| **LTE Setup** | ⚠️ Deprecated | Superseded by USB Ethernet (which includes an LTE mode) |
+| **LTE Setup** | ⚠️ Deprecated | Superseded by USB Ethernet (every mode sets up internet through your router) |
 | **Telnet Enabler** | ⚠️ Removed | Part of USB Ethernet, which starts telnet and the 2323 shell with the network |
 | **IOC Probe** | ⚠️ Removed | A research tool (it writes BAP requests to the IOC channels); kept in `tools/ioc-probe/` |
 

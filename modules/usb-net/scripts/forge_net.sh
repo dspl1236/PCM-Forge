@@ -20,6 +20,26 @@ UDRV=/HBpersistence/devn-asix-universal.so
 
 echo "forge_net: start (driver=$DRIVER addr=$ADDR ip=$IP)" > "$LOG"
 
+net_internet() {    # $1 gateway (empty: take the DHCP one). Default route + DNS.
+    # (the PCM has sed and grep but no awk/head)
+    G="$1"
+    if [ -z "$G" ]; then
+        set -- $(route -n show 2>/dev/null | sed -n 's/^default  *\([0-9][0-9.]*\).*/\1/p')
+        G="$1"
+    fi
+    if [ -z "$G" ]; then
+        echo "forge_net: no gateway -- local network only (static: fill in the gateway for internet)" >> "$LOG"
+        return
+    fi
+    route -n show 2>/dev/null | grep -q "^default" || route add default "$G" >> "$LOG" 2>&1
+    # DNS: the router first (routers forward DNS), then 8.8.8.8. /etc is read-only,
+    # so the file lives in RAM and a pathname link puts it at /etc/resolv.conf
+    # (gone after a restart; this script makes it again at every boot)
+    { echo "nameserver $G"; echo "nameserver 8.8.8.8"; } > /dev/shmem/forge_resolv.conf
+    grep -q nameserver /etc/resolv.conf 2>/dev/null || ln -sP /dev/shmem/forge_resolv.conf /etc/resolv.conf >> "$LOG" 2>&1
+    echo "forge_net: internet via $G (DNS $G, 8.8.8.8)" >> "$LOG"
+}
+
 findif() {          # the adapter's interface, if one is up
     for i in en5 en0 en1 en2; do
         ifconfig $i >/dev/null 2>&1 && { echo $i; return; }
@@ -62,13 +82,18 @@ if [ "$ADDR" = "static" ]; then
         echo "forge_net: address changed back, setting again" >> "$LOG"
         ifconfig $IF $IP netmask $MASK up >> "$LOG" 2>&1
     fi
-    [ -n "$GW" ] && route add default $GW >> "$LOG" 2>&1
+    net_internet "$GW"
 else
     # DHCP: for a 772/772A the PCM asks the router itself (the setup removed the
     # incar flag that forces .90); a universal-driver adapter needs a client
+    # (-m: the router's DNS servers go to memory, as /etc is read-only)
     if [ $LOADED -eq 1 ]; then
-        dhcp.client -i $IF >> "$LOG" 2>&1 &
+        dhcp.client -i $IF -m >> "$LOG" 2>&1 &
     fi
+    k=0
+    while [ $k -lt 12 ] && ! ifconfig $IF 2>/dev/null | grep -q "inet "; do $SLEEP 5; k=$((k + 1)); done
+    $SLEEP 5            # the default route lands with the lease
+    net_internet ""
 fi
 ifconfig $IF >> "$LOG" 2>&1
 

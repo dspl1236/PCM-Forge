@@ -55,7 +55,7 @@ In the web app's Toolkit, **What to do** picks one of:
 
 | Choice | What it does |
 |---|---|
-| **This session only**: DHCP / Static / LTE | Loads from the stick, nothing written to the PCM. A restart undoes it; insert the stick again after each restart. |
+| **This session only**: DHCP / Static | Loads from the stick, nothing written to the PCM. A restart undoes it; insert the stick again after each restart. |
 | **Every boot**: Auto adapter · DHCP / Auto adapter · static (beta, PCM 3.1) | The same, and it stays after every restart with no stick. |
 | **Remove the boot setup** | Undoes *Every boot* and puts the PCM's own settings back. |
 
@@ -65,6 +65,17 @@ driver can be forced (Auto-detect is the default).
 With Auto-detect, the stick checks the adapter that's plugged in. If none is, it installs with
 the universal driver, which covers every supported adapter (see below), and `pcm_ran.txt` says
 to plug the adapter in and restart.
+
+**Internet in every mode.** Once the address is up, every mode sets a default route through
+the gateway and DNS, so an LTE router (or any home router) gives the PCM internet:
+- DHCP: the gateway comes from the router; `dhcp.client -m` also keeps the router's DNS servers
+  in memory.
+- Static: fill in the **gateway** (your router). Left empty, the PCM stays on the local network.
+- DNS: `/etc` is read-only, so `/dev/shmem/forge_resolv.conf` (the router, then 8.8.8.8) is put at
+  `/etc/resolv.conf` with a pathname link (`ln -sP`). It lives in RAM: a restart removes it, and
+  *Every boot* makes it again. The old separate LTE choice is now just DHCP.
+- The log on the stick ends with an internet check: `bin/nettest` looks up www.google.com and
+  opens a connection to it (the PCM has no working `ping`; source in `tools/sh4-toolchain/nettest.c`).
 
 **How *Every boot* works.** The PCM runs `/HBpersistence/debugTools.sh` on every boot. The
 stick (`scripts/net_boot_setup.sh`) adds one line to it that starts `forge_net.sh`, and keeps

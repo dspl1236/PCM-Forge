@@ -35,6 +35,13 @@ if grep -q 'gf_' "$SRC"; then
   echo "[build] libgf stub included (source uses gf_*)"
 fi
 
+# add the libsocket stub only if the program uses the network (socket/gethostbyname)
+if grep -q -e 'socket(' -e 'gethostbyname' "$SRC"; then
+  "$CC" -shared -nostdlib -fPIC -Wl,-soname,libsocket.so.2 "$HERE/stub_libsocket.c" -o stub/libsocket.so.2
+  LIBS="$LIBS stub/libsocket.so.2"
+  echo "[build] libsocket stub included (source uses sockets)"
+fi
+
 "$CC" -c -O2 -fno-stack-protector -ffreestanding -fno-builtin "$SRC" -o "${OUT}.o"
 "$CC" -c "$HERE/crt.S" -o crt.o
 "$LD" -o "$OUT" -e _start --dynamic-linker=/usr/lib/ldqnx.so.2 crt.o "${OUT}.o" $LIBS
