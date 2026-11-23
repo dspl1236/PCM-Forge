@@ -29,16 +29,17 @@ Same codes as PagSWAct.002 — no USB needed if you know the code.
 | 0x010a | BTH (Bluetooth) |
 | 0x0106 | KOMP (Kompass — Compass Display) |
 | 0x0101 | Navigation |
+| 0x0102 | OFFROADNAV (Off-road Navigation) |
 | 0x0109 | UMS (USB Media) |
 | 0x0103 | FB (Fahrtenbuch — Electronic Logbook) |
 | 0x0104 | SSS (Voice Control) |
 | 0x0105 | SC (Sport Chrono) |
 | 0x0107 | TVINF (Video in Motion) |
 | 0x0108 | SDARS (Satellite Radio) |
-| 0x010c | INDMEM (Individual Memory) |
-| 0x010d | HDTuner |
+| 0x010c | SPELLER (text-entry speed lock) |
+| 0x010d | INDMEM (Individual Memory) |
 | 0x010e | FeatureLevel (model variant) |
-| 0x010f | HDTuner (alt) |
+| 0x010f | HDTuner |
 | 0x0110 | DABTuner |
 | 0x0111 | OnlineServices |
 | 0x2001-0x200b | Navigation databases (11 regions) |

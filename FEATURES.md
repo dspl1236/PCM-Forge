@@ -1,6 +1,6 @@
 # What PCM-Forge Can Activate
 
-All 27 features the Porsche PCM 3.1 can unlock and what each one actually does in the car.
+All 28 features the Porsche PCM 3.1 can unlock and what each one actually does in the car.
 
 **TL;DR:** If your PCM is PCM 3.1 hardware (Cayenne 958, 911 991.1, Panamera 970, Boxster/Cayman 981, Macan 95B), PCM-Forge can generate a permanent activation code for any of these features. Whether the feature then works depends on whether the physical hardware is present in the car — see the "Hardware required" column.
 
@@ -23,8 +23,22 @@ All 27 features the Porsche PCM 3.1 can unlock and what each one actually does i
 | 13 | Compass (KOMP) | 0x0106 | None — software-only |
 | 14 | Electronic Logbook (FB) | 0x0103 | None — software-only |
 | 15 | Engineering Menu | 0x010b | None |
-| 16 | Telephone (TEL) | 0x0102 | Telephone module present stock |
-| 17-27 | Navigation map databases | 0x2001-0x200b | Navigation already activated |
+| 16 | Off-road Navigation (OFFROADNAV) | 0x0102 | Navigation already activated |
+| 17 | Speller in motion (SPELLER) | 0x010c | None — software-only |
+| 18-28 | Navigation map databases | 0x2001-0x200b | Navigation already activated |
+
+## Feature options
+
+For four features the PCM reads the SubID as a setting, not just as part of the code. The web app and the offline app show a dropdown for each; on the command line it is `--subid NAME=HEX`. The first value is the default.
+
+| Feature | SubID | Setting |
+|---------|-------|---------|
+| Video in Motion (TVINF) | `0x0166` / `0x0109` / `0x0105` / `0x0100` / `0x0000` | Video never locks / locks above 9 km/h / above 5 km/h / when moving / unless the handbrake is on |
+| Speller (SPELLER) | same as TVINF | The same limits, for text entry |
+| Voice control (SSS) | `0x0000` / `0x0001` | Siri off / Siri on (Siri Eyes Free) |
+| Online Services | `0x0001` / `0x0002` | Search with Google / with Bing |
+
+These come from the firmware (PCM3Root's activation handlers), not from car tests. The Backup tab shows which setting a car's own record carries.
 
 ## 1. FeatureLevel — Boot logo / model identity
 
@@ -41,7 +55,7 @@ Porsche's "which car am I?" code. Determines the boot animation, main menu brand
 
 **SWID/SubID:** `0x0101` / `0x0000`
 
-Enables the GPS navigation UI, route planning, turn-by-turn directions. Does NOT include map data (that's activated separately, see #17-27 below).
+Enables the GPS navigation UI, route planning, turn-by-turn directions. Does NOT include map data (that's activated separately, see #18-28 below).
 
 
 **What breaks without it:** The Nav button does nothing or shows "Feature not available." No route guidance, no GPS display.
@@ -50,9 +64,11 @@ Enables the GPS navigation UI, route planning, turn-by-turn directions. Does NOT
 
 ## 3. Voice Control (SSS — Sprachsteuerung)
 
-**SWID/SubID:** `0x0104` / `0x0000`
+**SWID/SubID:** `0x0104` / `0x0000` (Siri off) or `0x0001` (Siri on)
 
 "Sag's Porsche" / "Speak a command" button. Voice dialing, address entry, media commands.
+
+**Siri:** the SubID decides whether the PCM passes Bluetooth voice recognition through to an iPhone (Siri Eyes Free). With `0x0001` the PCM uses its Siri-enabled phone configuration (`/HBbin/pss.siri-enabled.cfg`); any other value uses the Siri-disabled one. 4 of the 27 factory records carry `0x0001`. PCM-Forge defaults to `0x0000`, the factory's most common value; pick Siri in the web app's dropdown or with `--subid SSS=0x0001`. Not yet confirmed on a car.
 
 
 **Hardware check:** The overhead microphone is standard on every PCM 3.1 car — it's used for Bluetooth calls. Voice control just enables the speech-recognition software stack.
@@ -88,10 +104,20 @@ Plays audio files (MP3/AAC/FLAC depending on firmware) from USB stick. Without t
 
 **SWID/SubID:** `0x0107` / `0x0166` (default — some records vary)
 
-Removes the speed lockout on video playback and — depending on firmware — on some navigation interactions. On stock PCMs, DVDs/video sources stop displaying above ~5 mph. With TVINF active, video plays at any speed.
+Sets the speed lockout on video. PCM3Root calls this package `TVTunerSpeedLimits`, and the SubID is the limit itself:
+
+| SubID | Video locks |
+|-------|-------------|
+| `0x0000` (or unknown) | unless the handbrake is on |
+| `0x0100` | from 1 km/h |
+| `0x0105` | from 5 km/h |
+| `0x0109` | from 9 km/h |
+| `0x0166` | never (PCM-Forge's default) |
+
+The lock is read from vehicle speed and the handbrake signal; it releases 2 s after the car drops below the limit. No coding change is needed for it: activation alone sets the limit. Text entry while driving is a separate lock, #17 SPELLER.
 
 
-**Note:** This is the feature with the most SubID variance across our test data — appears to be model-keyed similar to FeatureLevel. Default value works for most cars.
+**Note:** The factory records in `research/firmware/PagSWAct.csv` hold 19× `0x0166`, 4× `0x0109` and 1× `0x0000`: the variance is the market's speed limit, not the model. Pick another with `--subid TVINF=0x0109`.
 
 ## 8. Satellite Radio (SDARS)
 
@@ -122,9 +148,11 @@ DAB+/DAB digital radio for EU and select Asia-Pacific markets.
 
 ## 11. Online Services
 
-**SWID/SubID:** `0x0111` / `0x0001`
+**SWID/SubID:** `0x0111` / `0x0001` (Google) or `0x0002` (Bing)
 
 Porsche Connect / Car Connect services: remote door lock, remote start (where legal), POI search, traffic overlays on nav.
+
+**Search provider:** activating it also turns on the Aha app link over the iPhone connection (`/HBpersistence/ipod/eaf-aha-enabled.cfg`), and the SubID picks the provider its search uses: `0x0001` Google, `0x0002` Bing. Any other value falls back to Google (5 factory records carry `0x0000`).
 
 
 **Hardware check:** Requires telematics control unit (TCU) with cellular modem + SIM. Most PCM 3.1 cars have hardware; SIM provisioning is the hard part now that 3G networks are sunset in the US.
@@ -230,17 +258,31 @@ requires 12 requires 11 — telnet/qconn as well.
 request is a strong inference from `'IgnitionStatus is not valid'` plus the
 observed BCM no-contact error, not something read end-to-end from the FSM.
 
-## 16. Telephone (TEL)
+## 16. Off-road Navigation (OFFROADNAV)
 
 **SWID/SubID:** `0x0102` / `0x0000`
 
-Enables the built-in telephone module: the PCM's phone interface, contact management, call history and the phone settings menu. This is the base telephony function and is independent of Bluetooth — #5 BTH adds the wireless side on top of it.
+PCM3Root's activation dispatch names SWID `0x0102` Off-road Navigation. Until that table was read, PCM-Forge listed it as "TEL" (a telephone module); the PCM has no such package, and the phone is #5 BTH. The old name `TEL` is still accepted by `--add`, `--remove` and `--subid`.
 
-**How to access:** the PHONE button on the PCM.
+**Caveat:** no factory record in `research/firmware/PagSWAct.csv` carries `0x0102` (the CSV has no column for it), so its effect has not been observed on a car.
 
-**Caveat:** TEL does not appear in any of the 27 factory activation records recovered from firmware (`research/firmware/PagSWAct.csv`), so unlike the other entries here its effect has not been observed on a car. It is listed because the SWID sits in the documented range and the web app offers it.
+## 17. Speller in motion (SPELLER)
 
-## 17-27. Navigation Map Databases (11 regions)
+**SWID/SubID:** `0x010c` / `0x0166` (default)
+
+The lock on text entry (the speller: destinations, contacts) while driving. PCM3Root calls it `SpellerSpeedLimits`; it takes the same SubIDs as #7 TVINF, and `0x0166` means it never locks:
+
+| SubID | Text entry locks |
+|-------|-------------|
+| `0x0000` (or unknown) | unless the handbrake is on |
+| `0x0100` | from 1 km/h |
+| `0x0105` | from 5 km/h |
+| `0x0109` | from 9 km/h |
+| `0x0166` | never (PCM-Forge's default) |
+
+**Tested:** activated on a bench PCM with `0x0166` (state 7 straight away, kept across a power cycle). No factory record carries `0x010c`, and the lock itself has not yet been checked in a moving car. Pick another limit with `--subid SPELLER=0x0105`.
+
+## 18-28. Navigation Map Databases (11 regions)
 
 **SWID/SubID range:** `0x2001-0x200b` / `0x00ff`
 

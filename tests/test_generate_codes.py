@@ -22,9 +22,22 @@ def webapp_features():
 
 
 class TestFeatureTable:
-    def test_includes_tel_telephone_module(self):
-        names = [f[0] for f in gc.features_for(0x0003)]
-        assert 'TEL' in names
+    def test_0x0102_is_off_road_navigation(self):
+        # The firmware's activation dispatch names 0x0102 Off-road Navigation;
+        # it was listed as "OFFROADNAV" (telephone) before that was read.
+        feat = {f[2]: f for f in gc.features_for(0x0003)}[0x0102]
+        assert feat[0] == 'OFFROADNAV'
+
+    def test_includes_the_speller_lock_at_0x010c(self):
+        feat = {f[2]: f for f in gc.features_for(0x0003)}[0x010c]
+        assert feat[0] == 'SPELLER'
+        assert feat[3] == 0x0166, 'default must be the never-lock SubID, like TVINF'
+
+    def test_swids_match_the_firmware_dispatch_table(self):
+        # Every SWID PCM3Root's activation dispatch handles (RDW400), and
+        # nothing else.
+        firmware = set(range(0x0101, 0x0112)) | set(range(0x2001, 0x200c))
+        assert {f[2] for f in gc.features_for(0x0003)} == firmware
 
     def test_feature_names_match_the_web_app(self):
         assert [f[0] for f in gc.features_for(0x0003)] == [f[0] for f in webapp_features()]
@@ -161,23 +174,23 @@ def records(path):
 class TestAddRemove:
     def test_add_appends_a_missing_feature(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV'])
         assert 0x0102 not in [r[0] for r in records(tmp_path / 'PagSWAct.002')]
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV'])
         assert 0x0102 in [r[0] for r in records(tmp_path / 'PagSWAct.002')]
 
     def test_add_writes_the_same_code_the_full_build_would(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         expected = dict((r[0], r[2]) for r in records(tmp_path / 'PagSWAct.002'))[0x0102]
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV'])
         got = dict((r[0], r[2]) for r in records(tmp_path / 'PagSWAct.002'))[0x0102]
         assert got == expected
 
     def test_add_replaces_an_existing_record_rather_than_duplicating(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         before = len(records(tmp_path / 'PagSWAct.002'))
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV'])
         assert len(records(tmp_path / 'PagSWAct.002')) == before
 
     def test_remove_drops_only_the_named_feature(self, tmp_path):
@@ -191,11 +204,11 @@ class TestAddRemove:
     def test_add_leaves_the_other_usb_files_untouched(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         before = (tmp_path / 'copie_scr.sh').read_bytes()
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV'])
         assert (tmp_path / 'copie_scr.sh').read_bytes() == before
 
     def test_add_without_an_existing_file_is_an_error(self, tmp_path):
-        assert gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL']) == 1
+        assert gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV']) == 1
 
     def test_unknown_feature_name_is_an_error(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
@@ -204,10 +217,10 @@ class TestAddRemove:
     def test_add_and_remove_together_is_an_error(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         with pytest.raises(SystemExit):
-            gc.main([VIN, str(tmp_path), '--add', 'TEL', '--remove', 'KOMP'])
+            gc.main([VIN, str(tmp_path), '--add', 'OFFROADNAV', '--remove', 'KOMP'])
 
     def test_add_without_a_usb_path_is_an_error(self):
-        assert gc.main([VIN, '--quiet', '--add', 'TEL']) == 1
+        assert gc.main([VIN, '--quiet', '--add', 'OFFROADNAV']) == 1
 
     def test_add_with_a_vin_from_another_car_is_refused(self, tmp_path, capsys):
         """The file is signed for one car; a code for another would mix them."""
@@ -267,7 +280,7 @@ class TestDiagnosticMode:
 
     def test_cannot_be_combined_with_add(self, tmp_path):
         with pytest.raises(SystemExit):
-            gc.main(['--diag', str(tmp_path), '--add', 'TEL'])
+            gc.main(['--diag', str(tmp_path), '--add', 'OFFROADNAV'])
 
 
 class TestListFeatures:
@@ -293,7 +306,7 @@ class TestCodeListing:
         # A cp1252 or cp437 console garbles non-ASCII punctuation.
         assert gc.main([VIN]) == 0
         assert gc.main([VIN, str(tmp_path)]) == 0
-        assert gc.main([VIN, str(tmp_path), '--add', 'TEL']) == 0
+        assert gc.main([VIN, str(tmp_path), '--add', 'OFFROADNAV']) == 0
         out = capsys.readouterr().out
         assert out.isascii(), [c for c in out if not c.isascii()]
 
@@ -426,8 +439,8 @@ class TestFileRoundTrip:
         full = (tmp_path / 'PagSWAct.002').read_bytes()
         original = {full[i + 18] | (full[i + 19] << 8): full[i:i + 28]
                     for i in range(0, len(full), 28)}
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV'])
         rebuilt = (tmp_path / 'PagSWAct.002').read_bytes()
         readded = {rebuilt[i + 18] | (rebuilt[i + 19] << 8): rebuilt[i:i + 28]
                    for i in range(0, len(rebuilt), 28)}[0x0102]
@@ -605,7 +618,7 @@ class TestShow:
 
     def test_cannot_be_combined_with_add(self, tmp_path):
         with pytest.raises(SystemExit):
-            gc.main(['--show', str(tmp_path), '--add', 'TEL'])
+            gc.main(['--show', str(tmp_path), '--add', 'OFFROADNAV'])
 
 
 class TestShowWildcardSubId:
@@ -696,61 +709,61 @@ class TestAddRemoveMultiple:
 
     def test_comma_separated_add(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL,KOMP'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV,KOMP'])
         assert 0x0102 not in self._swids(tmp_path)
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL,KOMP'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV,KOMP'])
         got = self._swids(tmp_path)
         assert 0x0102 in got and 0x0106 in got
 
     def test_comma_separated_remove(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         before = len(self._swids(tmp_path))
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL,KOMP,SDARS'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV,KOMP,SDARS'])
         got = self._swids(tmp_path)
         assert len(got) == before - 3
         assert not {0x0102, 0x0106, 0x0108} & set(got)
 
     def test_repeating_the_flag_also_works(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL', '--remove', 'KOMP'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV', '--remove', 'KOMP'])
         got = self._swids(tmp_path)
         assert 0x0102 not in got and 0x0106 not in got
 
     def test_whitespace_around_names_is_tolerated(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', ' TEL , KOMP '])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', ' OFFROADNAV , KOMP '])
         got = self._swids(tmp_path)
         assert 0x0102 not in got and 0x0106 not in got
 
     def test_added_codes_match_the_full_build(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         want = {r[0]: r[2] for r in records(tmp_path / 'PagSWAct.002')}
-        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL,KOMP'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL,KOMP'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV,KOMP'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV,KOMP'])
         got = {r[0]: r[2] for r in records(tmp_path / 'PagSWAct.002')}
         assert got[0x0102] == want[0x0102] and got[0x0106] == want[0x0106]
 
     def test_one_bad_name_rejects_the_whole_call(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
         before = self._swids(tmp_path)
-        assert gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL,NOPE']) == 1
+        assert gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV,NOPE']) == 1
         assert self._swids(tmp_path) == before, 'file must stay untouched on error'
 
     def test_the_bad_name_is_named_in_the_error(self, tmp_path, capsys):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'TEL,NOPE'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--add', 'OFFROADNAV,NOPE'])
         assert 'NOPE' in capsys.readouterr().err
 
     def test_empty_segments_are_ignored(self, tmp_path):
         gc.main([VIN, str(tmp_path), '--quiet'])
-        assert gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'TEL,,KOMP']) == 0
+        assert gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV,,KOMP']) == 0
 
     def test_summary_names_every_feature_touched(self, tmp_path, capsys):
         gc.main([VIN, str(tmp_path), '--quiet'])
         capsys.readouterr()
-        gc.main([VIN, str(tmp_path), '--remove', 'TEL,KOMP'])
+        gc.main([VIN, str(tmp_path), '--remove', 'OFFROADNAV,KOMP'])
         out = capsys.readouterr().out
-        assert 'TEL' in out and 'KOMP' in out
+        assert 'OFFROADNAV' in out and 'KOMP' in out
 
 
 OTHER_VIN = 'WP0ZZZ97Z8L040010'
@@ -1175,3 +1188,63 @@ class TestFromBackupUsesTheDetectedVin:
     def test_without_diagnostics_it_still_asks_for_a_vin(self, tmp_path):
         make_diag_stick(tmp_path)
         assert gc.main([str(tmp_path), '--from-backup', '--add', 'SDARS']) == 1
+
+
+class TestFeatureAliases:
+    """'TEL' was the old name for 0x0102; commands that use it keep working."""
+
+    def test_add_accepts_the_old_tel_name(self, tmp_path):
+        gc.main([VIN, str(tmp_path), '--quiet'])
+        gc.main([VIN, str(tmp_path), '--quiet', '--remove', 'OFFROADNAV'])
+        assert gc.main([VIN, str(tmp_path), '--quiet', '--add', 'tel']) == 0
+        assert 0x0102 in [r[0] for r in records(tmp_path / 'PagSWAct.002')]
+
+    def test_subid_accepts_the_old_tel_name(self):
+        names = [f[0] for f in gc.features_for(0x0003)]
+        assert gc.parse_subid_overrides(['TEL=0x0001'], names) == {'OFFROADNAV': 1}
+
+    def test_the_alias_is_not_listed_as_a_feature(self):
+        assert 'TEL' not in [f[0] for f in gc.features_for(0x0003)]
+
+
+class TestSpeller:
+    def test_speller_subid_override_picks_a_speed_limit(self):
+        feats = gc.features_for(0x0003, {'SPELLER': 0x0105})
+        feat = {f[2]: f for f in feats}[0x010c]
+        assert feat[1] == '010c0105'
+
+    def test_speller_code_decodes_to_its_swid_and_subid(self):
+        code = gc.generate_code(VIN, '010c0166')
+        assert gc.signed_feature(code) == (0x010c, 0x0166)
+
+
+def webapp_variants():
+    """FEATURE_VARIANTS from the web app: {name: [(subid, label)]}."""
+    html = open(WEBAPP, encoding='utf-8').read()
+    def pairs(text):
+        return [(int(h, 16), l) for h, l in re.findall(r"\[0x([0-9a-fA-F]{4}),\s*'([^']*)'\]", text)]
+    limits = pairs(html.split('const SPEED_LIMIT_CHOICES = [')[1].split('];')[0])
+    body = html.split('const FEATURE_VARIANTS = {')[1].split('};')[0]
+    out = {}
+    for name, rest in re.findall(r"^\s*(\w+):\s*(.+?),?\s*$", body, re.M):
+        out[name] = limits if rest.startswith('SPEED_LIMIT_CHOICES') else pairs(rest)
+    return out
+
+
+class TestFeatureVariants:
+    def test_match_the_web_app(self):
+        ours = {n: list(v) for n, v in gc.FEATURE_VARIANTS.items()}
+        assert ours == webapp_variants()
+
+    def test_every_variant_feature_exists(self):
+        names = {f[0] for f in gc.features_for(0x0003)}
+        assert set(gc.FEATURE_VARIANTS) <= names
+
+    def test_default_option_is_the_table_default(self):
+        defaults = {f[0]: f[3] for f in gc.features_for(0x0003)}
+        for name, opts in gc.FEATURE_VARIANTS.items():
+            assert opts[0][0] == defaults[name], name
+
+    def test_list_features_shows_the_siri_option(self, capsys):
+        assert gc.main(['--list-features']) == 0
+        assert '--subid SSS=0x0001' in capsys.readouterr().out

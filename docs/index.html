@@ -479,12 +479,13 @@ function featuresFor(flSubId) {
     {name:'BTH',              hex:'010a0000', desc:'Bluetooth telephony',              cat:'core'},
     {name:'KOMP',             hex:'01060000', desc:'Kompass (compass display)',          cat:'core'},
     {name:'Navigation',       hex:'01010000', desc:'Navigation system',                cat:'core'},
-    {name:'TEL',               hex:'01020000', desc:'Telephone module',                   cat:'core'},
+    {name:'OFFROADNAV',       hex:'01020000', desc:'Off-road navigation',              cat:'core'},
     {name:'UMS',              hex:'01090000', desc:'USB media support',                cat:'core'},
     {name:'FB',               hex:'01030000', desc:'Fahrtenbuch (electronic logbook)',   cat:'core'},
     {name:'SSS',              hex:'01040000', desc:'Voice control',                    cat:'core'},
     {name:'SC',               hex:'01050000', desc:'Sport Chrono',                     cat:'core'},
     {name:'TVINF',            hex:'01070166', desc:'Video in Motion',                  cat:'core'},
+    {name:'SPELLER',          hex:'010c0166', desc:'Text entry while driving (speller lock)', cat:'core'},
     {name:'SDARS',            hex:'01080000', desc:'Satellite radio',                  cat:'core'},
     {name:'INDMEM',           hex:'010d0000', desc:'Individual memory',                cat:'core'},
     {name:'FeatureLevel',     hex:flHex,      desc:'Feature level / boot logo',        cat:'core'},
@@ -503,6 +504,47 @@ function featuresFor(flSubId) {
     {name:'NavDBChile',       hex:'200a00ff', desc:'Chile',                            cat:'nav'},
     {name:'NavDBArgentina',   hex:'200b00ff', desc:'Argentina',                        cat:'nav'},
   ];
+}
+
+// Features whose SubID the PCM reads as an option, default first. Same table
+// as FEATURE_VARIANTS in generate_codes.py (the tests hold them level).
+const SPEED_LIMIT_CHOICES = [
+  [0x0166, 'never locks'],
+  [0x0109, 'locks above 9 km/h'],
+  [0x0105, 'locks above 5 km/h'],
+  [0x0100, 'locks when moving'],
+  [0x0000, 'only with the handbrake on'],
+];
+const FEATURE_VARIANTS = {
+  TVINF: SPEED_LIMIT_CHOICES,
+  SPELLER: SPEED_LIMIT_CHOICES,
+  SSS: [[0x0000, 'Siri off'], [0x0001, 'Siri on (Siri Eyes Free)']],
+  OnlineServices: [[0x0001, 'search with Google'], [0x0002, 'search with Bing']],
+};
+// The option picked for each feature, shared by the Codes and USB tabs.
+const variantChoice = {};
+
+function withVariants(features) {
+  return features.map(f => {
+    const sub = variantChoice[f.name];
+    if (sub === undefined) return f;
+    return {...f, hex: f.hex.slice(0, 4) + sub.toString(16).padStart(4, '0')};
+  });
+}
+
+function setVariant(name, value) {
+  variantChoice[name] = parseInt(value, 10);
+  if (currentCodes.length) generateCodes();
+  document.querySelectorAll('select[data-variant="' + name + '"]').forEach(s => { s.value = value; });
+}
+
+function variantSelect(f) {
+  const opts = FEATURE_VARIANTS[f.name];
+  if (!opts) return '';
+  const cur = parseInt(f.hex.slice(4), 16);
+  return '<select data-variant="' + f.name + '" style="margin-top:6px;font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);max-width:260px" onchange="setVariant(\'' + f.name + '\', this.value)">' +
+    opts.map(([sub, label]) => '<option value="' + sub + '"' + (sub === cur ? ' selected' : '') + '>' +
+      label + '  (0x' + sub.toString(16).padStart(4, '0') + ')</option>').join('') + '</select>';
 }
 
 // ===== Populate models dropdown =====
@@ -568,6 +610,20 @@ function navLevelNote(rec){
   const s=signedFeat(rec.code);
   if(!s||s.sw!==rec.sw||s.su===0xff)return '';
   return '<div class="feat-desc" style="color:var(--accent);margin-top:4px">Map level '+s.su+': this code unlocks one map level, likely from a dealer map update. A code made here unlocks every level (255), like most factory codes, so it will differ from this one. Both work.</div>';
+}
+// The option a car's record carries, for features whose SubID is one
+// (FEATURE_VARIANTS): e.g. whether voice control has Siri on.
+function variantNote(rec,name){
+  const opts=FEATURE_VARIANTS[name];
+  if(!opts)return '';
+  const s=signedFeat(rec.code);
+  if(!s||s.sw!==rec.sw)return '';
+  // what the firmware does with a value it has no case for
+  const FALLBACK={TVINF:'only with the handbrake on',SPELLER:'only with the handbrake on',
+    SSS:'Siri off',OnlineServices:'search with Google'};
+  const hit=opts.find(([sub])=>sub===s.su);
+  const label=hit?hit[1]:(FALLBACK[name]?FALLBACK[name]+', the PCM’s fallback':'unlisted setting');
+  return '<div class="feat-desc" style="color:var(--accent);margin-top:4px">Setting: '+label+' (0x'+s.su.toString(16).padStart(4,'0')+')</div>';
 }
 function backupSignedHash(){
   const hs=new Set(backupRecords.map(r=>signedVinHash(r.code)).filter(Boolean));
@@ -721,7 +777,7 @@ function renderBackup(){
     // the PCM rewrites this flag after checking the code
     const mark=rec.active?'\u2705 ':'\u26aa ';
     const state=rec.active?'':' <span style="color:var(--text2);font-weight:normal">(marked inactive by the PCM)</span>';
-    bf.innerHTML+='<div class="feat-item'+(rec.active?' on':'')+'" style="opacity:0.85;margin-bottom:8px;cursor:default"><input type="checkbox"'+(rec.active?' checked':'')+' disabled><div><div class="feat-name">'+mark+name+state+'</div><div class="feat-desc">'+desc+'</div><div class="feat-code">'+rec.code+'</div>'+navLevelNote(rec)+'</div></div>';
+    bf.innerHTML+='<div class="feat-item'+(rec.active?' on':'')+'" style="opacity:0.85;margin-bottom:8px;cursor:default"><input type="checkbox"'+(rec.active?' checked':'')+' disabled><div><div class="feat-name">'+mark+name+state+'</div><div class="feat-desc">'+desc+'</div><div class="feat-code">'+rec.code+'</div>'+navLevelNote(rec)+(feat?variantNote(rec,feat.nm):'')+'</div></div>';
   }
   if(!backupRecords.length) bf.innerHTML='<div style="color:var(--text2);font-size:13px">No features found in backup</div>';
   let hasNew=false;
@@ -804,6 +860,7 @@ function switchTab(id) {
 
 // ===== TAB 1: Generate =====
 let currentCodes = [];
+let lastCodesModel = 'cayenne-se';
 
 
 function updateBootPreview(selectId, previewId, imgId) {
@@ -836,9 +893,12 @@ function generateCodes() {
   err.style.display = 'none';
 
   const modelSel = document.getElementById('boot-model-1');
-  const modelKey = modelSel ? modelSel.value : 'cayenne-se';
+  // The dropdown is refilled just after each render; until then keep the
+  // model picked last, so an option change right after a render keeps it.
+  const modelKey = (modelSel && MODELS[modelSel.value]) ? modelSel.value : lastCodesModel;
+  lastCodesModel = modelKey;
   const [flSubId] = MODELS[modelKey];
-  const features = featuresFor(flSubId);
+  const features = withVariants(featuresFor(flSubId));
 
   currentCodes = features.map(f => ({ ...f, code: generateCode(vin, f.hex) }));
 
@@ -892,7 +952,7 @@ function generateCodes() {
       }, 0);
     } else {
       row.innerHTML = `
-        <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div></div>
+        <div><div class="code-name">${c.name}</div><div class="code-desc">${c.desc}</div>${variantSelect(c)}</div>
         <div style="display:flex;align-items:center">
           <span class="code-val" title="Click to copy" onclick="copyOne(this)">${c.code}</span>
           <button class="code-copy" onclick="copyOne(this.previousElementSibling)">Copy</button>
@@ -1007,8 +1067,8 @@ function usbBuildFeatureGrid() {
         updateBootPreview('boot-model-2', 'boot-preview-2', 'boot-img-2');
       }, 0);
     } else {
-      div.innerHTML = `<input type="checkbox" data-hex="${f.hex}">
-        <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div></div>`;
+      div.innerHTML = `<input type="checkbox" data-name="${f.name}">
+        <div><div class="feat-name">${f.name}</div><div class="feat-desc">${f.desc}</div>${variantSelect(withVariants([f])[0])}</div>`;
     }
     div.querySelector('input').addEventListener('change', function() {
       div.classList.toggle('on', this.checked);
@@ -1039,11 +1099,11 @@ function usbGetSelectedFeatures() {
   const bootSel = document.getElementById('boot-model-2');
   const modelKey = bootSel ? bootSel.value : 'cayenne-se';
   const [flSubId] = MODELS[modelKey];
-  const allFeats = featuresFor(flSubId);
+  const allFeats = withVariants(featuresFor(flSubId));
   const selected = [];
   document.querySelectorAll('#tab-usb .feat-item input:checked').forEach(cb => {
-    const hex = cb.dataset.isFl ? ('010e' + flSubId.toString(16).padStart(4,'0')) : cb.dataset.hex;
-    const feat = allFeats.find(f => f.hex === hex);
+    const name = cb.dataset.isFl ? 'FeatureLevel' : cb.dataset.name;
+    const feat = allFeats.find(f => f.name === name);
     if (feat) selected.push(feat);
   });
   return selected;

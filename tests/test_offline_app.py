@@ -83,10 +83,10 @@ def test_returned_stick_round_trip(tmp_path):
     (stick / "pcm_dump_20261112" / "vin").write_text(VIN + "\n")
 
     assert gc.vin_from_diagnostics(str(stick))[0] == VIN
-    names, model, kept, levels = app.car_features(str(stick))
+    names, model, kept, levels, variants = app.car_features(str(stick))
     assert names == {"ENGINEERING", "UMS", "FeatureLevel"}
     assert model == "cayenne-se"
-    assert kept == [] and levels == []
+    assert kept == [] and levels == [] and variants == {}
     rc, text = app.capture(gc.show_pagswact, str(stick), VIN)
     assert rc == 0 and "MATCH" in text
 
@@ -95,7 +95,7 @@ def test_variant_record_is_reported_not_changed(tmp_path):
     rec = gc.build_record(VIN, *next((f[1], f[2]) for f in gc.features_for(0x0043)
                                      if f[0] == "NavDBEurope"), 0x0007)
     (tmp_path / "PagSWAct.002").write_bytes(bytes(rec))
-    names, _model, kept, levels = app.car_features(str(tmp_path))
+    names, _model, kept, levels, _variants = app.car_features(str(tmp_path))
     assert names == {"NavDBEurope"}
     assert kept == ["NavDBEurope variant 0x0007"] and levels == []
 
@@ -106,7 +106,7 @@ def test_map_level_record_is_explained(tmp_path):
     CLI's --show says the same."""
     rec = gc.build_record(VIN, "20020006", 0x2002, 0x0006)
     (tmp_path / "PagSWAct.002").write_bytes(bytes(rec))
-    names, _model, kept, levels = app.car_features(str(tmp_path))
+    names, _model, kept, levels, _variants = app.car_features(str(tmp_path))
     assert names == {"NavDBNorthAmerica"}
     assert kept == [] and levels == ["NavDBNorthAmerica level 6"]
     rc, text = app.capture(gc.show_pagswact, str(tmp_path), VIN)
@@ -122,3 +122,32 @@ def test_map_level_helper():
 
 def test_no_backup_on_stick(tmp_path):
     assert app.car_features(str(tmp_path)) is None
+
+
+@pytest.mark.parametrize("options", [{"SSS": 0x0001}, {"OnlineServices": 0x0002},
+                                     {"TVINF": 0x0109, "SPELLER": 0x0105}])
+def test_options_match_the_cli_subid_flag(tmp_path, options):
+    """An option picked here == the same --subid on the CLI, byte for byte."""
+    cli, gui = tmp_path / "cli", tmp_path / "gui"
+    flags = []
+    for name, sub in options.items():
+        flags += ["--subid", "%s=0x%04x" % (name, sub)]
+    subprocess.run([sys.executable, os.path.join(ROOT, "generate_codes.py"), "-q", "-m", "911",
+                    VIN, str(cli)] + flags, check=True, capture_output=True)
+    names = {f[0] for f in gc.features_for(gc.MODELS["911"][0])}
+    app.build_activation(VIN, "911", names, str(gui), options)
+    assert (cli / "PagSWAct.002").read_bytes() == (gui / "PagSWAct.002").read_bytes()
+
+
+def test_returned_option_is_picked_up_not_dropped(tmp_path):
+    """A car with Siri on comes back as an option to set, not a record lost."""
+    app.build_activation(VIN, "cayenne-se", {"SSS", "UMS"}, str(tmp_path), {"SSS": 0x0001})
+    names, _model, kept, _levels, variants = app.car_features(str(tmp_path))
+    assert names == {"SSS", "UMS"}
+    assert variants == {"SSS": 0x0001} and kept == []
+
+
+def test_every_option_list_starts_with_the_default():
+    defaults = {f[0]: f[3] for f in gc.features_for(0x0003)}
+    for name in gc.FEATURE_VARIANTS:
+        assert app.variant_choices(name)[0][1] == defaults[name], name
