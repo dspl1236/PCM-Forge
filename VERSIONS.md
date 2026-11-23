@@ -1,6 +1,6 @@
 # PCM 3.1 hardware, software versions and features
 
-Which software a PCM 3.1 can run depends on its hardware, and a few activation options depend on the software. This page lists both. The hardware and release tables come from the update definition files (`*.def`) on Porsche's 2015 update disc (`PCM_NA_20150721`). The feature table comes from the firmware itself (`PCM3Root` from each release) and from tests on real units.
+Which software a PCM 3.1 can run depends on its hardware, and which features work depends on the software. This page covers hardware IDs, software limits, hard drives, the phone and activations. The hardware and release tables come from the update definition files (`*.def`) on Porsche's 2015 update disc (`PCM_NA_20150721`). The feature table comes from the firmware itself (`PCM3Root` from each release) and from tests on real units.
 
 ## Find your hardware and software
 
@@ -13,26 +13,61 @@ The hardware ID reads `PCM` + letter + generation + `XX` + date code, for exampl
 
 | Part | Values | Meaning |
 |------|--------|---------|
-| Letter | `G`, `E`, `S`, `C` | Hardware variant. Each newer release accepts more letters: 1.35 takes only `G`; 2.47 takes `G`, `E`; 3.43 takes `G`, `E`, `S`; 4.76 takes `G`, `E`, `S`, `C`. |
-| Generation | `01`, `02` | **The part that decides the software line.** `01` = original units, software 1.xx to 3.xx. `02` = facelift ("MOPF") units, software 4.xx. |
-| Date code | `0828`/`0829`, `0919`/`0920`, `1220`/`1221` | Design year and week: 2008, 2009, 2012. `1220` is the units without a hard drive (the `LOW` software). |
+| Generation | `01`, `02` | **This decides the software line.** `01` = original units, software 1.xx to 3.xx. `02` = later ("MOPF") units, software 4.xx. |
+| Letter | `G`, `E`, `S`, `C` | Hardware variant: which I/O controller chip and which firmware build the unit gets (table below). |
+| Date code | `0828`/`0829`, `0919`/`0920`, `1220`/`1221` | Design year and week: 2008, 2009, 2012. On `02` units, `1220` = no hard drive, `1221` = with hard drive. |
+
+What the update disc installs for each letter:
+
+| Hardware | I/O controller | Firmware build |
+|----------|----------------|----------------|
+| `G01` | 9600 | standard |
+| `E01` | 9608 | standard |
+| `S01` | 9612 | `9x1` |
+| `G02` | 9600 | MOPF |
+| `E02` | 9612 | MOPF |
+| `S02` | 9612 | MOPF `9x1` |
+| `C02` | 9612 | MOPF `Macan` |
+
+The firmware file names suggest the models: `Macan` for the Macan, and `9x1` most likely for the 991 and 981 (911, Boxster, Cayman). The disc doesn't say which car uses `G` or `E`.
 
 ## Which software each unit can take
 
-The update disc picks the software by hardware ID. If a release has no entry for your ID, the disc has nothing to install on that unit.
+The update disc picks the software by hardware ID. If a release has no entry for your ID, the disc has nothing to install on that unit, so these are hard limits.
 
-| Hardware ID | Newest release on the disc | Version string |
-|-------------|----------------------------|----------------|
-| `PCMG01XX0828` | 1.35 (`PCM31_G1_V135`) | `Porsche_PCM3.1_128MB_VRam_VR_G1_17.6_14183AGI` |
-| `PCMG01XX0829` | 2.47 (`PCM31_V247_RDW`) | `Porsche_PCM3.1_iPod1wire_VR_E2_12.8_14183AEN` |
-| `PCMG01XX0919`/`0920`, `PCME01XX0919`/`0920` | 3.43 (`PCM31_V343_RDW`), also offered 2.47 | `Porsche_PCM3.1_iPod1wire_VR_9X1_13.4_14181A9K` |
-| `PCMS01XX0919`/`0920` | 3.43 | as above |
-| `PCM{C,E,G,S}02XX1221` | 4.76 (`PCM31MOPF_V476_RDW`) | `Porsche_PCM3.1_MOPF_SOP_STEP9.6_15245AS9` |
-| `PCM{C,E,G,S}02XX1220` | 4.76 without hard drive (`PCM31MOPF_V476_LOW`) | build `15245B` |
+| Hardware ID | 1.35 | 1.51 (China) | 2.47 | 2.51 (China) | 3.43 | 3.51 (China) | 4.76 | Newest |
+|-------------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|--------|
+| `PCMG01XX0828` | China build | yes | | | | | | **1.35 / 1.51** |
+| `PCMG01XX0829` | yes | yes | | | | | | **1.35** |
+| `PCMG01XX0919` / `0920` | | | yes | yes | yes | yes | | **3.43** |
+| `PCME01XX0919` / `0920` | | | yes | yes | yes | yes | | **3.43** |
+| `PCMS01XX0919` / `0920` | | | | | yes | yes | | **3.43** |
+| `PCM{G,E,S,C}02XX1221` | | | | | | | yes | **4.76** |
+| `PCM{G,E,S,C}02XX1220` | | | | | | | LOW build | **4.76** (no hard drive) |
 
-- **No `01` unit can take 4.xx, and no `02` unit is offered 3.xx.** No hardware ID appears on both sides. Whether a `01` unit could physically run 4.xx has never been tested; no Porsche package tries it.
-- **Same release, other markets:** China (`CHN`, with its own 1.51, 2.51 and 3.51 releases) and Arabic (`ARB`) have their own builds of each version. The feature tables below were read from the Rest of World builds.
-- The version string's last part is the build: `15245A` is 4.76 Rest of World / North America, `15245B` LOW, `15245C` Arabic, `15245D` China.
+- **The 2008 units stop at 1.35.** `PCMG01XX0828` installs from the disc's China folder and `0829` from the Rest of World folder.
+- **No `01` unit can take 4.xx, and no `02` unit is offered anything older.** No hardware ID appears on both sides. Besides the hardware ID, 4.76 also dropped the older FPGA board revision and the 64 MB video-RAM units that 1.xx to 3.xx still supported.
+- **Earlier releases exist in each line** (4.63, for example); the 2015 disc carries only the last one of each.
+- **Other markets:** China (`CHN`) and Arabic (`ARB`) get their own builds of each version. The feature tables below were read from the Rest of World builds.
+- **Version strings:** `Porsche_PCM3.1_MOPF_SOP_STEP9.6_15245AS9` is 4.76. The build is the `15245A` part: `A` Rest of World / North America, `B` LOW, `C` Arabic, `D` China. 3.43 is build `14181`.
+
+## Hard drive
+
+| | 40 GB drive | 100 GB drive |
+|-|-------------|--------------|
+| Found in | early units (about 2011-2012) | later units (about 2013-2016) |
+| Partitions | 3: system, data, maps | 4: system, data, maps, and a 42 GB jukebox |
+| Jukebox (music on the PCM) | no | yes, needs 4.xx |
+
+- **The jukebox needs 4.xx software.** Versions 1.xx to 3.xx have no code to use a media partition, so a bigger drive in a `01` unit won't add one.
+- **Filesystems:** 1.xx and 2.xx use only QNX4 filesystems; QNX6 support starts with 3.xx. A drive from a newer unit may not read on an older one.
+- **Units ending `1220`** have no hard drive at all: the `LOW` software keeps everything in flash.
+- **Maps are not on the software update disc.** They come from a separate navigation disc. 4.76 expects map data version 4 to 6. If you put in a blank drive or SSD and run only the software update, everything works except navigation ("loading maps"). Install the maps from the navigation disc too.
+
+**Swapping in an SSD:**
+- The drive runs as the **slave** on its IDE channel (the DVD drive is the master). The SATA-to-IDE adapter must be set to slave. A master-only adapter just isn't found; nothing breaks.
+- The PCM runs the channel at MDMA2 / PIO4, not UDMA, so the adapter has to work in those modes.
+- **Stay at 128 GB or below.** Nothing larger than the stock 100 GB has been checked. Above 137 GB, the old 28-bit addressing limit would make writes wrap round to the start of the disk without warning.
 
 ## Features by software version
 
@@ -62,6 +97,19 @@ A version that doesn't know an activation skips its record and logs "no valid SW
 On 1.xx-3.xx the Siri option has no effect: voice control activates the same either way. The speed-limit values are the same in every version.
 
 Evidence: the activation dispatch in each `PCM3Root` (1.35 at `0x822c4fc`, 2.47 `0x823e9ea`, 3.43 `0x8248ac6`, 4.76 `0x826b090`) and the handlers' own log strings. The 2.47 speed-limit handling is read from the same compare values as 1.35 and 3.43, not traced step by step.
+
+## Phone (hands-free)
+
+The phone needs more than an activation. All of these have to be in place:
+
+1. **Activation: BTH (0x010A), "Bluetooth Handyvorbereitung"** (Bluetooth phone). It exists on every version. The entry PCM-Forge used to call "TEL" (0x0102) is Off-road Navigation and does nothing for the phone.
+2. **Coding**, set with PIWIS or another diagnostic tool. In Porsche's diagnostic data:
+   - **Bluetooth:** `On`
+   - **Telefon Einstellungen → Telefonmodulaktivierung** (phone module): `Yes`
+   - **Mikrofon → Anzahl** (number of microphones): not `keines` (none)
+3. **A microphone wired to the PCM.** Without one, calls can't work even when everything else is set.
+
+On a used PCM from another car, a phone screen that says "unavailable" most likely means one of these is missing. Voice control (SSS, 0x0104) is a separate activation and also uses the microphone.
 
 ## Activation codes
 

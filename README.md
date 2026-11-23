@@ -30,13 +30,12 @@ The update disc reads your PCM's hardware ID and installs the newest software fo
 
 | Hardware ID | Newest software |
 |-------------|-----------------|
-| `PCMG01XX0828` (2008 design) | v1.35 |
-| `PCMG01XX0829` (2008 design) | v2.47 |
+| `PCMG01XX0828` / `0829` (2008 design) | v1.35 |
 | `PCM{G,E,S}01XX0919` / `0920` (2009 design) | v3.43 |
 | `PCM{C,E,G,S}02XX1221` (facelift) | v4.76 |
 | `PCM{C,E,G,S}02XX1220` (facelift, no hard drive) | v4.76 LOW |
 
-Which features and options each version supports: [VERSIONS.md](VERSIONS.md).
+Full chart, hard drive sizes, SSD swaps, the phone, and which features each version supports: [VERSIONS.md](VERSIONS.md).
 
 Check your version: press **INFO** → **Option** → **Show System Version**.
 
