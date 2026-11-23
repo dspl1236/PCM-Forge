@@ -3,19 +3,19 @@
 PCM-Forge: Porsche PCM 3.1 Activation Code Generator
 https://github.com/dspl1236/PCM-Forge
 
-Generates activation codes for ALL 27 features of the Porsche PCM 3.1.
+Generates activation codes for ALL 28 features of the Porsche PCM 3.1.
 
 Usage:
   python generate_codes.py <VIN>                     # list all codes (911 default)
   python generate_codes.py <VIN> <USB_PATH>          # build an activation USB stick
   python generate_codes.py <VIN> --model <key>       # pick model variant
   python generate_codes.py <VIN> <USB_PATH> --model <key>
-  python generate_codes.py <VIN> <USB_PATH> --add TEL,KOMP     # add features
+  python generate_codes.py <VIN> <USB_PATH> --add OFFROADNAV,KOMP  # add features
   python generate_codes.py <VIN> <USB_PATH> --remove KOMP      # remove features
   python generate_codes.py --diag <USB_PATH>         # diagnostic stick (no VIN needed)
   python generate_codes.py --show <PATH>             # decode an existing PagSWAct.002
   python generate_codes.py <USB_PATH> --from-backup  # rebuild from the car's backup
-  python generate_codes.py <USB_PATH> --from-backup --add TEL  # VIN read off the stick
+  python generate_codes.py <USB_PATH> --from-backup --add KOMP  # VIN read off the stick
   python generate_codes.py <VIN> --show <PATH>       # ...and check it belongs to that VIN
   python generate_codes.py --list-models             # show available models
   python generate_codes.py --list-features           # show feature names
@@ -23,7 +23,11 @@ Usage:
 
 Most features have a single SubID, but a few carry variants: the nav databases
 take a map index (0x00ff = all, or a specific index), and TVINF, SSS and
-OnlineServices differ per vehicle. --subid NAME=HEX selects one; it is
+OnlineServices differ per vehicle. TVINF and SPELLER take the speed limit as
+their SubID: 0x0000 handbrake, 0x0100 0 km/h, 0x0105 5 km/h, 0x0109 9 km/h,
+0x0166 never locks (the default). SSS=0x0001 turns Siri on (0x0000, the
+default, leaves it off), and OnlineServices picks the search provider: 0x0001
+Google (the default), 0x0002 Bing. --list-features shows every choice. --subid NAME=HEX selects one; it is
 repeatable. The built-in defaults are the values the factory used most often
 in research/firmware/PagSWAct.csv, so overriding is the exception.
 
@@ -154,6 +158,41 @@ MODELS = {
     '911-991-2-cab':         (0x0062, '911 (991.2) Cabriolet'),
 }
 
+# Old feature names still accepted on the command line, so existing commands
+# and notes keep working. 0x0102 was listed as "TEL" until the firmware showed
+# it is Off-road Navigation.
+FEATURE_ALIASES = {'tel': 'OFFROADNAV'}
+
+
+def canonical_feature_name(name):
+    """A user-typed feature name with old aliases mapped to the current name."""
+    return FEATURE_ALIASES.get(name.strip().lower(), name.strip())
+
+
+# Features whose SubID PCM3Root reads as an option (RDW400, the package-state
+# handlers of the activation dispatch), default first. The web app's
+# FEATURE_VARIANTS and the offline app offer the same choices; the tests hold
+# the three level.
+#   TVINF / SPELLER: the speed limit for video / for text entry.
+#   SSS: 0x0001 makes /HBbin/pss.cfg the Siri-enabled config (Bluetooth voice
+#        recognition passed through to the phone); any other value disables it.
+#   OnlineServices: the Aha search provider; 0x0001 (or 0xFFFF) Google,
+#        0x0002 Bing, anything else falls back to Google.
+SPEED_LIMIT_CHOICES = (
+    (0x0166, "never locks"),
+    (0x0109, "locks above 9 km/h"),
+    (0x0105, "locks above 5 km/h"),
+    (0x0100, "locks when moving"),
+    (0x0000, "only with the handbrake on"),
+)
+FEATURE_VARIANTS = {
+    'TVINF': SPEED_LIMIT_CHOICES,
+    'SPELLER': SPEED_LIMIT_CHOICES,
+    'SSS': ((0x0000, "Siri off"), (0x0001, "Siri on (Siri Eyes Free)")),
+    'OnlineServices': ((0x0001, "search with Google"), (0x0002, "search with Bing")),
+}
+
+
 def features_for(featlvl_subid, subid_overrides=None):
     """Build the feature list using a specific FeatureLevel SubID.
 
@@ -172,17 +211,23 @@ def features_for(featlvl_subid, subid_overrides=None):
     # The SubIDs are the variant the factory used most often in
     # research/firmware/PagSWAct.csv -- SSS, TVINF, OnlineServices and the nav
     # databases are known to carry others on some cars. --subid picks those.
+    #
+    # The SWIDs are the ones PCM3Root's activation dispatch handles (RDW400,
+    # binary search at 0x826b090). The factory CSV names its columns but
+    # carries no SWIDs, so this mapping comes from the firmware: 0x0102 is
+    # Off-road Navigation (once mislabelled "TEL"), 0x010C the Speller lock.
     feats = [
         ("ENGINEERING",      "010b0000", 0x010b, 0x0000, "Engineering & diagnostic menu"),
         ("BTH",              "010a0000", 0x010a, 0x0000, "Bluetooth telephony"),
         ("KOMP",             "01060000", 0x0106, 0x0000, "Kompass (compass display)"),
         ("Navigation",       "01010000", 0x0101, 0x0000, "Navigation system"),
-        ("TEL",              "01020000", 0x0102, 0x0000, "Telephone module"),
+        ("OFFROADNAV",       "01020000", 0x0102, 0x0000, "Off-road navigation"),
         ("UMS",              "01090000", 0x0109, 0x0000, "USB media support"),
         ("FB",               "01030000", 0x0103, 0x0000, "Fahrtenbuch (electronic logbook)"),
         ("SSS",              "01040000", 0x0104, 0x0000, "Voice control"),
         ("SC",               "01050000", 0x0105, 0x0000, "Sport Chrono"),
         ("TVINF",            "01070166", 0x0107, 0x0166, "Video in Motion"),
+        ("SPELLER",          "010c0166", 0x010c, 0x0166, "Text entry while driving (speller lock)"),
         ("SDARS",            "01080000", 0x0108, 0x0000, "Satellite radio"),
         ("INDMEM",           "010d0000", 0x010d, 0x0000, "Individual memory"),
         ("FeatureLevel",     featlvl_hex, 0x010e, featlvl_subid, "Feature level / boot logo"),
@@ -362,7 +407,7 @@ def parse_subid_overrides(values, valid_names):
         if '=' not in item:
             raise ValueError(f"--subid needs NAME=VALUE, got '{item}'")
         name, _, raw = item.partition('=')
-        key = name.strip().lower()
+        key = canonical_feature_name(name).lower()
         if key not in lookup:
             raise ValueError(f"unknown feature '{name.strip()}' in --subid "
                              f"(use --list-features)")
@@ -576,11 +621,12 @@ def resolve_feature_names(names, features):
     applied halfway through a file the head unit depends on.
     """
     by_name = {f[0].lower(): f for f in features}
-    unknown = [n for n in names if n.lower() not in by_name]
+    keys = [canonical_feature_name(n).lower() for n in names]
+    unknown = [n for n, k in zip(names, keys) if k not in by_name]
     if unknown:
         raise ValueError(f"unknown feature(s): {', '.join(unknown)}. "
                          f"Use --list-features to see options.")
-    return [by_name[n.lower()] for n in names]
+    return [by_name[k] for k in keys]
 
 def apply_feature_edits(recs, matches, vin, adding):
     """Return `recs` with `matches` added (replacing same-SWID records) or removed."""
@@ -913,6 +959,8 @@ def list_features():
     print(f"  {'-'*20}  {'-'*6}  {'-'*40}")
     for name, _hex, swid, _subid, desc in features_for(0x0003):
         print(f"  {name:<20s} 0x{swid:04x}  {desc}")
+        for sub, label in FEATURE_VARIANTS.get(name, ()):
+            print(f"  {'':<20s}   --subid {name}=0x{sub:04x}  {label}")
     print()
 
 def parse_args(argv):

@@ -81,11 +81,11 @@ See each tool's own `--help`/docstring; `tools/README.md` and `PCM4/tools/README
 
 Standalone CLI, no dependencies beyond stdlib:
 ```sh
-python generate_codes.py <VIN>                       # list all 27 codes (911 model default)
+python generate_codes.py <VIN>                       # list all 28 codes (911 model default)
 python generate_codes.py <VIN> <USB_PATH>             # build an activation stick
 python generate_codes.py --diag <USB_PATH>            # build a diagnostic stick (no VIN needed)
 python generate_codes.py --show <PATH>                # decode an existing PagSWAct.002
-python generate_codes.py <VIN> <USB_PATH> --from-backup --add TEL   # edit the car's own set
+python generate_codes.py <VIN> <USB_PATH> --from-backup --add KOMP  # edit the car's own set
 python generate_codes.py --list-models                 # show all model keys
 ```
 The RSA-64 keys (`N`, `E`, `D`) and per-feature SWID/SubID tables live at the top of the file.

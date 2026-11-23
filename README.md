@@ -47,7 +47,9 @@ Check your version: press **INFO** → **Option** → **Show System Version**.
 The web app at [dspl1236.github.io/PCM-Forge](https://dspl1236.github.io/PCM-Forge/) has four tabs:
 
 ### Tab 1: Activation Codes
-Enter your VIN → generates all 26 activation codes instantly. No server, no account, runs entirely in your browser.
+Enter your VIN → generates all 28 activation codes instantly. No server, no account, runs entirely in your browser.
+
+Four features have a setting, picked from a dropdown under the feature: the Video in Motion and Speller speed limits, Siri on or off for voice control, and Google or Bing search for Online Services. See [FEATURES.md](FEATURES.md#feature-options).
 
 ### Tab 2: USB Stick Builder
 Builds a ready-to-use USB stick with activation codes and optional diagnostic probe. The USB stick uses the same `copie_scr.sh` autorun mechanism as Audi MMI3G — `proc_scriptlauncher` runs the script automatically when the USB stick is inserted.
@@ -69,7 +71,7 @@ Modular USB toolkit for PCM 3.1 diagnostics and utilities. Select modules and bu
 | **IOC Probe** | ⚠️ Removed | A research tool (it writes BAP requests to the IOC channels); kept in `tools/ioc-probe/` |
 
 ### Tab 4: Backup
-Upload the `PagSWAct_backup.002` that Diagnostic mode pulls off the PCM to see exactly what's currently activated, then add features on top and download a **merged** `PagSWAct.002` — so you keep every existing activation instead of overwriting them.
+Upload the `PagSWAct_backup.002` that Diagnostic mode pulls off the PCM to see exactly what's currently activated (and, for the four features above, which setting each has), then add features on top and download a **merged** `PagSWAct.002` — so you keep every existing activation instead of overwriting them.
 
 ## Data Connectivity & LTE Restoration
 
@@ -169,7 +171,7 @@ If you installed a used PCM from another car, codes made for your own VIN won't 
 
 **2. Activate with the donor VIN (recommended).** Build the activation stick as above, but enter the **donor VIN** instead of your car's, and choose **your car's model**. The codes then match what the PCM has stored and the features activate. Nothing on the unit has to change.
 
-**Or move the PCM to your own VIN (not yet bench-verified).** Activate **ENGINEERING** (GEM) with the donor VIN, open the menu with **SOUND + SOURCE**, change the stored VIN to your car's, then re-run PCM-Forge with your real VIN. We have not confirmed the VIN-change step on a bench yet, so prefer the route above.
+**Or move the PCM to your own VIN (not yet bench-verified).** Activate **ENGINEERING** (GEM) with the donor VIN, open the menu with **SOUND + SOURCE**, change the stored VIN to your car's, then re-run PCM-Forge with your real VIN. We have not confirmed the VIN-change step on a bench yet, so prefer the route above. The PCM holds more than one VIN field, and only one of them counts for activation codes: on a bench PCM whose second VIN field had been changed to the car's VIN, codes made for the car's VIN were refused, and codes for the unit's original VIN still worked.
 
 Units without a hard drive (the factory `LOW` build, e.g. Korean-market cars) work the same way: the VIN and the activation file live in the PCM's flash, not on the drive.
 
@@ -183,12 +185,14 @@ Units without a hard drive (the factory `LOW` build, e.g. Korean-market cars) wo
 no internet. Nothing is sent anywhere.
 
 - Enter the VIN and pick the model: every activation code appears, double-click to copy.
+- **Options** — the same four settings as the web app (speed limits, Siri, search provider).
 - **Build activation stick…** — tick the features, pick the USB stick: `copie_scr.sh`,
   `run.sh`, `PagSWAct.002` and the progress splash, exactly as the web app writes them.
 - **Build diagnostic stick…** — read-only; the PCM writes its stored VIN and a backup of
   its activations to the stick.
 - **Open returned stick…** — shows what the PCM has activated and the VIN it stores, and
-  with one click uses that VIN and ticks those features, so a new stick keeps them.
+  with one click uses that VIN and ticks those features (and sets the options to match),
+  so a new stick keeps them.
 
 It covers codes and the activation/diagnostic sticks; the Toolkit modules and the Backup
 tab stay in the web app. The exe is unsigned, so SmartScreen warns on first run: **More
@@ -206,7 +210,7 @@ inspecting a stick that came back from the car, and for anything you would rathe
 clicking. Python 3 and the standard library, nothing to install.
 
 ```sh
-python generate_codes.py <VIN>                              # print all 27 codes
+python generate_codes.py <VIN>                              # print all 28 codes
 python generate_codes.py <VIN> <USB_PATH>                   # build an activation stick
 python generate_codes.py --diag <USB_PATH>                  # build a diagnostic stick
 python generate_codes.py --show <PATH>                      # decode a PagSWAct.002
@@ -221,7 +225,7 @@ python generate_codes.py --list-features                    # feature names
 | `--featlevel-subid HEX` | The same thing by number, for a model the table does not list |
 | `--add`, `--remove` | Edit features in an existing `PagSWAct.002`; comma-separated, repeatable |
 | `--from-backup` | Rebuild an activation stick from what the car reported, using the `<USB_PATH>` the diagnostic run wrote — its backup and its VIN. Takes no argument; only when that stick holds several backups, name the one to use: `--from-backup PagSWAct_backup_1234.002` |
-| `--subid NAME=HEX` | Pick a non-default variant of a feature (map index, region) |
+| `--subid NAME=HEX` | Pick a non-default variant of a feature: a map index, a speed limit (`TVINF=0x0109`), Siri (`SSS=0x0001`), the search provider (`OnlineServices=0x0002`). `--list-features` shows every choice |
 | `--no-xor` | Write `copie_scr.sh` unencoded — for inspection only, the PCM will not run it |
 | `--quiet` | Codes only, no headings |
 
@@ -230,7 +234,7 @@ The usual round trip, once per car:
 ```sh
 python generate_codes.py --diag /Volumes/STICK        # 1. pull the car's current state
 python generate_codes.py --show /Volumes/STICK        # 2. read what came back
-python generate_codes.py /Volumes/STICK --from-backup --add SDARS,TEL          # 3. add to it
+python generate_codes.py /Volumes/STICK --from-backup --add SDARS,KOMP         # 3. add to it
 ```
 
 None of those three needs you to type a VIN. The diagnostic run copies the car's own VIN onto

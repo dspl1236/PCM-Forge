@@ -49,19 +49,18 @@ Enables the full navigation system including turn-by-turn directions, map displa
 
 ---
 
-### TEL (SWID 0x0102)
-**Internal name:** Telephone  
-**Porsche option:** Standard equipment  
+### OFFROADNAV (SWID 0x0102)
+**Internal name:** Off-road Navigation (PCM3Root activation dispatch)  
 
-Enables the built-in telephone module for making and receiving calls through the PCM. This controls the base telephony functions independent of Bluetooth.
+Listed here as "TEL" (telephone) until the firmware's SWID table was read: 0x0102 is Off-road Navigation, and the phone is BTH (0x010a). No factory record carries it, so what it shows on a car has not been observed.
 
-**What it enables:**
-- PCM phone interface
-- Contact management
-- Call history
-- Phone settings menu
+---
 
-**How to access:** Press the PHONE button on the PCM
+### SPELLER (SWID 0x010c)
+**Internal name:** SpellerSpeedLimits  
+**SubID:** the speed limit, same values as TVINF (0x0166 = never locks)  
+
+The lock on text entry while driving. It was missing from this list; the firmware handles it next to TVINF. Activated on a bench PCM (SubID 0x0166, state 7, kept across a power cycle); not yet checked in a moving car.
 
 ---
 
@@ -69,7 +68,7 @@ Enables the built-in telephone module for making and receiving calls through the
 **Internal name:** BT_HPF (Bluetooth Hands-Free Profile)  
 **Porsche option:** Standard equipment  
 
-Enables Bluetooth connectivity for hands-free calling and audio streaming. This is separate from the base TEL module — BTH adds wireless connectivity.
+Enables Bluetooth connectivity for hands-free calling and audio streaming. There is no separate telephone activation; 0x0102, once listed as TEL, is Off-road Navigation.
 
 **What it enables:**
 - Bluetooth device pairing and management
@@ -122,6 +121,8 @@ Enables the PCM's built-in voice control system for hands-free operation of navi
 
 **How to access:** Press the voice control button on the steering column stalk, or press and hold the PHONE button
 
+**SubID:** 0x0001 turns on Siri (Siri Eyes Free): PCM3Root makes `/HBbin/pss.cfg` the `pss.siri-enabled.cfg` config, which passes Bluetooth voice recognition through to the phone. Any other SubID gives the Siri-disabled config.
+
 **Note:** Voice recognition quality is typical of 2010-era systems. Works best with clear pronunciation and low background noise.
 
 ---
@@ -165,9 +166,9 @@ Enables the digital compass display on the PCM screen and instrument cluster. On
 ---
 
 ### TVINF (SWID 0x0107)
-**Internal name:** TVTuner  
+**Internal name:** TVTunerSpeedLimits  
 **Porsche option:** TV tuner module  
-**SubID:** 0x0166 (specific to tuner variant)  
+**SubID:** the speed limit: 0x0000 handbrake, 0x0100 / 0x0105 / 0x0109 for 0, 5, 9 km/h, 0x0166 never locks  
 
 Enables the TV tuner functionality. When activated, a "TV" menu icon appears on the PCM home screen. This is also the menu used by aftermarket CarPlay/Android Auto modules (like the Mr12Volt) which masquerade as TV tuner devices on the MOST bus.
 
@@ -178,7 +179,7 @@ Enables the TV tuner functionality. When activated, a "TV" menu icon appears on 
 
 **How to access:** TV icon on PCM home screen
 
-**Note:** Video playback is speed-restricted in most markets — screen blanks above ~5 km/h unless Video in Motion (VIM) coding is applied via PIWIS.
+**Note:** The firmware's name for this package is TVTunerSpeedLimits, and its SubID sets when video locks, so this activation is Video in Motion itself; no PIWIS coding is involved. Whether it also adds the TV icon has not been verified: the TV tuner's presence is a separate coding item (`UPD_ID_ExtTVTunerConfigured`).
 
 ---
 
@@ -289,7 +290,7 @@ Enables DAB/DAB+ digital radio reception. European market equivalent of HD Radio
 
 ### OnlineServices (SWID 0x0111)
 **Internal name:** OnlineServices  
-**SubID:** 0x0001  
+**SubID:** the search provider: 0x0001 (or 0xFFFF) Google, 0x0002 Bing; anything else falls back to Google  
 
 Enables internet-connected services on the PCM. This originally supported Porsche-branded online features via the built-in cellular modem or tethered phone.
 
@@ -365,5 +366,5 @@ CAR → OPTION → Set PCM System → Reset PCM → Vehicle Handover → Yes →
 ## Compatibility Notes
 
 - **CarPlay/Android Auto modules** (Mr12Volt, GTA, Carlinkkit, etc.): These are HARDWARE devices that sit on the MOST fiber optic bus. They are completely independent of software activations and are not affected by PCM-Forge.
-- **PIWIS coding:** Some features require both activation AND variant coding via PIWIS. For example, Video in Motion (VIM) requires TVINF activation plus a PIWIS coding change to disable the speed restriction.
+- **PIWIS coding:** Some features also need the matching hardware coded via PIWIS (a TV tuner, for example). Video in Motion is not one of them: the TVINF SubID alone sets the speed limit.
 - **Firmware version:** All activations work across PCM 3.1 firmware versions (tested on v4.66 through v4.76).

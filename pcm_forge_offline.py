@@ -6,6 +6,8 @@ A small desktop window over generate_codes.py, the same code the web app's
 USB Stick tab mirrors (tests/ check the two byte for byte):
 
   * enter the VIN, pick the model, tick features -> every code, live
+  * options for the features whose SubID is a setting: the Video in Motion and
+    Speller speed limits, Siri, the online search provider
   * Build activation stick...   copie_scr.sh + run.sh + PagSWAct.002 + splash
   * Build diagnostic stick...   read-only; brings back the PCM's VIN and backup
   * Open returned stick...      what the PCM has activated, and the VIN it stores
@@ -51,10 +53,16 @@ def capture(fn, *a, **kw):
     return rc, buf.getvalue()
 
 
-def build_activation(vin, model_key, names, out):
-    """Write an activation stick for `names` (feature names) to `out`."""
+def variant_choices(name):
+    """[(label, subid)] the options dropdown offers for `name`, default first."""
+    return [("%s  (0x%04x)" % (label, sub), sub) for sub, label in gc.FEATURE_VARIANTS[name]]
+
+
+def build_activation(vin, model_key, names, out, variants=None):
+    """Write an activation stick for `names` (feature names) to `out`.
+    `variants` maps a feature name to the SubID picked for it."""
     subid = gc.MODELS[model_key][0]
-    feats = [f for f in gc.features_for(subid) if f[0] in names]
+    feats = [f for f in gc.features_for(subid, variants) if f[0] in names]
     if not feats:
         raise ValueError("no features selected")
     gc.write_usb(out, gc.RUN_ACTIVATE, pagswact=gc.build_pagswact(vin, feats))
@@ -64,7 +72,10 @@ def build_activation(vin, model_key, names, out):
 def car_features(path):
     """What a returned stick (or a folder with PagSWAct.002) says the car has:
     (feature names, model key or None, [records not carried over as-is],
-    [map databases at a single level]) or None.
+    [map databases at a single level], {feature: option SubID}) or None.
+
+    A record at one of a feature's options (FEATURE_VARIANTS, e.g. Siri on)
+    goes into the last dict, so the options can be set to match the car.
 
     A stick built here signs each feature with its standard SubID, so a record
     with another variant, or a SWID this tool doesn't know, is listed rather
@@ -75,7 +86,7 @@ def car_features(path):
     except (OSError, ValueError):
         return None
     known = {f[2]: f for f in gc.features_for(0x0003)}
-    names, model_key, kept, levels = set(), None, [], []
+    names, model_key, kept, levels, variants = set(), None, [], [], {}
     for swid, rec in recs:
         subid = int.from_bytes(rec[0x14:0x16], "little")
         code = rec[:16].decode("ascii", "replace")
@@ -90,9 +101,13 @@ def car_features(path):
                 kept.append("FeatureLevel 0x%04x (unknown model)" % subid)
         elif swid in gc.NAVDB_SWIDS and gc.map_level(code) is not None:
             levels.append("%s level %d" % (entry[0], gc.map_level(code)))
+        elif entry[0] in gc.FEATURE_VARIANTS and \
+                subid in [s for s, _l in gc.FEATURE_VARIANTS[entry[0]]]:
+            if subid != entry[3]:
+                variants[entry[0]] = subid
         elif subid not in (entry[3], gc.SUBID_WILDCARD):
             kept.append("%s variant 0x%04x" % (entry[0], subid))
-    return names, model_key, kept, levels
+    return names, model_key, kept, levels, variants
 
 
 def build_diagnostic(out):
@@ -195,7 +210,7 @@ def run_gui():
     fbox = ttk.Frame(body); fbox.grid(row=1, column=0, sticky="nsw", padx=(0, 14))
     feat_vars = {}
     feats0 = gc.features_for(gc.MODELS[DEFAULT_MODEL][0])
-    per_col = (len(feats0) + 1) // 2                  # two columns: all 27 fit on screen
+    per_col = (len(feats0) + 1) // 2                  # two columns: all 28 fit on screen
     for i, (name, _hex, _sw, _su, desc) in enumerate(feats0):
         v = tk.BooleanVar(value=False)
         feat_vars[name] = v
@@ -204,6 +219,29 @@ def run_gui():
     fbtn = ttk.Frame(body); fbtn.grid(row=2, column=0, sticky="w", pady=6)
     ttk.Button(fbtn, text="Select all", command=lambda: [v.set(True) for v in feat_vars.values()]).pack(side="left")
     ttk.Button(fbtn, text="Clear", command=lambda: [v.set(False) for v in feat_vars.values()]).pack(side="left", padx=6)
+
+    # ---- options: features whose SubID is a setting ----
+    obox = ttk.Frame(body); obox.grid(row=3, column=0, sticky="nw", pady=(2, 0))
+    ttk.Label(obox, text="OPTIONS", style="Title.TLabel").grid(row=0, column=0, columnspan=2, sticky="w")
+    var_vars, var_boxes = {}, []
+    for i, name in enumerate(gc.FEATURE_VARIANTS):
+        opts = variant_choices(name)
+        v = tk.StringVar(value=opts[0][0])
+        var_vars[name] = v
+        ttk.Label(obox, text=name).grid(row=1 + i, column=0, sticky="w", padx=(0, 8))
+        cb = ttk.Combobox(obox, textvariable=v, values=[l for l, _s in opts], width=34, state="readonly")
+        cb.grid(row=1 + i, column=1, sticky="w", pady=1)
+        var_boxes.append(cb)
+
+    def variants():
+        """{feature: SubID} from the options dropdowns."""
+        return {n: dict(variant_choices(n))[v.get()] for n, v in var_vars.items()}
+
+    def set_variants(picked):
+        for n, v in var_vars.items():
+            opts = variant_choices(n)
+            sub = picked.get(n, opts[0][1])
+            v.set(next(l for l, s in opts if s == sub))
 
     # ---- codes ----
     ttk.Label(body, text="ACTIVATION CODES (double-click to copy)", style="Title.TLabel").grid(row=0, column=1, sticky="w")
@@ -240,7 +278,7 @@ def run_gui():
         notes = gc.vin_advisories(vin)
         vin_msg.config(text=("Note: " + " ".join(notes)) if notes else "VIN OK.",
                        foreground=ACCENT if notes else GREEN)
-        for name, feat_hex, _sw, _su, desc in gc.features_for(gc.MODELS[key][0]):
+        for name, feat_hex, _sw, _su, desc in gc.features_for(gc.MODELS[key][0], variants()):
             codes.insert("", "end", text=name, values=(gc.generate_code(vin, feat_hex), desc))
 
     def copy_code(_evt=None):
@@ -276,7 +314,7 @@ def run_gui():
         if not out:
             return
         try:
-            feats = build_activation(vin, key, names, out)
+            feats = build_activation(vin, key, names, out, variants())
         except Exception as e:
             messagebox.showerror(TITLE, "Could not write the stick:\n%s" % e); return
         status.set("Activation stick written to %s: %d features for %s. Insert it after the PCM "
@@ -321,7 +359,8 @@ def run_gui():
             def use():
                 if found_vin:
                     vin_var.set(found_vin)
-                names, model_key, kept, levels = have or (set(), None, [], [])
+                names, model_key, kept, levels, picked = have or (set(), None, [], [], {})
+                set_variants(picked)
                 if model_key:
                     model_var.set(next(l for l, k in choices if k == model_key))
                 if names:
@@ -333,6 +372,9 @@ def run_gui():
                     msg.append("Using the PCM's own VIN %s." % found_vin)
                 if names:
                     msg.append("Ticked the %d features it has, so a new stick keeps them." % len(names))
+                if picked:
+                    msg.append("Options set to match the car: %s."
+                               % ", ".join("%s 0x%04x" % kv for kv in sorted(picked.items())))
                 if kept:
                     msg.append("Not carried over (a stick here uses the standard variant): %s -- "
                                "use generate_codes.py --from-backup to keep them exactly."
@@ -356,6 +398,8 @@ def run_gui():
 
     vin_var.trace_add("write", refresh)
     model_box.bind("<<ComboboxSelected>>", refresh)
+    for cb in var_boxes:
+        cb.bind("<<ComboboxSelected>>", refresh)
     codes.bind("<Double-1>", copy_code)
     vin_entry.focus_set()
     root.mainloop()
