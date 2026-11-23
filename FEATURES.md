@@ -38,7 +38,7 @@ For four features the PCM reads the SubID as a setting, not just as part of the 
 | Voice control (SSS) | `0x0000` / `0x0001` | Siri off / Siri on (Siri Eyes Free) |
 | Online Services | `0x0001` / `0x0002` | Search with Google / with Bing |
 
-These come from the firmware (PCM3Root's activation handlers), not from car tests. The Backup tab shows which setting a car's own record carries.
+These come from the firmware (PCM3Root's activation handlers), not from car tests. The Siri and search options only exist in v4.76; older software ignores them. Which features each software version supports: [VERSIONS.md](VERSIONS.md). The Backup tab shows which setting a car's own record carries.
 
 ## 1. FeatureLevel — Boot logo / model identity
 

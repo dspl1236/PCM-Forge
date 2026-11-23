@@ -26,13 +26,17 @@ All Porsche models with **PCM 3.1** (Harman Becker, SH4A QNX 6.3):
 
 ### Hardware Revisions & Firmware
 
-PCM 3.1 has three hardware revisions. The update disc auto-detects your hardware and installs the correct version — it will not flash the wrong firmware.
+The update disc reads your PCM's hardware ID and installs the newest software for it; it won't install software meant for other hardware. The `01` / `02` in the ID is what decides it:
 
-| Hardware | Code | Max Firmware | Era | IOC |
-|----------|------|-------------|-----|-----|
-| Gen 1 "9600" | PCMG01XX | v2.47 | 2010–2012 | 9600 |
-| Series 1 "9612" | PCMS01XX | v3.43 | 2012–2013 | 9612 |
-| Series 2 "9633" | PCMS02XX | v4.76 | 2013–2018 | 9612 |
+| Hardware ID | Newest software |
+|-------------|-----------------|
+| `PCMG01XX0828` (2008 design) | v1.35 |
+| `PCMG01XX0829` (2008 design) | v2.47 |
+| `PCM{G,E,S}01XX0919` / `0920` (2009 design) | v3.43 |
+| `PCM{C,E,G,S}02XX1221` (facelift) | v4.76 |
+| `PCM{C,E,G,S}02XX1220` (facelift, no hard drive) | v4.76 LOW |
+
+Which features and options each version supports: [VERSIONS.md](VERSIONS.md).
 
 Check your version: press **INFO** → **Option** → **Show System Version**.
 
@@ -40,7 +44,7 @@ Check your version: press **INFO** → **Option** → **Show System Version**.
 
 **Wiring diagrams:** [hausofdub.com/wireview](https://hausofdub.com/wireview/) — browse by model, year and system. Each sheet shows its connector pinout alongside the drawing, and prints or exports to SVG and PNG. The PCM and gateway connectors this project works against are in [research/CAYENNE_958_PINOUTS.md](research/CAYENNE_958_PINOUTS.md).
 
-**PCM-Forge activation compatibility:** Tested and verified on PCMS02XX (v4.76). The RSA-64 algorithm is firmware-independent, but v2.47 and v3.43 are untested — if you're on older firmware and have issues, run the diagnostic USB and [open an issue](https://github.com/dspl1236/PCM-Forge/issues).
+**PCM-Forge activation compatibility:** tested on v4.76 (PCMS02XX) and v3.43 (a `01` unit). The codes don't depend on the software version, but older versions handle fewer features: 23 on v1.35 and v2.47, 24 on v3.43, all 28 on v4.76, and the Siri and Google/Bing options need v4.76. See [VERSIONS.md](VERSIONS.md). If you're on another version, run the diagnostic USB and [open an issue](https://github.com/dspl1236/PCM-Forge/issues).
 
 ## Web App
 

@@ -188,7 +188,7 @@ SPEED_LIMIT_CHOICES = (
 FEATURE_VARIANTS = {
     'TVINF': SPEED_LIMIT_CHOICES,
     'SPELLER': SPEED_LIMIT_CHOICES,
-    'SSS': ((0x0000, "Siri off"), (0x0001, "Siri on (Siri Eyes Free)")),
+    'SSS': ((0x0000, "Siri off"), (0x0001, "Siri on (Siri Eyes Free, needs v4.76)")),
     'OnlineServices': ((0x0001, "search with Google"), (0x0002, "search with Bing")),
 }
 
