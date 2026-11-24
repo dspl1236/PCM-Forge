@@ -46,10 +46,33 @@ The update disc picks the software by hardware ID. If a release has no entry for
 | `PCM{G,E,S,C}02XX1220` | | | | | | | LOW build | **4.76** (no hard drive) |
 
 - **The 2008 units stop at 1.35.** `PCMG01XX0828` installs from the disc's China folder and `0829` from the Rest of World folder.
-- **No `01` unit can take 4.xx, and no `02` unit is offered anything older.** No hardware ID appears on both sides. Besides the hardware ID, 4.76 also dropped the older FPGA board revision and the 64 MB video-RAM units that 1.xx to 3.xx still supported.
+- **The disc never offers 4.xx to an `01` unit, or anything older to an `02` unit.** No hardware ID appears on both sides. Besides the hardware ID, 4.76 also dropped the older FPGA board revision and the 64 MB video-RAM units that 1.xx to 3.xx still supported. Porsche did sign 4.76 for `01` units, though; see [Update discs](#update-discs).
 - **Earlier releases exist in each line** (4.63, for example); the 2015 disc carries only the last one of each.
 - **Other markets:** China (`CHN`) and Arabic (`ARB`) get their own builds of each version. The feature tables below were read from the Rest of World builds.
 - **Version strings:** `Porsche_PCM3.1_MOPF_SOP_STEP9.6_15245AS9` is 4.76. The build is the `15245A` part: `A` Rest of World / North America, `B` LOW, `C` Arabic, `D` China. 3.43 is build `14181`.
+
+## Update discs
+
+Tested on a bench PCM (`PCME01XX0920`, 3.43) with discs built from Porsche's own `PCM_NA_20150721` files, November 2026.
+
+**How a unit reads the disc**
+- A unit only reads the install list named after its own release: 3.43 Rest of World reads `PCM31RDW300.def`, 4.76 reads `PCM31RDW400.def`, an Arabic 4.76 unit reads `PCM31ARB400.def`. The disc's root `HBUPDATE.def` is most likely for 1.35 units (not tested). That's also how a unit recognises an update disc in the first place.
+- The install list decides which hardware ID gets which modules. Each module names its files and a signature file (`.sig`).
+- The install list itself isn't signed. The unit accepted one we wrote ourselves.
+- Every module is signature-checked. A single changed digit in one `.sig` stopped the update with error 3015, and the unit was unchanged afterwards.
+- Modules whose version is already installed are skipped. Rerunning the stock 3.43 disc on a 3.43 unit only ran the drive check and the configuration module.
+
+**What the error tells you**
+
+| On screen | Meaning |
+|-----------|---------|
+| "Wrong medium" banner, the update never starts | The disc has no install list named after the unit's release |
+| Error 1206 "Update medium corrupt - unable to read structure" | The install list has a syntax error (for example a block closed with `}` instead of `};`) |
+| Error 3015 "Security check failed" | A module's files don't match its signature |
+
+**Porsche signed 4.76 for `01` units.** The 4.76 folder on the disc carries a full signed module set for every `01` hardware ID (`PCM{G,E,S}01XX0828` and `PCM{G,E,S,C}01XX0920`), even though Porsche's own install list only offers 4.76 to `02` units. We installed one of those modules, the 4.76 configuration module for `PCME01XX0920`, on the bench unit through our own install list. The unit accepted Porsche's signature and installed it. A second disc then put the 3.43 module back. The software and activations were unchanged throughout.
+
+**Not tested: the full 4.76 software on an `01` unit.** The configuration module only writes the version list. The real modules rewrite the I/O controller, the FPGA and the application in flash, and nobody has shown that they run on `01` hardware. 4.76 ships no I/O-controller build for the `E01` units' 9608 controller. A module that installs but doesn't run on the hardware could leave the unit unable to start. **Don't try this on a car.** On a bench, have a serial console connected first so the unit can be recovered.
 
 ## Hard drive
 
