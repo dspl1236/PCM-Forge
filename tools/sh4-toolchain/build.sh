@@ -23,9 +23,21 @@ CC="${CC:-sh4-linux-gnu-gcc}"
 LD="${LD:-sh4-linux-gnu-ld}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
+# stdio / heap / environment need libc initialised first: use crt_libc.S, which
+# calls _init_libc the way a real QNX _start does, and add those functions to the
+# stub (stub_libc_stdio.c). Freestanding programs keep the bare crt.S and the
+# original stub, so they link exactly as before.
+CRT="$HERE/crt.S"
+STUBS="$HERE/stub_libc.c"
+if grep -qE '\b(printf|snprintf|puts|fflush|malloc|calloc|realloc|getenv|fopen)\s*\(' "$SRC"; then
+  CRT="$HERE/crt_libc.S"
+  STUBS="$STUBS $HERE/stub_libc_stdio.c"
+  echo "[build] libc start-up (crt_libc.S: source uses stdio/heap/environment)"
+fi
+
 mkdir -p stub
 # stub libc.so.2 -- names + SONAME only (bound to the real libc.so.2 on the PCM)
-"$CC" -shared -nostdlib -fPIC -Wl,-soname,libc.so.2 "$HERE/stub_libc.c" -o stub/libc.so.2
+"$CC" -shared -nostdlib -fPIC -Wl,-soname,libc.so.2 $STUBS -o stub/libc.so.2
 LIBS="stub/libc.so.2"
 
 # add the libgf stub only if the program draws (uses gf_* from libgf.so.1)
@@ -43,7 +55,7 @@ if grep -q -e 'socket(' -e 'gethostbyname' "$SRC"; then
 fi
 
 "$CC" -c -O2 -fno-stack-protector -ffreestanding -fno-builtin "$SRC" -o "${OUT}.o"
-"$CC" -c "$HERE/crt.S" -o crt.o
+"$CC" -c "$CRT" -o crt.o
 "$LD" -o "$OUT" -e _start --dynamic-linker=/usr/lib/ldqnx.so.2 crt.o "${OUT}.o" $LIBS
 
 echo "[build] $OUT:"
