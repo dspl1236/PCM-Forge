@@ -11,6 +11,12 @@ Three pieces:
 
 1. **`crt.S`** — a minimal C runtime. Provides `_start`: reads `argc`/`argv` off
    the stack, calls `main`, then `_exit(main())`. No glibc startup needed.
+   **`crt_libc.S`** is the full one, for programs that use stdio, the heap or the
+   environment: it does what a real PCM binary's `_start` does (`__set_fpscr`,
+   `_init_libc(argc, argv, envp, auxv, exit hook)`, then `exit(main(...))`, so
+   stdout is flushed). `build.sh` picks it by itself when the source calls
+   `printf`, `snprintf`, `puts`, `fflush`, `malloc`, `calloc`, `realloc`, `getenv`
+   or `fopen`.
 2. **`stub_libc.c` / `stub_libgf.c`** — tiny **SONAME stub** shared objects. They
    export just the *names* of the libc / libgf functions we call (plus the right
    `SONAME`). You link against these. At load time the PCM's own `ldqnx.so.2`
@@ -27,9 +33,18 @@ actual system libraries — built entirely off-target.
 
 ```sh
 # one-time: apt install gcc-sh4-linux-gnu   (Debian/Ubuntu/WSL)
-./build.sh app_oil.c        # -> ./app_oil   (QNX SH4 LE ELF)
+./build.sh hello_libc.c     # -> ./hello_libc (QNX SH4 LE ELF): start here
+./build.sh app_oil.c        # -> ./app_oil
 ./build.sh bt_fix.c
 ```
+
+**Start with `hello_raw.c` and `hello_libc.c`.** `hello_raw` is freestanding (raw
+`write`, `getpid`, `time`). `hello_libc` uses the unit's own stdio, heap and
+environment (`snprintf`, `strlen`, a 64 KB `malloc`/`free` check, `printf`,
+`getenv`, `envp`), announcing each stage with a raw `write()` first, so a failure
+names its stage. Both passed on a Porsche PCM 3.1 (958.2, 4.76) and on an
+**Audi MMI 3G+** (K0942_3, MU9411) on 2026-11-26, the same binaries on both,
+built with Ubuntu 24.04's `gcc-sh4-linux-gnu` 13.3. Neither writes anything.
 
 `build.sh` auto-adds the libgf stub when your source calls `gf_*`. Copy the
 output to a FAT32 USB, then run it from the PCM shell (telnet/serial) as root.
@@ -42,7 +57,10 @@ clean slate.
 | file | purpose |
 |------|---------|
 | `crt.S` | minimal SH4 `_start` runtime |
+| `crt_libc.S` | full `_start` that initialises libc first; chosen automatically for stdio/heap/environment |
 | `stub_libc.c` | SONAME stub for `libc.so.2` (open/read/write/devctl/IPC…) |
+| `stub_libc_stdio.c` | the rest of the `libc.so.2` stub: stdio, heap, strings, `getenv`, the start-up calls. Added only with `crt_libc.S`, so the freestanding tools (and the shipped `forge_splash`, `fcopy`, `nettest`) still build byte for byte as before. Add a line for any other libc function you call |
+| `hello_raw.c`, `hello_libc.c` | the two test programs above |
 | `stub_libgf.c` | SONAME stub for `libgf.so.1` (the `gf_*` graphics API, incl. surface‑attach + blit) |
 | `build.sh` | one-command cross-build + deploy hint |
 | `font8x16.h` | self-shipped 8×16 bitmap font (text from `gf_draw_rect`) |
@@ -105,3 +123,8 @@ a recompile — and `pfim_tool.py`'s output is byte-identical to `make_img.py`.
 
 Built and validated on a Cayenne (958) PCM 3.1. Input (`dsi_*`, `ch8read`) is
 diagnostic — protocol documented, on-car decode calibration ongoing.
+
+**Audi MMI 3G+ / VW RNS-850:** the same Harman platform (SH7785, QNX 6.3.2,
+`ldqnx.so.2`, `libc.so.2`), and the test programs above run there unchanged. The
+graphics and input tools talk to PCM-specific services and have not been tried
+on an MMI.
