@@ -284,6 +284,10 @@ static unsigned G_cid, g_surf=0;
 /* ======================= progress state + drawing ======================== */
 static char g_prog_path[192];
 static char g_label[64];
+#ifdef FORGE_MMI
+static char g_note_path[192];
+static char g_note[64];    /* forge_note: what the user should do next, shown on DONE */
+#endif
 static int  g_n=-1, g_m=0;          /* g_n<0: no n/m -> indeterminate bar */
 static int  g_b=-1;                 /* "a-b/m": the step runs from a towards b (creep) */
 static unsigned g_elapsed=0;        /* seconds, from the real clock (see tick_clock) */
@@ -346,6 +350,10 @@ static void make_prog_path(const char*flagp){
   if(cut<0||cut+16>=(int)sizeof g_prog_path){ g_prog_path[0]=0; return; }
   for(i=0;i<=cut;i++) g_prog_path[i]=flagp[i];
   { const char*s="forge_progress"; int k=0; while(s[k]){ g_prog_path[cut+1+k]=s[k]; k++; } g_prog_path[cut+1+k]=0; }
+#ifdef FORGE_MMI
+  for(i=0;i<=cut;i++) g_note_path[i]=flagp[i];
+  { const char*s="forge_note"; int k=0; while(s[k]){ g_note_path[cut+1+k]=s[k]; k++; } g_note_path[cut+1+k]=0; }
+#endif
 }
 /* re-read the progress line; keep the last good one if the file is missing.
    Format: "n/m label", "a-b/m label" (a step expected to take a while: the bar
@@ -391,6 +399,10 @@ static void draw_progress(int state){
   rp=put_dec(right,rp,mins); right[rp++]=':'; right[rp++]=(char)('0'+ss/10); right[rp++]=(char)('0'+ss%10); right[rp]=0;
   rw=rp*ADV;
   text(BAR_X2+1-rw,TXT_Y,COL_TEXT2,right);
+  if(state==1 && g_note[0]){                         /* DONE: the module's note */
+    for(i=0;g_note[i]&&i<63;i++) lab[i]=g_note[i];
+    lab[i]=0; text(BAR_X1,TXT_Y,COL_TEXT,lab);
+  } else
   if(state==1 && g_m>0 && g_m!=100){                 /* DONE: "6 steps done" */
     const char*t= g_m==1? " step done" : " steps done"; int q=put_dec(lab,0,(unsigned)g_m), k=0;
     while(t[k]) lab[q++]=t[k++]; lab[q]=0; text(BAR_X1,TXT_Y,COL_TEXT,lab);
@@ -560,6 +572,9 @@ int main(int argc,char**argv){
   hold   =(argc>5)?myatoi(argv[5]):4;   if(hold<1) hold=1;
   make_prog_path(flagp);
   if(g_prog_path[0]){ unlink(g_prog_path); lg("progress file: "); lg(g_prog_path); lg("\n"); }
+#ifdef FORGE_MMI
+  if(g_note_path[0]) unlink(g_note_path);
+#endif
 
   rpx=load_blob(runp,  g_run,  (int)sizeof(g_run),  &rW,&rH,&rStride,&rFmt);
   dpx=load_blob(donep, g_done, (int)sizeof(g_done), &dW,&dH,&dStride,&dFmt);
@@ -618,6 +633,12 @@ int main(int argc,char**argv){
   lgdec(g_elapsed); lg("s ("); lgdec((unsigned)frame); lg(" frames)\n");
 
 #ifdef FORGE_MMI
+  if(seen && g_note_path[0]){
+    char b[96]; int f=open(g_note_path,O_RDONLY,0), r, k, maxc=(BAR_X2-6*ADV-12-BAR_X1)/ADV;
+    if(f>=0){ r=read(f,b,95); close(f);
+      if(r>0){ for(k=0;k<r&&k<maxc&&k<63&&b[k]!='\n'&&b[k]!='\r';k++) g_note[k]=(b[k]>=32&&b[k]<=126)?b[k]:'?';
+        g_note[k]=0; lg("  note: "); lg(g_note); lg("\n"); } }
+  }
   if(seen && g_failed){
     lg(">>> the flag says FAIL\n");
     if(fpx) present(fpx,fW,fH,fStride,fFmt,"FAILED",2);
