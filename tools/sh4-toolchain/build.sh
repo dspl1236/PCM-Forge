@@ -54,7 +54,7 @@ if grep -q -e 'socket(' -e 'gethostbyname' "$SRC"; then
   echo "[build] libsocket stub included (source uses sockets)"
 fi
 
-"$CC" -c -O2 -fno-stack-protector -ffreestanding -fno-builtin "$SRC" -o "${OUT}.o"
+"$CC" -c -O2 -fno-stack-protector -ffreestanding -fno-builtin ${EXTRA_CFLAGS:-} "$SRC" -o "${OUT}.o"
 "$CC" -c "$CRT" -o crt.o
 "$LD" -o "$OUT" -e _start --dynamic-linker=/usr/lib/ldqnx.so.2 crt.o "${OUT}.o" $LIBS
 

@@ -88,8 +88,15 @@ extern int  gf_context_free(void*);
 
 #define PFIM_MAGIC 0x4d494650u
 #define HDR_BYTES  24
+#ifdef FORGE_MMI
+#define MAX_W      800         /* the MMI3G-Toolkit art is full screen */
+#define MAX_H      480
+#define PANEL_W    480         /* the live band's panel, centred on the screen */
+#define PANEL_H    240
+#else
 #define MAX_W      480
 #define MAX_H      240
+#endif
 #define MAX_BPP    4
 #define MAX_OEM    12          /* max OEM cids we track for additive show */
 
@@ -97,6 +104,18 @@ extern int  gf_context_free(void*);
    its content above row 181; the band below is ours) ---- */
 #define FRAME_US   500000      /* 2 frames a second: a frame costs ~160 ms of SH4 time
                                   to draw (measured on a 958.2), so 4 fps took ~40% CPU */
+#ifdef FORGE_MMI
+/* MMI3G-Toolkit: its red while running, green DONE, amber FAILED */
+#define COL_BG     0xff0a0a0cu /* the art's background, under the band */
+#define COL_GOLD   0xffc41e3au /* the toolkit red (bar, active dot) */
+#define COL_DIM    0xff46121cu /* a resting dot */
+#define COL_TRACK  0xff1c1c20u
+#define COL_EDGE   0xff2a2a2eu
+#define COL_TEXT   0xffd8d8dcu
+#define COL_TEXT2  0xff8a8a90u
+#define COL_OK     0xff2fbf71u
+#define COL_FAIL   0xfff0a020u
+#else
 #define COL_BG     0xff0a0a0cu /* the image's own background */
 #define COL_GOLD   0xffc8a44eu /* the image's gold */
 #define COL_DIM    0xff4a3e22u /* a resting dot */
@@ -104,6 +123,7 @@ extern int  gf_context_free(void*);
 #define COL_EDGE   0xff5a4a28u
 #define COL_TEXT   0xffd8d4c8u
 #define COL_TEXT2  0xff8a8578u
+#endif
 #define TXT_Y      198
 #define BAR_X1     24
 #define BAR_X2     455
@@ -114,12 +134,22 @@ extern int  gf_context_free(void*);
 #define SWEEP_STEP 36
 #define CREEP_SHIFT 7          /* range steps: close 1/128 of the gap per frame (~85 s time constant at the measured ~0.66 s/frame) */
 /* the three dots of "RUNNING . . ." in running.bin: 11x11 at these x, y 168..178 */
+#ifdef FORGE_MMI
+/* right after the art's "RUNNING" (ends at panel x 298), on its baseline (y 161) */
+static const int DOT_X[3]={310,330,350};
+#define DOT_Y      151
+#else
 static const int DOT_X[3]={301,367,433};
 #define DOT_Y      168
+#endif
 static const unsigned char DOT_RUN[11][2]={{4,6},{2,8},{1,9},{1,9},{0,10},{0,10},{0,10},{1,9},{1,9},{2,8},{4,6}};
 
 static unsigned char g_run [HDR_BYTES + (MAX_W*MAX_H*MAX_BPP) + 64] __attribute__((aligned(16)));
 static unsigned char g_done[HDR_BYTES + (MAX_W*MAX_H*MAX_BPP) + 64] __attribute__((aligned(16)));
+#ifdef FORGE_MMI
+static unsigned char g_fail[HDR_BYTES + (MAX_W*MAX_H*MAX_BPP) + 64] __attribute__((aligned(16)));
+static int g_failed=0;   /* the done-flag says FAIL: show the failed screen */
+#endif
 static unsigned char g_lm[16384];             /* /dev/layermanager text state dump */
 
 /* ---- logging: fd 1 + USB forge_splash.txt ---- */
@@ -194,6 +224,33 @@ static unsigned blk_uint(int s,int e,const char*label){
 /* Find the OEM main HMI: the 800x480 displayable VISIBLE on display 0. Identify
    by SIZE, not by "which cids are on display 0" -- a leaked smaller cid (200,
    240x257) can falsely sit on display 0, and must NOT be restored. */
+#ifdef FORGE_MMI
+/* The MMI 3G+'s LayermanagerV2 writes each displayable as "Displayable id: <n>",
+   then "Visible on layer with gf index <l> of display <d>" or "Not visible", then
+   "Width: <w>, Height: <h>". The OEM HMI is the 800x480 one visible on display 0
+   (the A6, K0942_3: displayable 18). */
+static void discover_oem_cids(void){
+  int L=read_and_log_lmgr("startup"), i, e;
+  g_noem=0;
+  for(i=0;i<L;i++){
+    if(!str_at(g_lm,L,i,"Displayable id: ")) continue;
+    e=i+16; while(e<L && !str_at(g_lm,L,e,"Displayable id: ")) e++;
+    { unsigned cid=blk_uint(i,e,"Displayable id: ");
+      unsigned w  =blk_uint(i,e,"Width: ");
+      unsigned h  =blk_uint(i,e,"Height: ");
+      int visD0=0, j;
+      for(j=i;j<e;j++){ if(str_at(g_lm,e,j,"Visible on layer")){ int p=j;
+        while(p<e && !str_at(g_lm,e,p,"of display ")) p++;
+        if(p+11<e && g_lm[p+11]=='0') visD0=1; break; } }
+      if(cid!=0xffffffffu && visD0 && w==800 && h==480 && g_noem<MAX_OEM){
+        int dup=0,k; for(k=0;k<g_noem;k++) if(g_oem[k]==cid) dup=1; if(!dup) g_oem[g_noem++]=cid;
+      }
+    }
+    i=e-1;
+  }
+  lg("OEM main HMI cid(s) [800x480 @display0]: "); { int j; for(j=0;j<g_noem;j++){ lgdec(g_oem[j]); lg(" "); } } lg("\n");
+}
+#else
 static void discover_oem_cids(void){
   int L=read_and_log_lmgr("startup"), i;
   g_noem=0;
@@ -215,9 +272,13 @@ static void discover_oem_cids(void){
   }
   lg("OEM main HMI cid(s) [800x480 @display0]: "); { int j; for(j=0;j<g_noem;j++){ lgdec(g_oem[j]); lg(" "); } } lg("\n");
 }
+#endif
 
 static void *G_dev, *G_ctx;
 static int  G_W, G_H, G_fd;
+#ifdef FORGE_MMI
+static int  G_OX=0, G_OY=0;   /* the panel's place in the full-screen layer */
+#endif
 static unsigned G_cid, g_surf=0;
 
 /* ======================= progress state + drawing ======================== */
@@ -243,6 +304,9 @@ static void tick_clock(int frame){
 }
 
 static void rct(unsigned c,int x1,int y1,int x2,int y2){
+#ifdef FORGE_MMI
+  x1+=G_OX; x2+=G_OX; y1+=G_OY; y2+=G_OY;
+#endif
   if(x1<0)x1=0; if(y1<0)y1=0; if(x2>G_W-1)x2=G_W-1; if(y2>G_H-1)y2=G_H-1;
   if(x1>x2||y1>y2) return;
   gf_context_set_fgcolor(G_ctx,c); gf_draw_rect(G_ctx,x1,y1,x2,y2);
@@ -251,6 +315,9 @@ static void rct(unsigned c,int x1,int y1,int x2,int y2){
 static void glyph(int gx,int gy,int code){
   const unsigned char*g; int row,cx,start;
   if(code<FONT_FIRST||code>FONT_LAST) code='?';
+#ifdef FORGE_MMI
+  gx+=G_OX; gy+=G_OY;
+#endif
   g=FONT8X16[code-FONT_FIRST];
   for(row=0;row<FONT_H;row++){
     unsigned bits=g[row]; cx=0;
@@ -309,6 +376,39 @@ static void read_progress(void){
   if(g_n>=0){ int base=muldiv(INNER,g_n,g_m)<<8; if(base>g_fill_fp) g_fill_fp=base; }
 }
 
+#ifdef FORGE_MMI
+/* the band in the panel: label + "n/m  m:ss", then the bar. state 0 running,
+   1 done (full green bar), 2 failed (the step it stopped on, amber at its fill).
+   Only the panel's strip is cleared: the art around it stays. */
+static void draw_progress(int state){
+  char right[24], lab[64]; int rp=0, rw, maxc, i, inner, fill=g_fill_fp>>8;
+  unsigned secs=g_elapsed, mins=secs/60, ss=secs-mins*60;
+  rct(COL_BG,0,184,PANEL_W-1,PANEL_H-1);
+  if(state!=1 && g_n>=0){
+    if(g_m==100){ rp=put_dec(right,rp,(unsigned)muldiv(fill,100,INNER)); right[rp++]='%'; }
+    else { rp=put_dec(right,rp,(unsigned)g_n); right[rp++]='/'; rp=put_dec(right,rp,(unsigned)g_m); }
+    right[rp++]=' '; right[rp++]=' '; }
+  rp=put_dec(right,rp,mins); right[rp++]=':'; right[rp++]=(char)('0'+ss/10); right[rp++]=(char)('0'+ss%10); right[rp]=0;
+  rw=rp*ADV;
+  text(BAR_X2+1-rw,TXT_Y,COL_TEXT2,right);
+  if(state==1 && g_m>0 && g_m!=100){                 /* DONE: "6 steps done" */
+    const char*t= g_m==1? " step done" : " steps done"; int q=put_dec(lab,0,(unsigned)g_m), k=0;
+    while(t[k]) lab[q++]=t[k++]; lab[q]=0; text(BAR_X1,TXT_Y,COL_TEXT,lab);
+  } else
+  { const char*src= state==1? "complete" : state==2? (g_label[0]? g_label : "failed") : (g_label[0]? g_label : "working");
+    maxc=(BAR_X2-rw-12-BAR_X1)/ADV; if(maxc>63) maxc=63; if(maxc<4) maxc=4;
+    for(i=0;src[i]&&i<maxc;i++) lab[i]=src[i];
+    if(src[i]&&i>=2){ lab[i-1]='.'; lab[i-2]='.'; }
+    lab[i]=0; text(BAR_X1,TXT_Y,COL_TEXT,lab); }
+  rct(COL_EDGE,BAR_X1,BAR_Y1,BAR_X2,BAR_Y2);
+  rct(COL_TRACK,BAR_X1+1,BAR_Y1+1,BAR_X2-1,BAR_Y2-1);
+  inner=(BAR_X2-1)-(BAR_X1+1)+1;
+  if(state==1) rct(COL_OK,BAR_X1+1,BAR_Y1+1,BAR_X2-1,BAR_Y2-1);
+  else if(g_n>=0){ if(fill>inner) fill=inner; if(fill>0) rct(state==2? COL_FAIL : COL_GOLD,BAR_X1+1,BAR_Y1+1,BAR_X1+fill,BAR_Y2-1); }
+  else if(state==2) rct(COL_FAIL,BAR_X1+1,BAR_Y1+1,BAR_X1+inner/2,BAR_Y2-1);
+  else rct(COL_GOLD,BAR_X1+1+g_sweep,BAR_Y1+1,BAR_X1+g_sweep+SWEEP_W,BAR_Y2-1);
+}
+#else
 /* the band under the image: label + "n/m  m:ss", then the bar */
 static void draw_progress(int done){
   char right[24], lab[64]; int rp=0, rw, maxc, i, inner, fill=g_fill_fp>>8;
@@ -333,13 +433,18 @@ static void draw_progress(int done){
   else if(g_n>=0){ if(fill>inner) fill=inner; if(fill>0) rct(COL_GOLD,BAR_X1+1,BAR_Y1+1,BAR_X1+fill,BAR_Y2-1); }
   else rct(COL_GOLD,BAR_X1+1+g_sweep,BAR_Y1+1,BAR_X1+g_sweep+SWEEP_W,BAR_Y2-1);
 }
+#endif
 /* dim the two resting dots of "RUNNING . . ." (the active one stays as drawn) */
 static void draw_dots(void){
   int d,r;
   for(d=0;d<3;d++){ if(d==g_dot) continue;
     rct(COL_BG,DOT_X[d]-1,DOT_Y-1,DOT_X[d]+11,DOT_Y+11);
     gf_context_set_fgcolor(G_ctx,COL_DIM);
+#ifdef FORGE_MMI
+    for(r=0;r<11;r++) gf_draw_rect(G_ctx,G_OX+DOT_X[d]+DOT_RUN[r][0],G_OY+DOT_Y+r,G_OX+DOT_X[d]+DOT_RUN[r][1],G_OY+DOT_Y+r);
+#else
     for(r=0;r<11;r++) gf_draw_rect(G_ctx,DOT_X[d]+DOT_RUN[r][0],DOT_Y+r,DOT_X[d]+DOT_RUN[r][1],DOT_Y+r);
+#endif
   }
 }
 static void advance_animation(void){
@@ -363,9 +468,18 @@ static void draw_frame(unsigned char*px, unsigned iw, unsigned ih, unsigned stri
   gf_context_set_fgcolor(G_ctx,0xff000000u);
   gf_draw_rect(G_ctx,0,0,G_W-1,G_H-1);
   gf_draw_blit2(G_ctx,(void*)imgsurf,0, 0,0,(int)iw-1,(int)ih-1, dx,dy);
+#ifdef FORGE_MMI
+  G_OX=((int)G_W-PANEL_W)/2; G_OY=((int)G_H-PANEL_H)/2;   /* the band's panel, centred */
+  if(G_W>=PANEL_W && G_H>=PANEL_H){
+#else
   if(G_W==480 && G_H==240){            /* the layout assumes the 480x240 layer */
+#endif
     if(mode==0) draw_dots();
+#ifdef FORGE_MMI
+    draw_progress(mode);
+#else
     draw_progress(mode==1);
+#endif
   }
   gf_draw_finish(G_ctx);
   gf_draw_end(G_ctx);
@@ -388,7 +502,12 @@ static void present(unsigned char*px, unsigned iw, unsigned ih, unsigned stride,
   gmsg[0]=G_cid; gmsg[1]=gmsg[2]=gmsg[3]=0;
   rc=devctl(G_fd,LMGR_GETVFB,gmsg,sizeof gmsg,0); sid=gmsg[1];
   if(tag){ lg("  "); lg(tag); lg(" getvfb sid="); lghx(sid); lg("\n"); }
+#ifdef FORGE_MMI
+  /* LayermanagerV2 numbers a layer's two buffers 1 and 0: sid 0 is a buffer */
+  if(rc!=0){ if(tag) lg("  >>> getvfb failed\n"); return; }
+#else
   if(!(rc==0&&sid)){ if(tag) lg("  >>> getvfb failed\n"); return; }
+#endif
   if(g_surf){ gf_surface_free((void*)g_surf); g_surf=0; }
   gf_surface_attach_by_sid(&g_surf,G_dev,sid);
   gf_context_set_surface(G_ctx,(void*)g_surf);
@@ -415,12 +534,27 @@ int main(int argc,char**argv){
   unsigned rW,rH,rStride,rFmt,dW,dH,dStride,dFmt;
   int frame;
   unsigned char *rpx,*dpx;
+#ifdef FORGE_MMI
+  unsigned char *fpx; unsigned fW,fH,fStride,fFmt;
+#endif
   const char *runp,*donep,*flagp;
+#ifdef FORGE_MMI
+  static const int SZ[][2]={{800,480},{480,240},{400,240}};
+#else
   static const int SZ[][2]={{480,240},{400,240},{320,240}};
+#endif
 
   openlog();
+#ifdef FORGE_MMI
+  lg("== mmi_splash (forge_splash v2 for the MMI 3G+: full-screen layer, LayermanagerV2 dump) ==\n");
+#else
   lg("== forge_splash v2 (progress bar, additive-restore) ==\n");
+#endif
+#ifdef FORGE_MMI
+  if(argc<4){ lg(">>> usage: mmi_splash run.bin done.bin flagfile [maxwait] [hold] [fail.bin]\n"); return 1; }
+#else
   if(argc<4){ lg(">>> usage: forge_splash run.bin done.bin flagfile [maxwait] [hold]\n"); return 1; }
+#endif
   runp=argv[1]; donep=argv[2]; flagp=argv[3];
   maxwait=(argc>4)?myatoi(argv[4]):120; if(maxwait<1) maxwait=1; if(maxwait>86400) maxwait=86400;
   hold   =(argc>5)?myatoi(argv[5]):4;   if(hold<1) hold=1;
@@ -429,6 +563,9 @@ int main(int argc,char**argv){
 
   rpx=load_blob(runp,  g_run,  (int)sizeof(g_run),  &rW,&rH,&rStride,&rFmt);
   dpx=load_blob(donep, g_done, (int)sizeof(g_done), &dW,&dH,&dStride,&dFmt);
+#ifdef FORGE_MMI
+  fpx=(argc>6)? load_blob(argv[6], g_fail, (int)sizeof(g_fail), &fW,&fH,&fStride,&fFmt) : 0;
+#endif
   if(!rpx){ lg(">>> RUNNING blob failed\n"); return 1; }
 
   for(i=0;i<256;i++) devinfo[i]=0;
@@ -465,7 +602,12 @@ int main(int argc,char**argv){
   seen=0; frame=0; tick_clock(frame);
   for(;;){
     int ff=open(flagp,O_RDONLY,0);
+#ifdef FORGE_MMI
+    /* "FAIL..." in the flag: the card's script stopped at a refusal */
+    if(ff>=0){ char c=0; read(ff,&c,1); close(ff); seen=1; g_failed=(c=='F'); break; }
+#else
     if(ff>=0){ close(ff); seen=1; break; }
+#endif
     if(g_elapsed>=(unsigned)maxwait) break;
     usleep(FRAME_US); tick_clock(++frame);
     read_progress();
@@ -475,6 +617,14 @@ int main(int argc,char**argv){
   lg(seen?">>> done-flag seen -> DONE after ":">>> timeout, no done-flag -> teardown after ");
   lgdec(g_elapsed); lg("s ("); lgdec((unsigned)frame); lg(" frames)\n");
 
+#ifdef FORGE_MMI
+  if(seen && g_failed){
+    lg(">>> the flag says FAIL\n");
+    if(fpx) present(fpx,fW,fH,fStride,fFmt,"FAILED",2);
+    else present(rpx,rW,rH,rStride,rFmt,"FAILED (no failed image)",2);
+    sleep((unsigned)hold);
+  } else
+#endif
   if(seen && dpx){
     present(dpx,dW,dH,dStride,dFmt,"DONE",1);
     sleep((unsigned)hold);
